@@ -7,6 +7,9 @@ void Metrics::reset()
     generatedInWindow_ = 0;
     processedInWindow_ = 0;
     timedOutInWindow_ = 0;
+    retriesInWindow_ = 0;
+    cacheHitsInWindow_ = 0;
+    cacheLookupsInWindow_ = 0;
     latencySumInWindow_ = 0.0;
     latencySamplesInWindow_ = 0;
 }
@@ -33,10 +36,33 @@ void Metrics::recordTimedOut(double latencySeconds)
     ++snapshot_.totalTimedOut;
 }
 
-void Metrics::setBackendState(int queueDepth, double utilization)
+void Metrics::recordRetry()
 {
-    snapshot_.backendQueueDepth = queueDepth;
-    snapshot_.backendUtilization = utilization;
+    ++retriesInWindow_;
+    ++snapshot_.totalRetries;
+}
+
+void Metrics::recordCacheLookup(bool hit)
+{
+    ++cacheLookupsInWindow_;
+    ++snapshot_.totalCacheLookups;
+    if (hit) {
+        ++cacheHitsInWindow_;
+        ++snapshot_.totalCacheHits;
+    }
+}
+
+void Metrics::setNodeStates(int apiQueueDepth, double apiUtilization, int databaseQueueDepth, double databaseUtilization)
+{
+    snapshot_.apiQueueDepth = apiQueueDepth;
+    snapshot_.apiUtilization = apiUtilization;
+    snapshot_.databaseQueueDepth = databaseQueueDepth;
+    snapshot_.databaseUtilization = databaseUtilization;
+}
+
+void Metrics::setSimulationSpeed(double speed)
+{
+    snapshot_.simulationSpeed = speed;
 }
 
 void Metrics::update(double dt)
@@ -49,6 +75,12 @@ void Metrics::update(double dt)
     snapshot_.inputRatePerSecond = generatedInWindow_ / windowElapsed_;
     snapshot_.processedPerSecond = processedInWindow_ / windowElapsed_;
     snapshot_.timeoutRatePerSecond = timedOutInWindow_ / windowElapsed_;
+    snapshot_.retryRatePerSecond = retriesInWindow_ / windowElapsed_;
+    if (cacheLookupsInWindow_ > 0) {
+        snapshot_.cacheHitRate = static_cast<double>(cacheHitsInWindow_) / cacheLookupsInWindow_;
+    } else {
+        snapshot_.cacheHitRate = 0.0;
+    }
     if (latencySamplesInWindow_ > 0) {
         snapshot_.averageLatencySeconds = latencySumInWindow_ / latencySamplesInWindow_;
     }
@@ -57,6 +89,9 @@ void Metrics::update(double dt)
     generatedInWindow_ = 0;
     processedInWindow_ = 0;
     timedOutInWindow_ = 0;
+    retriesInWindow_ = 0;
+    cacheHitsInWindow_ = 0;
+    cacheLookupsInWindow_ = 0;
     latencySumInWindow_ = 0.0;
     latencySamplesInWindow_ = 0;
 }

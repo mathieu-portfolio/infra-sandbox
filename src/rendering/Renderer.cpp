@@ -16,6 +16,8 @@ Color kMutedText{139, 148, 158, 255};
 Color kText{230, 237, 243, 255};
 Color kLink{75, 94, 115, 170};
 Color kParticle{89, 196, 255, 255};
+Color kDbParticle{245, 184, 76, 255};
+Color kCacheParticle{86, 210, 151, 255};
 Color kTimeout{235, 86, 100, 190};
 
 float pulse(double timeSeconds, double speed, double phase)
@@ -83,6 +85,14 @@ void Renderer::drawNodes(const Simulation& simulation)
             DrawCircleV(center, radius + 12.0f, {58, 139, 253, 35});
             DrawCircleV(center, radius, {88, 166, 255, 115});
             DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, {152, 195, 255, 220});
+        } else if (node.type == NodeType::Cache) {
+            const Rectangle rect{center.x - 42.0f, center.y - 28.0f, 84.0f, 56.0f};
+            const Color cacheColor = simulation.cacheEnabled() ? Color{86, 210, 151, 255} : Color{90, 107, 126, 180};
+            DrawRectangleRounded(rect, 0.18f, 8, {28, 35, 42, 230});
+            DrawRectangleRoundedLines(rect, 0.18f, 8, cacheColor);
+            DrawCircleV({center.x - 18.0f, center.y}, 7.0f, cacheColor);
+            DrawCircleV({center.x + 4.0f, center.y}, 7.0f, cacheColor);
+            DrawCircleV({center.x + 26.0f, center.y}, 7.0f, cacheColor);
         } else if (node.type == NodeType::Service) {
             const float overloadPulse = node.health == HealthState::Healthy ? 0.0f : pulse(simulation.timeSeconds(), 10.0, node.id) * 8.0f;
             const Rectangle rect{center.x - 48.0f - overloadPulse * 0.5f, center.y - 48.0f - overloadPulse * 0.5f, 96.0f + overloadPulse, 96.0f + overloadPulse};
@@ -123,8 +133,17 @@ void Renderer::drawRequests(const Simulation& simulation)
 
             const Vec2 world = lerp(source->position, target->position, static_cast<float>(request.transitProgress));
             const Vector2 position = worldToScreen(world, width, height);
-            DrawCircleV(position, 4.0f, kParticle);
-            DrawCircleV(position, 8.0f, {89, 196, 255, 45});
+            const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
+            const Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);
+            const float radius = databaseHeavy ? 5.5f : 4.0f;
+            DrawCircleV(position, radius, color);
+            DrawCircleV(position, radius + 4.0f, {color.r, color.g, color.b, 45});
+        } else if (request.state == RequestState::RetryWaiting) {
+            const Node* source = simulation.graph().node(request.sourceNodeId);
+            if (source != nullptr) {
+                const Vector2 position = worldToScreen(source->position, width, height);
+                DrawCircleLines(static_cast<int>(position.x), static_cast<int>(position.y), 42.0f, {235, 86, 100, 140});
+            }
         } else if (request.state == RequestState::TimedOut && simulation.timeSeconds() - request.completedTime < 0.6) {
             const Node* node = simulation.graph().node(request.currentNodeId);
             if (node != nullptr) {
@@ -168,30 +187,38 @@ void Renderer::drawMetricsOverlay(const Simulation& simulation, bool paused)
     const auto& metrics = simulation.metrics();
     const int x = 18;
     const int y = 18;
-    DrawRectangleRounded({10.0f, 10.0f, 330.0f, 214.0f}, 0.04f, 8, kPanel);
+    DrawRectangleRounded({10.0f, 10.0f, 360.0f, 318.0f}, 0.04f, 8, kPanel);
 
     char buffer[128];
-    std::snprintf(buffer, sizeof(buffer), "FPS %d  |  %s", GetFPS(), paused ? "PAUSED" : "RUNNING");
+    std::snprintf(buffer, sizeof(buffer), "FPS %d  |  %s  |  %.0fx", GetFPS(), paused ? "PAUSED" : "RUNNING", simulation.simulationSpeed());
     drawTextLine(buffer, x, y, 18, kText);
     std::snprintf(buffer, sizeof(buffer), "Input rate: %.1f req/s", metrics.inputRatePerSecond);
     drawTextLine(buffer, x, y + 30, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Queue depth: %d", metrics.backendQueueDepth);
+    std::snprintf(buffer, sizeof(buffer), "API queue: %d", metrics.apiQueueDepth);
     drawTextLine(buffer, x, y + 56, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Processed: %.1f req/s", metrics.processedPerSecond);
+    std::snprintf(buffer, sizeof(buffer), "DB queue: %d", metrics.databaseQueueDepth);
     drawTextLine(buffer, x, y + 82, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Avg latency: %.2fs", metrics.averageLatencySeconds);
+    std::snprintf(buffer, sizeof(buffer), "Processed: %.1f req/s", metrics.processedPerSecond);
     drawTextLine(buffer, x, y + 108, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Timeouts: %.1f req/s", metrics.timeoutRatePerSecond);
+    std::snprintf(buffer, sizeof(buffer), "Avg latency: %.2fs", metrics.averageLatencySeconds);
     drawTextLine(buffer, x, y + 134, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Backend utilization: %.0f%%", metrics.backendUtilization * 100.0);
+    std::snprintf(buffer, sizeof(buffer), "Timeouts: %.1f req/s", metrics.timeoutRatePerSecond);
     drawTextLine(buffer, x, y + 160, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Cache placeholder: %.0f%%", simulation.cacheEfficiency() * 100.0);
+    std::snprintf(buffer, sizeof(buffer), "Retries: %.1f req/s", metrics.retryRatePerSecond);
     drawTextLine(buffer, x, y + 186, 18, kText);
+    std::snprintf(buffer, sizeof(buffer), "API utilization: %.0f%%", metrics.apiUtilization * 100.0);
+    drawTextLine(buffer, x, y + 212, 18, kText);
+    std::snprintf(buffer, sizeof(buffer), "DB utilization: %.0f%%", metrics.databaseUtilization * 100.0);
+    drawTextLine(buffer, x, y + 238, 18, kText);
+    std::snprintf(buffer, sizeof(buffer), "Cache: %s  hit %.0f%%", simulation.cacheEnabled() ? "on" : "off", metrics.cacheHitRate * 100.0);
+    drawTextLine(buffer, x, y + 264, 18, kText);
+    std::snprintf(buffer, sizeof(buffer), "Bursts: %s", simulation.burstModeEnabled() ? "on" : "off");
+    drawTextLine(buffer, x, y + 290, 18, kText);
 }
 
 void Renderer::drawControlsOverlay(const Simulation&)
 {
-    const char* controls = "Space pause | R reset | Up/Down or +/- demand | 1 scale capacity | 2 cache placeholder | 3 reset capacity";
+    const char* controls = "Space pause | . step | R reset | +/- demand | 1/3/5 speed | A scale API | 2 cache | C clear | B bursts | 4 reset";
     const int size = 16;
     const int width = MeasureText(controls, size);
     DrawRectangleRounded({12.0f, static_cast<float>(GetScreenHeight() - 42), static_cast<float>(width + 18), 30.0f}, 0.15f, 8, {22, 27, 34, 210});

@@ -8,15 +8,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(INFRA_BUILD_APP "Build the raylib visualization app" ON)
 option(INFRA_BUILD_TESTS "Build unit tests" ON)
+option(INFRA_FETCH_RAYLIB "Fetch raylib with CMake if it is not installed" ON)
 
-find_package(raylib CONFIG QUIET)
+if(INFRA_BUILD_APP)
+    find_package(raylib CONFIG QUIET)
+endif()
 
-if(NOT raylib_FOUND AND INFRA_FETCH_RAYLIB)
+if(INFRA_BUILD_APP AND NOT raylib_FOUND AND INFRA_FETCH_RAYLIB)
     include(FetchContent)
     FetchContent_Declare(
         raylib
         GIT_REPOSITORY https://github.com/raysan5/raylib.git
         GIT_TAG 5.5
+        GIT_SHALLOW TRUE
     )
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
@@ -34,23 +38,29 @@ add_library(infra_simulation
 
 target_include_directories(infra_simulation PUBLIC src)
 
-add_executable(infra_sandbox
-    src/main.cpp
-    src/app/Application.cpp
-    src/rendering/CameraController.cpp
-    src/rendering/Renderer.cpp
-    src/rendering/RenderPrimitives.cpp
-)
+if(INFRA_BUILD_APP)
+    add_executable(infra_sandbox
+        src/main.cpp
+        src/app/Application.cpp
+        src/rendering/CameraController.cpp
+        src/rendering/Renderer.cpp
+        src/rendering/RenderPrimitives.cpp
+    )
 
-target_include_directories(infra_sandbox PRIVATE src)
-target_link_libraries(infra_sandbox PRIVATE infra_simulation raylib)
+    target_include_directories(infra_sandbox PRIVATE src)
+    target_link_libraries(infra_sandbox PRIVATE infra_simulation raylib)
+endif()
 
 if(MSVC)
     target_compile_options(infra_simulation PRIVATE /W4)
-    target_compile_options(infra_sandbox PRIVATE /W4)
+    if(INFRA_BUILD_APP)
+        target_compile_options(infra_sandbox PRIVATE /W4)
+    endif()
 else()
     target_compile_options(infra_simulation PRIVATE -Wall -Wextra -Wpedantic)
-    target_compile_options(infra_sandbox PRIVATE -Wall -Wextra -Wpedantic)
+    if(INFRA_BUILD_APP)
+        target_compile_options(infra_sandbox PRIVATE -Wall -Wextra -Wpedantic)
+    endif()
 endif()
 
 if(INFRA_BUILD_TESTS)
@@ -64,6 +74,7 @@ if(INFRA_BUILD_TESTS)
             googletest
             GIT_REPOSITORY https://github.com/google/googletest.git
             GIT_TAG v1.15.2
+            GIT_SHALLOW TRUE
         )
         FetchContent_MakeAvailable(googletest)
     endif()

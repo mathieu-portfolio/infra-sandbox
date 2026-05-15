@@ -30,11 +30,13 @@ void Application::run()
         cameraController_.update(GetFrameTime());
 
         if (!paused_) {
-            fixedStepAccumulator_ += GetFrameTime();
+            fixedStepAccumulator_ += GetFrameTime() * simulation_.simulationSpeed();
             while (fixedStepAccumulator_ >= kFixedStepSeconds) {
                 simulation_.update(kFixedStepSeconds);
                 fixedStepAccumulator_ -= kFixedStepSeconds;
             }
+        } else if (IsKeyPressed(KEY_PERIOD)) {
+            simulation_.update(kFixedStepSeconds);
         }
 
         renderer_.draw(simulation_, paused_);
@@ -60,15 +62,35 @@ void Application::handleInput()
     }
 
     if (IsKeyPressed(KEY_ONE)) {
-        simulation_.scaleProcessingCapacity(1.5);
+        simulation_.setSimulationSpeed(1.0);
     }
 
     if (IsKeyPressed(KEY_TWO)) {
-        simulation_.applyCachePlaceholder();
+        simulation_.toggleCache();
     }
 
     if (IsKeyPressed(KEY_THREE)) {
+        simulation_.setSimulationSpeed(2.0);
+    }
+
+    if (IsKeyPressed(KEY_FIVE)) {
+        simulation_.setSimulationSpeed(5.0);
+    }
+
+    if (IsKeyPressed(KEY_A)) {
+        simulation_.scaleApiCapacity(1.5);
+    }
+
+    if (IsKeyPressed(KEY_FOUR)) {
         simulation_.resetProcessingCapacity();
+    }
+
+    if (IsKeyPressed(KEY_C)) {
+        simulation_.clearCache();
+    }
+
+    if (IsKeyPressed(KEY_B)) {
+        simulation_.toggleBurstMode();
     }
 }
 

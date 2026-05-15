@@ -12,6 +12,7 @@
       "description": "Configure the raylib visualization app.",
       "binaryDir": "${sourceDir}/build/app-debug",
       "cacheVariables": {
+        "INFRA_BUILD_APP": "ON",
         "INFRA_FETCH_RAYLIB": "ON",
         "INFRA_BUILD_TESTS": "OFF"
       }
@@ -30,6 +31,7 @@
       "description": "Configure GoogleTest simulator tests only. raylib is not required.",
       "binaryDir": "${sourceDir}/build/tests-debug",
       "cacheVariables": {
+        "INFRA_BUILD_APP": "OFF",
         "INFRA_FETCH_RAYLIB": "OFF",
         "INFRA_BUILD_TESTS": "ON"
       }
@@ -59,7 +61,7 @@
       "configurePreset": "tests-debug",
       "configuration": "Debug",
       "targets": [
-        "infra-sandbox-tests"
+        "infra_sandbox_tests"
       ]
     },
     {
@@ -67,7 +69,7 @@
       "configurePreset": "tests-vcpkg-debug",
       "configuration": "Debug",
       "targets": [
-        "infra-sandbox-tests"
+        "infra_sandbox_tests"
       ]
     }
   ],

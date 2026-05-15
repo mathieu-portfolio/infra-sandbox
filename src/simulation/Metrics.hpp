@@ -6,12 +6,20 @@ struct MetricsSnapshot {
     double inputRatePerSecond = 0.0;
     double processedPerSecond = 0.0;
     double timeoutRatePerSecond = 0.0;
+    double retryRatePerSecond = 0.0;
     double averageLatencySeconds = 0.0;
-    double backendUtilization = 0.0;
-    int backendQueueDepth = 0;
+    double apiUtilization = 0.0;
+    double databaseUtilization = 0.0;
+    double cacheHitRate = 0.0;
+    double simulationSpeed = 1.0;
+    int apiQueueDepth = 0;
+    int databaseQueueDepth = 0;
     std::uint64_t totalGenerated = 0;
     std::uint64_t totalProcessed = 0;
     std::uint64_t totalTimedOut = 0;
+    std::uint64_t totalRetries = 0;
+    std::uint64_t totalCacheHits = 0;
+    std::uint64_t totalCacheLookups = 0;
 };
 
 class Metrics {
@@ -20,7 +28,10 @@ public:
     void recordGenerated();
     void recordProcessed(double latencySeconds);
     void recordTimedOut(double latencySeconds);
-    void setBackendState(int queueDepth, double utilization);
+    void recordRetry();
+    void recordCacheLookup(bool hit);
+    void setNodeStates(int apiQueueDepth, double apiUtilization, int databaseQueueDepth, double databaseUtilization);
+    void setSimulationSpeed(double speed);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;
@@ -31,6 +42,9 @@ private:
     int generatedInWindow_ = 0;
     int processedInWindow_ = 0;
     int timedOutInWindow_ = 0;
+    int retriesInWindow_ = 0;
+    int cacheHitsInWindow_ = 0;
+    int cacheLookupsInWindow_ = 0;
     double latencySumInWindow_ = 0.0;
     int latencySamplesInWindow_ = 0;
 };

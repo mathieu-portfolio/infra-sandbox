@@ -14,6 +14,7 @@ struct Vec2 {
 
 enum class NodeType {
     ClientCluster,
+    Cache,
     Service,
     Database
 };
@@ -37,6 +38,7 @@ struct Node {
     double generationAccumulator = 0.0;
     double processingAccumulator = 0.0;
     double currentUtilization = 0.0;
+    double averageQueueWaitSeconds = 0.0;
     HealthState health = HealthState::Healthy;
     std::deque<std::uint64_t> queue;
     std::vector<std::uint64_t> processing;

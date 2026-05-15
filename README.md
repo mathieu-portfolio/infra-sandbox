@@ -5,6 +5,9 @@ A C++20/raylib prototype for an educational systems architecture strategy game.
 This first version focuses on the simulation and rendering foundations:
 clients generate traffic, requests move through links, backend queues build up,
 processors complete or time out work, and a debug overlay exposes core metrics.
+The current simulation distinguishes lightweight requests from database-heavy
+requests, models API and database queues separately, supports retries, and has
+a small TTL cache for repeat database-heavy work.
 
 ## Build
 
@@ -15,8 +18,8 @@ processors complete or time out work, and a debug overlay exposes core metrics.
 Or directly with CMake presets:
 
 ```bash
-cmake --preset default
-cmake --build --preset debug
+cmake --preset app-debug
+cmake --build --preset app-debug
 ```
 
 If raylib or GoogleTest are not already installed, CMake will fetch them by default.
@@ -37,8 +40,14 @@ Use `-DINFRA_FETCH_RAYLIB=OFF` if you want raylib configuration to fail instead.
 ## Controls
 
 - `Space`: pause/resume simulation
+- `.`: single fixed-step while paused
 - `R`: reset scenario
 - `Up` / `Down` or `+` / `-`: increase/decrease client request rate
-- `1`: scale backend/database processing capacity up
-- `2`: apply a simple cache placeholder that reduces effective client demand
-- `3`: reset capacity and cache placeholder
+- `1`: simulation speed 1x
+- `3`: simulation speed 2x
+- `5`: simulation speed 5x
+- `A`: scale API processing capacity up
+- `2`: toggle cache on/off
+- `C`: clear cache entries
+- `B`: toggle traffic bursts
+- `4`: reset API capacity, cache state, and burst state
