@@ -1,0 +1,92 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "app-debug",
+      "displayName": "App Debug",
+      "description": "Configure the raylib visualization app.",
+      "binaryDir": "${sourceDir}/build/app-debug",
+      "cacheVariables": {
+        "INFRA_FETCH_RAYLIB": "ON",
+        "INFRA_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "app-vcpkg-debug",
+      "displayName": "App Debug with vcpkg",
+      "description": "Configure the visualization app with the vcpkg toolchain. Requires VCPKG_ROOT.",
+      "inherits": "app-debug",
+      "binaryDir": "${sourceDir}/build/app-vcpkg-debug",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "tests-debug",
+      "displayName": "Tests Debug",
+      "description": "Configure GoogleTest simulator tests only. raylib is not required.",
+      "binaryDir": "${sourceDir}/build/tests-debug",
+      "cacheVariables": {
+        "INFRA_FETCH_RAYLIB": "OFF",
+        "INFRA_BUILD_TESTS": "ON"
+      }
+    },
+    {
+      "name": "tests-vcpkg-debug",
+      "displayName": "Tests Debug with vcpkg",
+      "description": "Configure GoogleTest simulator tests with the vcpkg toolchain. Requires VCPKG_ROOT.",
+      "inherits": "tests-debug",
+      "binaryDir": "${sourceDir}/build/tests-vcpkg-debug",
+      "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "app-debug",
+      "configurePreset": "app-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "app-vcpkg-debug",
+      "configurePreset": "app-vcpkg-debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "tests-debug",
+      "configurePreset": "tests-debug",
+      "configuration": "Debug",
+      "targets": [
+        "infra-sandbox-tests"
+      ]
+    },
+    {
+      "name": "tests-vcpkg-debug",
+      "configurePreset": "tests-vcpkg-debug",
+      "configuration": "Debug",
+      "targets": [
+        "infra-sandbox-tests"
+      ]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "tests-debug",
+      "configurePreset": "tests-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "tests-vcpkg-debug",
+      "configurePreset": "tests-vcpkg-debug",
+      "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    }
+  ]
+}
