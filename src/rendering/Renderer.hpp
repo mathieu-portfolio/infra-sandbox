@@ -22,6 +22,7 @@ private:
     void drawQueueBars(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
     void drawClusters(const CameraController& camera, const GeoLayoutFrame& layout);
     void drawLabels(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawMutationPreview(const Simulation& simulation, const CameraController& camera) const;
 
 public:
     [[nodiscard]] UiManager& uiManager();

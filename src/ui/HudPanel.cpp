@@ -18,7 +18,7 @@ void HudPanel::draw(const UiContext& context, const Simulation&, const ScenarioM
     std::snprintf(
         controls,
         sizeof(controls),
-        "Space pause | . step | +/- demand | 1/3/5 speed | IJKL pan | wheel zoom | A scale | 2 cache | T retries | G geo grid | F1-F8 overlays | F11/F12 diag | F9/F10 UI | Overlay: %s",
+        "Space pause | . step | +/- demand | 1/3/5 speed | IJKL pan | wheel zoom | A scale | 7-0 topology | 2 cache | T retries | G geo grid | F1-F8 overlays | Overlay: %s",
         overlayModeName(context.state->activeOverlay));
 
     const int size = 16;

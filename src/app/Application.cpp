@@ -58,7 +58,7 @@ void Application::handleInput()
     }
     stepRequested_ = simulationResult.stepRequested;
 
-    interventionController_.handleActions(events, simulation_);
+    interventionController_.handleActions(events, simulation_, renderer_.uiManager().state());
     cameraController_.handleActions(events, GetFrameTime());
     overlayController_.handleActions(events, renderer_.uiManager().state());
     selectionController_.handleActions(events, simulation_, cameraController_, renderer_.uiManager().state());

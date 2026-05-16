@@ -1,6 +1,7 @@
 #include "rendering/Renderer.hpp"
 
 #include "rendering/RenderPrimitives.hpp"
+#include "simulation/Geography.hpp"
 
 #include "raylib.h"
 
@@ -81,6 +82,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
 
     const GeoLayoutFrame geoLayout = geoLayoutSystem_.compute(simulation, camera, uiManager_.state(), GetScreenWidth(), GetScreenHeight());
     mapRenderer_.draw(camera, uiManager_.state().showGeoGrid);
+    drawMutationPreview(simulation, camera);
     drawLinks(simulation, camera, geoLayout);
     drawRequests(simulation, camera, geoLayout);
     drawClusters(camera, geoLayout);
@@ -113,6 +115,9 @@ void Renderer::drawLinks(const Simulation& simulation, const CameraController& c
     const int height = GetScreenHeight();
 
     for (const auto& link : simulation.graph().links()) {
+        if (!link.enabled) {
+            continue;
+        }
         const Node* source = simulation.graph().node(link.sourceNodeId);
         const Node* target = simulation.graph().node(link.targetNodeId);
         if (source == nullptr || target == nullptr) {
@@ -213,7 +218,7 @@ void Renderer::drawRequests(const Simulation& simulation, const CameraController
 
         if (request.state == RequestState::InTransit && request.currentLinkId >= 0) {
             const Link* link = simulation.graph().link(request.currentLinkId);
-            if (link == nullptr) {
+            if (link == nullptr || !link->enabled) {
                 continue;
             }
 
@@ -323,5 +328,67 @@ void Renderer::drawLabels(const Simulation& simulation, const CameraController& 
         const int textWidth = MeasureText(node->name.c_str(), 16);
         DrawRectangleRounded({label.x - 5.0f, label.y - 3.0f, static_cast<float>(textWidth) + 10.0f, 22.0f}, 0.18f, 6, {13, 17, 23, 180});
         DrawText(node->name.c_str(), static_cast<int>(label.x), static_cast<int>(label.y), 16, kText);
+    }
+}
+
+void Renderer::drawMutationPreview(const Simulation& simulation, const CameraController& camera) const
+{
+    const UiState& state = uiManager_.state();
+    if (!state.placementActive) {
+        return;
+    }
+
+    const int width = GetScreenWidth();
+    const int height = GetScreenHeight();
+    const PlacementCandidateGenerator generator;
+    const MutationValidator validator;
+    const auto candidates = generator.generate(simulation, state.activeMutation);
+    if (candidates.empty()) {
+        return;
+    }
+
+    const int selected = std::clamp(state.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
+    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
+        const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
+        const Vector2 center = worldToScreen(world, width, height, camera);
+        const bool isSelected = i == selected;
+        const Color color = isSelected ? Color{89, 196, 255, 210} : Color{139, 148, 158, 120};
+        DrawCircleV(center, isSelected ? 38.0f : 28.0f, {color.r, color.g, color.b, 34});
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), isSelected ? 38.0f : 28.0f, color);
+        DrawText(candidates[static_cast<std::size_t>(i)].displayName.c_str(), static_cast<int>(center.x + 42.0f), static_cast<int>(center.y - 8.0f), 14, color);
+    }
+
+    const auto& option = candidates[static_cast<std::size_t>(selected)];
+    const MutationPreview preview = validator.preview(simulation, state.activeMutation, option);
+    const Color ghost{89, 196, 255, 150};
+    for (const auto& node : preview.mutation.nodesToCreate) {
+        const Vector2 center = worldToScreen(node.position, width, height, camera);
+        DrawCircleV(center, 32.0f, {ghost.r, ghost.g, ghost.b, 42});
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 32.0f, ghost);
+        DrawText(node.name.c_str(), static_cast<int>(center.x + 38.0f), static_cast<int>(center.y + 18.0f), 14, ghost);
+    }
+
+    for (const auto& link : preview.mutation.linksToCreate) {
+        Vec2 source{};
+        Vec2 target{};
+        bool hasSource = false;
+        bool hasTarget = false;
+        if (const Node* sourceNode = simulation.graph().node(link.sourceNodeId)) {
+            source = sourceNode->position;
+            hasSource = true;
+        } else if (!preview.mutation.nodesToCreate.empty()) {
+            source = preview.mutation.nodesToCreate.front().position;
+            hasSource = true;
+        }
+        if (const Node* targetNode = simulation.graph().node(link.targetNodeId)) {
+            target = targetNode->position;
+            hasTarget = true;
+        } else if (!preview.mutation.nodesToCreate.empty()) {
+            target = preview.mutation.nodesToCreate.front().position;
+            hasTarget = true;
+        }
+        if (hasSource && hasTarget) {
+            drawArc(source, target, width, height, camera, 2.0f, {89, 196, 255, 110});
+        }
     }
 }

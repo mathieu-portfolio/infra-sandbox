@@ -41,6 +41,7 @@ add_library(infra_simulation
     src/simulation/SimulationLayer.cpp
     src/simulation/Simulation.cpp
     src/simulation/SimulationTime.cpp
+    src/simulation/TopologyMutation.cpp
     src/gameplay/Event.cpp
     src/gameplay/Scenario.cpp
     src/gameplay/ScenarioManager.cpp

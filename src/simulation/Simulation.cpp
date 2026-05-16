@@ -1,6 +1,7 @@
 #include "simulation/Simulation.hpp"
 
 #include "simulation/Geography.hpp"
+#include "simulation/TopologyMutation.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -159,6 +160,44 @@ void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
             allowedMechanics_[index] = true;
         }
     }
+}
+
+bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
+{
+    std::vector<int> createdNodeIds;
+    createdNodeIds.reserve(mutation.nodesToCreate.size());
+    for (auto node : mutation.nodesToCreate) {
+        createdNodeIds.push_back(graph_.addNode(std::move(node)));
+    }
+
+    for (const int linkId : mutation.linksToDisable) {
+        if (Link* link = graph_.link(linkId)) {
+            link->enabled = false;
+        }
+    }
+
+    for (auto link : mutation.linksToCreate) {
+        for (const int createdId : createdNodeIds) {
+            if (link.sourceNodeId == -1) {
+                link.sourceNodeId = createdId;
+            }
+            if (link.targetNodeId == -1) {
+                link.targetNodeId = createdId;
+            }
+        }
+        const Node* source = graph_.node(link.sourceNodeId);
+        const Node* target = graph_.node(link.targetNodeId);
+        if (source != nullptr && target != nullptr && source->hasGeoLocation && target->hasGeoLocation) {
+            const GeographicSystem geography;
+            const double geographicLatency = geography.latencySeconds(source->geoLocation, target->geoLocation, link.baseLatencySeconds);
+            link.geographicDistanceKm = MapProjection::greatCircleKilometers(source->geoLocation, target->geoLocation);
+            link.geographicLatencyContributionSeconds = std::max(0.0, geographicLatency - link.baseLatencySeconds);
+            link.baseLatencySeconds = geographicLatency;
+        }
+        graph_.addLink(std::move(link));
+    }
+
+    return !createdNodeIds.empty() || !mutation.linksToDisable.empty() || !mutation.linksToCreate.empty();
 }
 
 const InfrastructureGraph& Simulation::graph() const
@@ -393,6 +432,9 @@ void Simulation::updateRetryWaits()
 void Simulation::updateLinks(double dt)
 {
     for (auto& link : graph_.links()) {
+        if (!link.enabled) {
+            continue;
+        }
         std::vector<std::uint64_t> stillInFlight;
         stillInFlight.reserve(link.inFlightRequests.size());
 
@@ -529,6 +571,21 @@ void Simulation::completeRequest(Request& request, Node& node)
         return;
     }
 
+    if (node.type == NodeType::ReadReplica) {
+        routeFromDatabase(request);
+        return;
+    }
+
+    if (node.type == NodeType::Cache || node.type == NodeType::QueueBroker) {
+        const auto databaseId = firstNodeOfType(NodeType::Database);
+        if (databaseId) {
+            if (Link* link = linkBetween(node.id, *databaseId)) {
+                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+                return;
+            }
+        }
+    }
+
     request.state = RequestState::Completed;
     request.completedTime = timeSeconds_;
     request.stateEnteredTime = timeSeconds_;
@@ -587,12 +644,27 @@ void Simulation::routeFromApi(Request& request)
             }
         }
 
+        if (request.cacheable) {
+            const auto replicaId = firstNodeOfType(NodeType::ReadReplica);
+            if (replicaId) {
+                if (Link* link = linkBetween(request.currentNodeId, *replicaId)) {
+                    routeToLink(request, *link, RequestRouteStage::ToDatabase);
+                    return;
+                }
+            }
+        }
+
         const auto databaseId = firstNodeOfType(NodeType::Database);
         if (databaseId) {
             if (Link* link = linkBetween(request.currentNodeId, *databaseId)) {
                 routeToLink(request, *link, RequestRouteStage::ToDatabase);
                 return;
             }
+        }
+
+        if (Link* link = graph_.firstOutgoingLink(request.currentNodeId)) {
+            routeToLink(request, *link, RequestRouteStage::ToDatabase);
+            return;
         }
     }
 
@@ -632,7 +704,7 @@ void Simulation::routeToLink(Request& request, Link& link, RequestRouteStage nex
 Link* Simulation::linkBetween(int sourceNodeId, int targetNodeId)
 {
     for (auto& link : graph_.links()) {
-        if (link.sourceNodeId == sourceNodeId && link.targetNodeId == targetNodeId) {
+        if (link.enabled && link.sourceNodeId == sourceNodeId && link.targetNodeId == targetNodeId) {
             return &link;
         }
     }
@@ -651,8 +723,12 @@ std::optional<int> Simulation::firstNodeOfType(NodeType type) const
 
 double Simulation::processingCost(const Request& request, const Node& node) const
 {
-    if (node.type == NodeType::Database) {
+    if (node.type == NodeType::Database || node.type == NodeType::ReadReplica) {
         return scenario_.requestTypes.databaseCostHeavy;
+    }
+
+    if (node.type == NodeType::Cache || node.type == NodeType::QueueBroker) {
+        return 0.25;
     }
 
     if (request.routeStage == RequestRouteStage::ApiReturn) {

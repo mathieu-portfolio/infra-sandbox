@@ -49,7 +49,7 @@ const Link* InfrastructureGraph::link(int id) const
 Link* InfrastructureGraph::firstOutgoingLink(int sourceNodeId)
 {
     for (auto& candidate : links_) {
-        if (candidate.sourceNodeId == sourceNodeId) {
+        if (candidate.enabled && candidate.sourceNodeId == sourceNodeId) {
             return &candidate;
         }
     }
@@ -59,7 +59,7 @@ Link* InfrastructureGraph::firstOutgoingLink(int sourceNodeId)
 const Link* InfrastructureGraph::firstOutgoingLink(int sourceNodeId) const
 {
     for (const auto& candidate : links_) {
-        if (candidate.sourceNodeId == sourceNodeId) {
+        if (candidate.enabled && candidate.sourceNodeId == sourceNodeId) {
             return &candidate;
         }
     }

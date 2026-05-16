@@ -37,6 +37,7 @@ public:
     void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds);
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);
+    bool applyTopologyMutation(const struct TopologyMutation& mutation);
 
     [[nodiscard]] const InfrastructureGraph& graph() const;
     [[nodiscard]] const std::unordered_map<std::uint64_t, Request>& requests() const;

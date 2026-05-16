@@ -34,9 +34,11 @@ constexpr std::array<MechanicDefinition, static_cast<std::size_t>(MechanicType::
     mechanic(MechanicType::ClearCache, "Clear Cache", "Evict current cache entries.", MechanicTargetType::Global, layers(SimulationLayer::Persistence, SimulationLayer::Flow), 2, true),
     mechanic(MechanicType::ToggleRetries, "Toggle Retries", "Enable or disable retry behavior.", MechanicTargetType::Global, layers(SimulationLayer::Reliability, SimulationLayer::Flow, SimulationLayer::Resources), 3, true),
     mechanic(MechanicType::AdjustRetryPolicy, "Adjust Retry Policy", "Tune retry delay or attempt count.", MechanicTargetType::Global, layers(SimulationLayer::Reliability, SimulationLayer::Complexity), 2, false),
-    mechanic(MechanicType::AddQueue, "Add Queue", "Insert buffering between components.", MechanicTargetType::Link, layers(SimulationLayer::Flow, SimulationLayer::Reliability, SimulationLayer::Complexity), 3, false),
+    mechanic(MechanicType::AddCache, "Add Cache", "Place a cache on a constrained route.", MechanicTargetType::Link, layers(SimulationLayer::Flow, SimulationLayer::Persistence, SimulationLayer::Complexity), 3, true),
+    mechanic(MechanicType::AddQueue, "Add Queue", "Insert buffering between components.", MechanicTargetType::Link, layers(SimulationLayer::Flow, SimulationLayer::Reliability, SimulationLayer::Complexity), 3, true),
     mechanic(MechanicType::AddLoadBalancer, "Add Load Balancer", "Route traffic across compute capacity.", MechanicTargetType::Node, layers(SimulationLayer::Flow, SimulationLayer::Resources, SimulationLayer::Reliability, SimulationLayer::Complexity), 4, false),
-    mechanic(MechanicType::AddReadReplica, "Add Read Replica", "Increase read capacity for persistence.", MechanicTargetType::Node, layers(SimulationLayer::Persistence, SimulationLayer::Resources, SimulationLayer::Flow, SimulationLayer::Complexity), 4, false),
+    mechanic(MechanicType::AddReadReplica, "Add Read Replica", "Increase read capacity for persistence.", MechanicTargetType::Node, layers(SimulationLayer::Persistence, SimulationLayer::Resources, SimulationLayer::Flow, SimulationLayer::Complexity), 4, true),
+    mechanic(MechanicType::AddRegionalCache, "Add Regional Cache", "Deploy cache capacity near a demand region.", MechanicTargetType::Node, layers(SimulationLayer::Geography, SimulationLayer::Flow, SimulationLayer::Complexity), 3, true),
     mechanic(MechanicType::ThrottleTraffic, "Throttle Traffic", "Adjust generated client demand.", MechanicTargetType::Global, layers(SimulationLayer::Flow, SimulationLayer::Reliability), 2, true),
     mechanic(MechanicType::SplitService, "Split Service", "Separate a service into smaller responsibilities.", MechanicTargetType::Node, layers(SimulationLayer::Complexity, SimulationLayer::Flow, SimulationLayer::Resources), 3, false),
     mechanic(MechanicType::EnableTracing, "Enable Tracing", "Increase observability for request paths.", MechanicTargetType::Global, layers(SimulationLayer::Observability, SimulationLayer::Complexity), 2, false),
@@ -98,9 +100,11 @@ void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& co
         break;
     case MechanicType::ScaleOut:
     case MechanicType::AdjustRetryPolicy:
+    case MechanicType::AddCache:
     case MechanicType::AddQueue:
     case MechanicType::AddLoadBalancer:
     case MechanicType::AddReadReplica:
+    case MechanicType::AddRegionalCache:
     case MechanicType::SplitService:
     case MechanicType::EnableTracing:
     case MechanicType::Count:

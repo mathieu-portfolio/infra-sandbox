@@ -1,5 +1,7 @@
 #pragma once
 
+#include "simulation/TopologyMutation.hpp"
+
 #include <array>
 #include <cstddef>
 
@@ -44,6 +46,9 @@ struct UiState {
     bool showMetrics = true;
     bool showHud = true;
     bool showGeoGrid = true;
+    bool placementActive = false;
+    TopologyMutationType activeMutation = TopologyMutationType::AddCache;
+    int placementCandidateIndex = 0;
 
     UiState()
     {

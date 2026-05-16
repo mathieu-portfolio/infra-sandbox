@@ -4,10 +4,12 @@
 #include "simulation/Mechanics.hpp"
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/Simulation.hpp"
+#include "simulation/TopologyMutation.hpp"
 
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <string>
 
 namespace {
 void runFor(Simulation& simulation, double seconds)
@@ -70,6 +72,46 @@ TEST(MechanicExecutorTests, AppliesCurrentlyImplementedMechanics)
     executor.execute(simulation, {MechanicType::ThrottleTraffic, -1, 2.0});
     runFor(simulation, 1.1);
     EXPECT_GT(simulation.metrics().totalGenerated, 0U);
+}
+
+TEST(TopologyMutationTests, GeneratesAndAppliesConstrainedCachePlacement)
+{
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
+    PlacementCandidateGenerator generator;
+    MutationValidator validator;
+    TopologyBuilder builder;
+
+    const auto candidates = generator.generate(simulation, TopologyMutationType::AddCache);
+    ASSERT_FALSE(candidates.empty());
+    const MutationPreview preview = validator.preview(simulation, TopologyMutationType::AddCache, candidates.front());
+
+    ASSERT_TRUE(preview.valid);
+    EXPECT_FALSE(preview.mutation.nodesToCreate.empty());
+    EXPECT_FALSE(preview.mutation.linksToDisable.empty());
+    EXPECT_TRUE(builder.apply(simulation, preview.mutation));
+
+    bool hasCreatedCache = false;
+    bool hasDisabledLink = false;
+    for (const auto& node : simulation.graph().nodes()) {
+        hasCreatedCache = hasCreatedCache || (node.type == NodeType::Cache && node.name.find("cache") != std::string::npos);
+    }
+    for (const auto& link : simulation.graph().links()) {
+        hasDisabledLink = hasDisabledLink || !link.enabled;
+    }
+    EXPECT_TRUE(hasCreatedCache);
+    EXPECT_TRUE(hasDisabledLink);
+}
+
+TEST(TopologyMutationTests, QueuePlacementIsRegionConstrained)
+{
+    Simulation simulation(ScenarioRegistry::burstTraffic());
+    PlacementCandidateGenerator generator;
+    const auto candidates = generator.generate(simulation, TopologyMutationType::AddQueue);
+
+    ASSERT_FALSE(candidates.empty());
+    for (const auto& candidate : candidates) {
+        EXPECT_EQ(candidate.location.regionName, "Europe");
+    }
 }
 
 TEST(ScenarioRegistryTests, ProvidesInitialScenarioSet)

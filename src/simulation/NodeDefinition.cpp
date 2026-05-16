@@ -116,7 +116,7 @@ constexpr std::array<NodeDefinition, 50> kDefinitions = {
     node(NodeType::ObjectStorage, "Object Storage", NodeCategory::Persistence, false, true, true, true, false, 6.0),
     node(NodeType::VectorDatabase, "Vector Database", NodeCategory::Persistence, false, true, true, true, false, 3.0),
     node(NodeType::SearchIndex, "Search Index", NodeCategory::Persistence, false, true, true, true, false, 5.0),
-    node(NodeType::Cache, "Cache", NodeCategory::Acceleration, false, false, true, false, false, 0.0, 0.0, 76.0f),
+    node(NodeType::Cache, "Cache", NodeCategory::Acceleration, false, true, true, true, false, 12.0, 0.0, 76.0f),
     node(NodeType::CDNEdge, "CDN Edge", NodeCategory::Acceleration, false, true, true, true, true, 15.0),
     node(NodeType::QueryAccelerator, "Query Accelerator", NodeCategory::Acceleration, false, true, true, true, false, 8.0),
     node(NodeType::CompressionNode, "Compression Node", NodeCategory::Acceleration, false, true, false, true, false, 6.0),

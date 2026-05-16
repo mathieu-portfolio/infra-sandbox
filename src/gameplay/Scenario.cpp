@@ -220,7 +220,7 @@ const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
             .tier = ProgressionTier::StateAndCache,
             .name = "State and Cache",
             .visibleMetrics = {"DB queue", "Cache hit rate", "Timeout rate", "Latency"},
-            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::AddCache, MechanicType::AddReadReplica, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
             .allowedPressures = {PressureCategory::QueuePressure, PressureCategory::PersistencePressure, PressureCategory::LatencyPressure},
             .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache},
         },
@@ -228,7 +228,7 @@ const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
             .tier = ProgressionTier::FailureFeedback,
             .name = "Failure Feedback",
             .visibleMetrics = {"Timeout rate", "Retry rate", "Queue depth", "Latency"},
-            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::AddQueue, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
             .allowedPressures = {PressureCategory::RetryPressure, PressureCategory::FailurePressure, PressureCategory::QueuePressure, PressureCategory::LatencyPressure},
             .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::RetryController},
         },
@@ -236,7 +236,7 @@ const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
             .tier = ProgressionTier::GeographicScale,
             .name = "Geographic Scale",
             .visibleMetrics = {"Latency", "Regional traffic", "Queue depth", "Error rate"},
-            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ThrottleTraffic},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::AddRegionalCache, MechanicType::ThrottleTraffic},
             .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::LatencyPressure, PressureCategory::PersistencePressure},
             .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache, NodeType::CDNEdge},
         },
@@ -244,7 +244,7 @@ const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
             .tier = ProgressionTier::DistributedSystems,
             .name = "Distributed Systems",
             .visibleMetrics = {"Latency", "Retry rate", "DB queue", "Cache hit rate"},
-            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::AddReadReplica, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::AddCache, MechanicType::AddRegionalCache, MechanicType::AddReadReplica, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic},
             .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::PersistencePressure, PressureCategory::RetryPressure},
             .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache, NodeType::ReadReplica, NodeType::LoadBalancer},
         },
@@ -252,7 +252,7 @@ const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
             .tier = ProgressionTier::Complexity,
             .name = "Complexity",
             .visibleMetrics = {"All core metrics"},
-            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ScaleOut, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::AddReadReplica, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic, MechanicType::EnableTracing},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ScaleOut, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::AddCache, MechanicType::AddQueue, MechanicType::AddReadReplica, MechanicType::AddRegionalCache, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic, MechanicType::EnableTracing},
             .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::ComputePressure, PressureCategory::PersistencePressure, PressureCategory::RetryPressure, PressureCategory::LatencyPressure, PressureCategory::FailurePressure},
             .allowedNodeTypes = {},
         },
@@ -330,7 +330,7 @@ ScenarioDefinition ScenarioRegistry::databaseBottleneck()
     scenario.minimumTier = ProgressionTier::StateAndCache;
     scenario.educationalFocus = {EducationalFocus::Persistence, EducationalFocus::Caching, EducationalFocus::Reliability};
     scenario.guaranteedPressures = {PressureCategory::PersistencePressure, PressureCategory::QueuePressure, PressureCategory::LatencyPressure};
-    scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
+    scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::AddCache, MechanicType::AddReadReplica, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
     scenario.recommendedMechanics = {MechanicType::EnableCache, MechanicType::ClearCache};
     scenario.trafficProfile = {.name = "Read pressure growth", .type = TrafficProfileType::GradualGrowth, .baseMultiplier = 0.85, .growthPerSecond = 0.006};
     scenario.nodes[3].processingCapacityPerSecond = 10.0;
@@ -372,7 +372,7 @@ ScenarioDefinition ScenarioRegistry::burstTraffic()
     scenario.minimumTier = ProgressionTier::FailureFeedback;
     scenario.educationalFocus = {EducationalFocus::Queues, EducationalFocus::Reliability, EducationalFocus::Latency};
     scenario.guaranteedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::RetryPressure};
-    scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
+    scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::AddQueue, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
     scenario.recommendedMechanics = {MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
     scenario.trafficProfile = {.name = "Bursty", .type = TrafficProfileType::Bursty, .baseMultiplier = 0.9, .growthPerSecond = 0.0};
     scenario.nodes[3].processingCapacityPerSecond = 6.0;
