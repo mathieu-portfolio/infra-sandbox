@@ -2,9 +2,9 @@
 
 #include "gameplay/Scenario.hpp"
 #include "simulation/InfrastructureGraph.hpp"
-#include "simulation/LayerSystems.hpp"
 #include "simulation/Metrics.hpp"
 #include "simulation/Request.hpp"
+#include "simulation/RuntimeSystems.hpp"
 #include "simulation/SimulationConfig.hpp"
 
 #include <cstdint>
@@ -22,6 +22,7 @@ public:
     void toggleCache();
     void clearCache();
     void toggleBurstMode();
+    void toggleRetries();
     void resetProcessingCapacity();
     void setSimulationSpeed(double speed);
 
@@ -31,8 +32,9 @@ public:
     [[nodiscard]] double timeSeconds() const;
     [[nodiscard]] bool cacheEnabled() const;
     [[nodiscard]] bool burstModeEnabled() const;
+    [[nodiscard]] bool retriesEnabled() const;
     [[nodiscard]] double simulationSpeed() const;
-    [[nodiscard]] const LayerSystems& layerSystems() const;
+    [[nodiscard]] const RuntimeSystems& runtimeSystems() const;
     [[nodiscard]] const SimulationConfig& config() const;
 
 private:
@@ -70,7 +72,7 @@ private:
     InfrastructureGraph graph_;
     ScenarioDefinition scenario_;
     SimulationConfig config_;
-    LayerSystems layerSystems_;
+    RuntimeSystems runtimeSystems_;
     Metrics metrics_;
     std::unordered_map<std::uint64_t, Request> requests_;
     std::deque<CacheEntry> cacheEntries_;

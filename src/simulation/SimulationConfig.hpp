@@ -5,7 +5,7 @@
 #include <array>
 
 struct LayerConfig {
-    SimulationLayer layer = SimulationLayer::Topology;
+    SimulationLayer layer = SimulationLayer::Flow;
     bool enabled = true;
 };
 

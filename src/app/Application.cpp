@@ -54,11 +54,11 @@ void Application::handleInput()
     }
 
     if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
-        simulation_.adjustClientRequestRates(1.0);
+        mechanicExecutor_.execute(simulation_, {MechanicType::ThrottleTraffic, -1, 1.0});
     }
 
     if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_MINUS) || IsKeyPressed(KEY_KP_SUBTRACT)) {
-        simulation_.adjustClientRequestRates(-1.0);
+        mechanicExecutor_.execute(simulation_, {MechanicType::ThrottleTraffic, -1, -1.0});
     }
 
     if (IsKeyPressed(KEY_ONE)) {
@@ -66,7 +66,7 @@ void Application::handleInput()
     }
 
     if (IsKeyPressed(KEY_TWO)) {
-        simulation_.toggleCache();
+        mechanicExecutor_.execute(simulation_, {MechanicType::EnableCache});
     }
 
     if (IsKeyPressed(KEY_THREE)) {
@@ -78,7 +78,7 @@ void Application::handleInput()
     }
 
     if (IsKeyPressed(KEY_A)) {
-        simulation_.scaleApiCapacity(1.5);
+        mechanicExecutor_.execute(simulation_, {MechanicType::ScaleUp, -1, 1.5});
     }
 
     if (IsKeyPressed(KEY_FOUR)) {
@@ -86,11 +86,15 @@ void Application::handleInput()
     }
 
     if (IsKeyPressed(KEY_C)) {
-        simulation_.clearCache();
+        mechanicExecutor_.execute(simulation_, {MechanicType::ClearCache});
     }
 
     if (IsKeyPressed(KEY_B)) {
         simulation_.toggleBurstMode();
+    }
+
+    if (IsKeyPressed(KEY_T)) {
+        mechanicExecutor_.execute(simulation_, {MechanicType::ToggleRetries});
     }
 }
 

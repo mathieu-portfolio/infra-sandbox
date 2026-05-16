@@ -13,7 +13,7 @@ Simulation::Simulation(const ScenarioDefinition& scenario, SimulationConfig conf
 void Simulation::update(double dt)
 {
     timeSeconds_ += dt;
-    layerSystems_.update(dt);
+    runtimeSystems_.update(dt);
     expireCacheEntries();
     generateClientRequests(dt);
     updateRetryWaits();
@@ -23,7 +23,7 @@ void Simulation::update(double dt)
     updateMetricsNodeStates();
 
     metrics_.setSimulationSpeed(simulationSpeed_);
-    metrics_.setLayerSystemCounts(layerSystems_.enabledCount(), static_cast<int>(layerSystems_.states().size()));
+    metrics_.setRuntimeSystemCounts(runtimeSystems_.enabledCount(), static_cast<int>(runtimeSystems_.states().size()));
     metrics_.update(dt);
     pruneOldRequests();
 }
@@ -60,6 +60,11 @@ void Simulation::clearCache()
 void Simulation::toggleBurstMode()
 {
     burstModeEnabled_ = !burstModeEnabled_;
+}
+
+void Simulation::toggleRetries()
+{
+    scenario_.retries.enabled = !scenario_.retries.enabled;
 }
 
 void Simulation::resetProcessingCapacity()
@@ -110,14 +115,19 @@ bool Simulation::burstModeEnabled() const
     return burstModeEnabled_;
 }
 
+bool Simulation::retriesEnabled() const
+{
+    return scenario_.retries.enabled;
+}
+
 double Simulation::simulationSpeed() const
 {
     return simulationSpeed_;
 }
 
-const LayerSystems& Simulation::layerSystems() const
+const RuntimeSystems& Simulation::runtimeSystems() const
 {
-    return layerSystems_;
+    return runtimeSystems_;
 }
 
 const SimulationConfig& Simulation::config() const
@@ -137,7 +147,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     simulationSpeed_ = 1.0;
     cacheEnabled_ = scenario.cache.enabled;
     burstModeEnabled_ = scenario.bursts.enabled;
-    layerSystems_.initialize(config_);
+    runtimeSystems_.initialize(config_);
 
     for (const auto& nodeScenario : scenario.nodes) {
         const auto& definition = NodeRegistry::definition(nodeScenario.type);

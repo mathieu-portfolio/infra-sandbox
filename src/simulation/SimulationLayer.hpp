@@ -6,19 +6,13 @@
 #include <string_view>
 
 enum class SimulationLayer {
-    Topology,
     Flow,
-    Processing,
-    Resource,
+    Resources,
     Persistence,
-    Coordination,
     Reliability,
     Observability,
     Complexity,
-    Geographic,
-    EconomicEnergy,
-    Evolution,
-    Scenario,
+    Geography,
     Count
 };
 
@@ -30,7 +24,7 @@ struct LayerDebugColor {
 };
 
 struct LayerDefinition {
-    SimulationLayer layer = SimulationLayer::Topology;
+    SimulationLayer layer = SimulationLayer::Flow;
     std::string_view displayName;
     std::string_view description;
     bool enabledByDefault = true;

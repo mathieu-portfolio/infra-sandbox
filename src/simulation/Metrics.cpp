@@ -67,9 +67,9 @@ void Metrics::setSimulationSpeed(double speed)
     snapshot_.simulationSpeed = speed;
 }
 
-void Metrics::setLayerSystemCounts(int enabledLayerCount, int initializedSystemCount)
+void Metrics::setRuntimeSystemCounts(int enabledSystemCount, int initializedSystemCount)
 {
-    snapshot_.observability.enabledLayerCount = enabledLayerCount;
+    snapshot_.observability.enabledSystemCount = enabledSystemCount;
     snapshot_.observability.initializedSystemCount = initializedSystemCount;
 }
 

@@ -1,4 +1,5 @@
 #include "gameplay/Scenario.hpp"
+#include "simulation/Mechanics.hpp"
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/Simulation.hpp"
 
@@ -28,21 +29,43 @@ TEST(NodeRegistryTests, RegistersFutureNodeSkeletons)
 
 TEST(LayerRegistryTests, RegistersSimulationLayerSkeletons)
 {
-    EXPECT_EQ(LayerRegistry::definitions().size(), 13U);
-    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::Topology).displayName, "Topology");
-    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::EconomicEnergy).displayName, "Economic/Energy");
+    EXPECT_EQ(LayerRegistry::definitions().size(), 7U);
+    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::Flow).displayName, "Flow");
+    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::Resources).displayName, "Resources");
     EXPECT_TRUE(LayerRegistry::definition(SimulationLayer::Flow).enabledByDefault);
 }
 
-TEST(LayerSystemsTests, InitializesAndUpdatesEnabledSystems)
+TEST(RuntimeSystemsTests, InitializesAndUpdatesEnabledSystems)
 {
     Simulation simulation(Scenario::createDefault());
 
     simulation.update(1.0 / 60.0);
 
-    EXPECT_EQ(simulation.layerSystems().states().size(), 13U);
-    EXPECT_EQ(simulation.layerSystems().enabledCount(), 13);
-    EXPECT_EQ(simulation.metrics().observability.enabledLayerCount, 13);
+    EXPECT_EQ(simulation.runtimeSystems().states().size(), 7U);
+    EXPECT_EQ(simulation.runtimeSystems().enabledCount(), 7);
+    EXPECT_EQ(simulation.metrics().observability.enabledSystemCount, 7);
+}
+
+TEST(MechanicRegistryTests, RegistersInterventionDefinitions)
+{
+    EXPECT_EQ(MechanicRegistry::definitions().size(), static_cast<std::size_t>(MechanicType::Count));
+    EXPECT_TRUE(MechanicRegistry::definition(MechanicType::ScaleUp).available);
+    EXPECT_TRUE(MechanicRegistry::definition(MechanicType::EnableCache).available);
+    EXPECT_EQ(MechanicRegistry::definition(MechanicType::AddReadReplica).affectedLayers[0], SimulationLayer::Persistence);
+}
+
+TEST(MechanicExecutorTests, AppliesCurrentlyImplementedMechanics)
+{
+    Simulation simulation(Scenario::createDefault());
+    MechanicExecutor executor;
+
+    EXPECT_FALSE(simulation.cacheEnabled());
+    executor.execute(simulation, {MechanicType::EnableCache});
+    EXPECT_TRUE(simulation.cacheEnabled());
+
+    executor.execute(simulation, {MechanicType::ThrottleTraffic, -1, 2.0});
+    runFor(simulation, 1.1);
+    EXPECT_GT(simulation.metrics().totalGenerated, 0U);
 }
 
 ScenarioDefinition saturatedScenario()

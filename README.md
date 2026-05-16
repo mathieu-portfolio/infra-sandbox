@@ -37,6 +37,10 @@ Use `-DINFRA_FETCH_RAYLIB=OFF` if you want raylib configuration to fail instead.
 ./tests.sh
 ```
 
+## Architecture
+
+See [docs/architecture.md](docs/architecture.md) for the current split between layers, runtime systems, mechanics, node categories, and overlay modes.
+
 ## Controls
 
 - `Space`: pause/resume simulation
@@ -48,6 +52,7 @@ Use `-DINFRA_FETCH_RAYLIB=OFF` if you want raylib configuration to fail instead.
 - `5`: simulation speed 5x
 - `A`: scale API processing capacity up
 - `2`: toggle cache on/off
+- `T`: toggle retries on/off
 - `C`: clear cache entries
 - `B`: toggle traffic bursts
 - `4`: reset API capacity, cache state, and burst state

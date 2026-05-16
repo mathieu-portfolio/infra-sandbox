@@ -23,7 +23,7 @@ struct ComplexityMetrics {
 };
 
 struct ObservabilityMetrics {
-    int enabledLayerCount = 0;
+    int enabledSystemCount = 0;
     int initializedSystemCount = 0;
 };
 
@@ -62,7 +62,7 @@ public:
     void recordCacheLookup(bool hit);
     void setNodeStates(int apiQueueDepth, double apiUtilization, int databaseQueueDepth, double databaseUtilization);
     void setSimulationSpeed(double speed);
-    void setLayerSystemCounts(int enabledLayerCount, int initializedSystemCount);
+    void setRuntimeSystemCounts(int enabledSystemCount, int initializedSystemCount);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;
