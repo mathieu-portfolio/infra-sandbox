@@ -1,5 +1,6 @@
 #pragma once
 
+#include "simulation/NodeDefinition.hpp"
 #include "simulation/Request.hpp"
 
 #include <cstdint>
@@ -12,13 +13,6 @@ struct Vec2 {
     float y = 0.0f;
 };
 
-enum class NodeType {
-    ClientCluster,
-    Cache,
-    Service,
-    Database
-};
-
 enum class HealthState {
     Healthy,
     Saturated,
@@ -28,7 +22,7 @@ enum class HealthState {
 struct Node {
     int id = -1;
     std::string name;
-    NodeType type = NodeType::Service;
+    NodeType type = NodeType::ApiService;
     Vec2 position{};
     double requestRatePerSecond = 0.0;
     double baseRequestRatePerSecond = 0.0;

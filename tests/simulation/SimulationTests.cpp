@@ -1,4 +1,5 @@
 #include "gameplay/Scenario.hpp"
+#include "simulation/NodeDefinition.hpp"
 #include "simulation/Simulation.hpp"
 
 #include <gtest/gtest.h>
@@ -13,13 +14,25 @@ void runFor(Simulation& simulation, double seconds)
     }
 }
 
+TEST(NodeRegistryTests, RegistersFutureNodeSkeletons)
+{
+    EXPECT_EQ(NodeRegistry::definitions().size(), 50U);
+    EXPECT_EQ(NodeRegistry::categoryOf(NodeType::ClientCluster), NodeCategory::Demand);
+    EXPECT_EQ(NodeRegistry::categoryOf(NodeType::ApiService), NodeCategory::Compute);
+    EXPECT_EQ(NodeRegistry::categoryOf(NodeType::Database), NodeCategory::Persistence);
+    EXPECT_EQ(NodeRegistry::categoryOf(NodeType::Cache), NodeCategory::Acceleration);
+    EXPECT_EQ(NodeRegistry::categoryOf(NodeType::WAF), NodeCategory::Security);
+    EXPECT_TRUE(NodeRegistry::processesRequests(NodeType::ApiService));
+    EXPECT_TRUE(NodeRegistry::storesState(NodeType::SecretVault));
+}
+
 ScenarioDefinition saturatedScenario()
 {
     ScenarioDefinition scenario;
     scenario.name = "Saturated API test";
     scenario.nodes = {
         {.name = "Clients", .type = NodeType::ClientCluster, .position = {-100.0f, 0.0f}, .requestRatePerSecond = 12.0},
-        {.name = "API", .type = NodeType::Service, .position = {100.0f, 0.0f}, .processingCapacityPerSecond = 1.0, .timeoutSeconds = 1.5},
+        {.name = "API", .type = NodeType::ApiService, .position = {100.0f, 0.0f}, .processingCapacityPerSecond = 1.0, .timeoutSeconds = 1.5},
     };
     scenario.links = {
         {.sourceNode = 0, .targetNode = 1, .baseLatencySeconds = 0.1, .bandwidthPerSecond = 100.0},
@@ -34,7 +47,7 @@ ScenarioDefinition databasePressureScenario()
     scenario.name = "Database pressure test";
     scenario.nodes = {
         {.name = "Clients", .type = NodeType::ClientCluster, .position = {-100.0f, 0.0f}, .requestRatePerSecond = 8.0},
-        {.name = "API", .type = NodeType::Service, .position = {100.0f, 0.0f}, .processingCapacityPerSecond = 20.0, .timeoutSeconds = 4.0},
+        {.name = "API", .type = NodeType::ApiService, .position = {100.0f, 0.0f}, .processingCapacityPerSecond = 20.0, .timeoutSeconds = 4.0},
         {.name = "DB", .type = NodeType::Database, .position = {300.0f, 0.0f}, .processingCapacityPerSecond = 1.0, .timeoutSeconds = 4.0},
     };
     scenario.links = {

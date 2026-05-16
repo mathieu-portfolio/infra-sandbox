@@ -2,5 +2,5 @@
 
 bool Node::isProcessor() const
 {
-    return type == NodeType::Service || type == NodeType::Database;
+    return NodeRegistry::processesRequests(type);
 }

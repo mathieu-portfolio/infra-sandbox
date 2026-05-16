@@ -9,7 +9,7 @@ ScenarioDefinition Scenario::createDefault()
         {.name = "Web clients", .type = NodeType::ClientCluster, .position = {-420.0f, -120.0f}, .requestRatePerSecond = 4.0},
         {.name = "Mobile clients", .type = NodeType::ClientCluster, .position = {-420.0f, 150.0f}, .requestRatePerSecond = 3.0},
         {.name = "Cache", .type = NodeType::Cache, .position = {80.0f, -165.0f}},
-        {.name = "API service", .type = NodeType::Service, .position = {80.0f, 0.0f}, .processingCapacityPerSecond = 7.0, .timeoutSeconds = 5.5},
+        {.name = "API service", .type = NodeType::ApiService, .position = {80.0f, 0.0f}, .processingCapacityPerSecond = 7.0, .timeoutSeconds = 5.5},
         {.name = "Database", .type = NodeType::Database, .position = {430.0f, 0.0f}, .processingCapacityPerSecond = 4.0, .timeoutSeconds = 5.5},
     };
 

@@ -32,6 +32,7 @@ add_library(infra_simulation
     src/simulation/Link.cpp
     src/simulation/Metrics.cpp
     src/simulation/Node.cpp
+    src/simulation/NodeDefinition.cpp
     src/simulation/Simulation.cpp
     src/gameplay/Scenario.cpp
 )

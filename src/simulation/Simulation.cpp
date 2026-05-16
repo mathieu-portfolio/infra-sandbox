@@ -28,7 +28,7 @@ void Simulation::update(double dt)
 void Simulation::adjustClientRequestRates(double deltaPerSecond)
 {
     for (auto& node : graph_.nodes()) {
-        if (node.type == NodeType::ClientCluster) {
+        if (NodeRegistry::generatesRequests(node.type)) {
             node.requestRatePerSecond = std::max(0.0, node.requestRatePerSecond + deltaPerSecond);
             node.baseRequestRatePerSecond = node.requestRatePerSecond;
         }
@@ -38,7 +38,7 @@ void Simulation::adjustClientRequestRates(double deltaPerSecond)
 void Simulation::scaleApiCapacity(double multiplier)
 {
     for (auto& node : graph_.nodes()) {
-        if (node.type == NodeType::Service) {
+        if (node.type == NodeType::ApiService) {
             node.processingCapacityPerSecond = std::max(0.1, node.processingCapacityPerSecond * multiplier);
         }
     }
@@ -126,14 +126,19 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     burstModeEnabled_ = scenario.bursts.enabled;
 
     for (const auto& nodeScenario : scenario.nodes) {
+        const auto& definition = NodeRegistry::definition(nodeScenario.type);
         Node node;
         node.name = nodeScenario.name;
         node.type = nodeScenario.type;
         node.position = nodeScenario.position;
-        node.requestRatePerSecond = nodeScenario.requestRatePerSecond;
-        node.baseRequestRatePerSecond = nodeScenario.requestRatePerSecond;
-        node.processingCapacityPerSecond = nodeScenario.processingCapacityPerSecond;
-        node.baseProcessingCapacityPerSecond = nodeScenario.processingCapacityPerSecond;
+        node.requestRatePerSecond = nodeScenario.requestRatePerSecond > 0.0
+            ? nodeScenario.requestRatePerSecond
+            : definition.defaultRequestRatePerSecond;
+        node.baseRequestRatePerSecond = node.requestRatePerSecond;
+        node.processingCapacityPerSecond = nodeScenario.processingCapacityPerSecond > 0.0
+            ? nodeScenario.processingCapacityPerSecond
+            : definition.defaultProcessingCapacityPerSecond;
+        node.baseProcessingCapacityPerSecond = node.processingCapacityPerSecond;
         node.timeoutSeconds = nodeScenario.timeoutSeconds;
         graph_.addNode(std::move(node));
     }
@@ -159,7 +164,7 @@ void Simulation::generateClientRequests(double dt)
     }
 
     for (auto& node : graph_.nodes()) {
-        if (node.type != NodeType::ClientCluster) {
+        if (!NodeRegistry::generatesRequests(node.type)) {
             continue;
         }
 
@@ -349,11 +354,11 @@ void Simulation::enqueueAtNode(Request& request, Node& node)
     request.stateEnteredTime = timeSeconds_;
     request.transitProgress = 1.0;
 
-    if (node.type == NodeType::Service && request.routeStage == RequestRouteStage::ToApi) {
+    if (node.type == NodeType::ApiService && request.routeStage == RequestRouteStage::ToApi) {
         request.routeStage = RequestRouteStage::ApiIngress;
     } else if (node.type == NodeType::Database && request.routeStage == RequestRouteStage::ToDatabase) {
         request.routeStage = RequestRouteStage::DatabaseWork;
-    } else if (node.type == NodeType::Service && request.routeStage == RequestRouteStage::BackToApi) {
+    } else if (node.type == NodeType::ApiService && request.routeStage == RequestRouteStage::BackToApi) {
         request.routeStage = RequestRouteStage::ApiReturn;
     }
 
@@ -362,7 +367,7 @@ void Simulation::enqueueAtNode(Request& request, Node& node)
 
 void Simulation::completeRequest(Request& request, Node& node)
 {
-    if (node.type == NodeType::Service) {
+    if (node.type == NodeType::ApiService) {
         routeFromApi(request);
         return;
     }
@@ -371,6 +376,11 @@ void Simulation::completeRequest(Request& request, Node& node)
         routeFromDatabase(request);
         return;
     }
+
+    request.state = RequestState::Completed;
+    request.completedTime = timeSeconds_;
+    request.stateEnteredTime = timeSeconds_;
+    metrics_.recordProcessed(timeSeconds_ - request.creationTime);
 }
 
 void Simulation::timeOutRequest(Request& request, Node&)
@@ -442,7 +452,7 @@ void Simulation::routeFromApi(Request& request)
 
 void Simulation::routeFromDatabase(Request& request)
 {
-    const auto apiId = firstNodeOfType(NodeType::Service);
+    const auto apiId = firstNodeOfType(NodeType::ApiService);
     if (apiId) {
         if (Link* link = linkBetween(request.currentNodeId, *apiId)) {
             routeToLink(request, *link, RequestRouteStage::BackToApi);
@@ -568,7 +578,7 @@ void Simulation::updateMetricsNodeStates()
     double apiUtilization = 0.0;
     double databaseUtilization = 0.0;
 
-    if (const auto apiId = firstNodeOfType(NodeType::Service)) {
+    if (const auto apiId = firstNodeOfType(NodeType::ApiService)) {
         if (const Node* api = graph_.node(*apiId)) {
             apiQueueDepth = static_cast<int>(api->queue.size());
             apiUtilization = api->currentUtilization;

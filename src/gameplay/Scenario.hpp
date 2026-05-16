@@ -7,7 +7,7 @@
 
 struct NodeScenario {
     std::string name;
-    NodeType type = NodeType::Service;
+    NodeType type = NodeType::ApiService;
     Vec2 position{};
     double requestRatePerSecond = 0.0;
     double processingCapacityPerSecond = 0.0;

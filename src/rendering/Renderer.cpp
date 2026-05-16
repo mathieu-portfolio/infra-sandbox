@@ -29,6 +29,27 @@ void drawTextLine(const std::string& text, int x, int y, int size, Color color)
 {
     DrawText(text.c_str(), x, y, size, color);
 }
+
+Color toRaylib(NodeVisualColor color)
+{
+    return {color.r, color.g, color.b, color.a};
+}
+
+void drawDiamond(Vector2 center, float radius, Color fill, Color outline)
+{
+    const Vector2 points[4] = {
+        {center.x, center.y - radius},
+        {center.x + radius, center.y},
+        {center.x, center.y + radius},
+        {center.x - radius, center.y},
+    };
+    DrawTriangle(points[0], points[1], points[2], fill);
+    DrawTriangle(points[0], points[2], points[3], fill);
+    DrawLineEx(points[0], points[1], 2.0f, outline);
+    DrawLineEx(points[1], points[2], 2.0f, outline);
+    DrawLineEx(points[2], points[3], 2.0f, outline);
+    DrawLineEx(points[3], points[0], 2.0f, outline);
+}
 }
 
 Renderer::Renderer(const ScenarioDefinition& scenario)
@@ -76,16 +97,18 @@ void Renderer::drawNodes(const Simulation& simulation)
     const int height = GetScreenHeight();
 
     for (const auto& node : simulation.graph().nodes()) {
+        const auto& definition = NodeRegistry::definition(node.type);
         const Vector2 center = worldToScreen(node.position, width, height);
         const Color healthColor = colorForHealth(node.health);
+        const Color definitionColor = toRaylib(definition.color);
 
-        if (node.type == NodeType::ClientCluster) {
+        if (definition.renderStyle == NodeRenderStyle::DemandPulse) {
             const float trafficPulse = pulse(simulation.timeSeconds(), 4.0, node.id);
             const float radius = 28.0f + static_cast<float>(node.requestRatePerSecond) * 2.0f + trafficPulse * 8.0f;
-            DrawCircleV(center, radius + 12.0f, {58, 139, 253, 35});
-            DrawCircleV(center, radius, {88, 166, 255, 115});
+            DrawCircleV(center, radius + 12.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 35});
+            DrawCircleV(center, radius, {definitionColor.r, definitionColor.g, definitionColor.b, 115});
             DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, {152, 195, 255, 220});
-        } else if (node.type == NodeType::Cache) {
+        } else if (definition.renderStyle == NodeRenderStyle::AccelerationCache) {
             const Rectangle rect{center.x - 42.0f, center.y - 28.0f, 84.0f, 56.0f};
             const Color cacheColor = simulation.cacheEnabled() ? Color{86, 210, 151, 255} : Color{90, 107, 126, 180};
             DrawRectangleRounded(rect, 0.18f, 8, {28, 35, 42, 230});
@@ -93,18 +116,32 @@ void Renderer::drawNodes(const Simulation& simulation)
             DrawCircleV({center.x - 18.0f, center.y}, 7.0f, cacheColor);
             DrawCircleV({center.x + 4.0f, center.y}, 7.0f, cacheColor);
             DrawCircleV({center.x + 26.0f, center.y}, 7.0f, cacheColor);
-        } else if (node.type == NodeType::Service) {
+        } else if (definition.renderStyle == NodeRenderStyle::ComputeBox) {
             const float overloadPulse = node.health == HealthState::Healthy ? 0.0f : pulse(simulation.timeSeconds(), 10.0, node.id) * 8.0f;
             const Rectangle rect{center.x - 48.0f - overloadPulse * 0.5f, center.y - 48.0f - overloadPulse * 0.5f, 96.0f + overloadPulse, 96.0f + overloadPulse};
             DrawRectangleRounded(rect, 0.12f, 8, {33, 38, 45, 255});
             DrawRectangleRoundedLines(rect, 0.12f, 8, healthColor);
             DrawCircleV(center, 12.0f + static_cast<float>(node.currentUtilization) * 10.0f, healthColor);
-        } else {
+        } else if (definition.renderStyle == NodeRenderStyle::PersistenceBlock) {
             const Rectangle body{center.x - 42.0f, center.y - 36.0f, 84.0f, 72.0f};
             DrawRectangleRounded(body, 0.08f, 8, {36, 41, 47, 255});
             DrawRectangleRoundedLines(body, 0.08f, 8, healthColor);
             DrawLineEx({center.x - 42.0f, center.y - 16.0f}, {center.x + 42.0f, center.y - 16.0f}, 2.0f, {90, 107, 126, 180});
             DrawLineEx({center.x - 42.0f, center.y + 10.0f}, {center.x + 42.0f, center.y + 10.0f}, 2.0f, {90, 107, 126, 180});
+        } else if (definition.renderStyle == NodeRenderStyle::NetworkingHub) {
+            DrawCircleV(center, 34.0f, {32, 38, 45, 240});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 34.0f, definitionColor);
+            DrawLineEx({center.x - 22.0f, center.y}, {center.x + 22.0f, center.y}, 2.0f, definitionColor);
+            DrawLineEx({center.x, center.y - 22.0f}, {center.x, center.y + 22.0f}, 2.0f, definitionColor);
+        } else if (definition.renderStyle == NodeRenderStyle::CoordinationDiamond) {
+            drawDiamond(center, 38.0f, {32, 38, 45, 240}, definitionColor);
+        } else if (definition.renderStyle == NodeRenderStyle::ObservabilityLens) {
+            DrawCircleV(center, 30.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 55});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 30.0f, definitionColor);
+        } else {
+            const Rectangle rect{center.x - 34.0f, center.y - 34.0f, 68.0f, 68.0f};
+            DrawRectangleRounded(rect, 0.08f, 8, {32, 38, 45, 235});
+            DrawRectangleRoundedLines(rect, 0.08f, 8, definitionColor);
         }
 
         DrawText(node.name.c_str(), static_cast<int>(center.x - MeasureText(node.name.c_str(), 18) * 0.5f), static_cast<int>(center.y + 62.0f), 18, kText);
