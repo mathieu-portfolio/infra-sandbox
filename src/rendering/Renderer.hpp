@@ -15,6 +15,7 @@ private:
     void drawRequests(const Simulation& simulation);
     void drawQueueBars(const Simulation& simulation);
     void drawMetricsOverlay(const Simulation& simulation, bool paused);
+    void drawLayerDebugOverlay(const Simulation& simulation);
     void drawControlsOverlay(const Simulation& simulation);
 
     ScenarioDefinition scenarioDefinition_;

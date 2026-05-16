@@ -29,10 +29,13 @@ endif()
 
 add_library(infra_simulation
     src/simulation/InfrastructureGraph.cpp
+    src/simulation/LayerSystems.cpp
     src/simulation/Link.cpp
     src/simulation/Metrics.cpp
     src/simulation/Node.cpp
     src/simulation/NodeDefinition.cpp
+    src/simulation/SimulationConfig.cpp
+    src/simulation/SimulationLayer.cpp
     src/simulation/Simulation.cpp
     src/gameplay/Scenario.cpp
 )

@@ -67,6 +67,7 @@ void Renderer::draw(const Simulation& simulation, bool paused)
     drawNodes(simulation);
     drawQueueBars(simulation);
     drawMetricsOverlay(simulation, paused);
+    drawLayerDebugOverlay(simulation);
     drawControlsOverlay(simulation);
 
     EndDrawing();
@@ -251,6 +252,49 @@ void Renderer::drawMetricsOverlay(const Simulation& simulation, bool paused)
     drawTextLine(buffer, x, y + 264, 18, kText);
     std::snprintf(buffer, sizeof(buffer), "Bursts: %s", simulation.burstModeEnabled() ? "on" : "off");
     drawTextLine(buffer, x, y + 290, 18, kText);
+}
+
+void Renderer::drawLayerDebugOverlay(const Simulation& simulation)
+{
+    const int panelWidth = 300;
+    const int x = GetScreenWidth() - panelWidth - 12;
+    const int y = 12;
+    DrawRectangleRounded({static_cast<float>(x), static_cast<float>(y), static_cast<float>(panelWidth), 238.0f}, 0.04f, 8, kPanel);
+
+    char buffer[128];
+    const auto& metrics = simulation.metrics();
+    std::snprintf(
+        buffer,
+        sizeof(buffer),
+        "Layers %d/%d  |  %.0fx",
+        metrics.observability.enabledLayerCount,
+        metrics.observability.initializedSystemCount,
+        simulation.simulationSpeed());
+    drawTextLine(buffer, x + 10, y + 10, 18, kText);
+
+    int row = 0;
+    for (const auto& state : simulation.layerSystems().states()) {
+        if (!state.enabled) {
+            continue;
+        }
+
+        const auto& definition = LayerRegistry::definition(state.layer);
+        const Color color{definition.debugColor.r, definition.debugColor.g, definition.debugColor.b, 255};
+        const int lineY = y + 42 + row * 22;
+        DrawCircleV({static_cast<float>(x + 18), static_cast<float>(lineY + 8)}, 4.0f, color);
+        DrawText(definition.displayName.data(), x + 30, lineY, 16, kMutedText);
+
+        ++row;
+        if (row >= 8) {
+            break;
+        }
+    }
+
+    const int remaining = metrics.observability.enabledLayerCount - row;
+    if (remaining > 0) {
+        std::snprintf(buffer, sizeof(buffer), "+ %d more layers", remaining);
+        drawTextLine(buffer, x + 30, y + 42 + row * 22, 16, kMutedText);
+    }
 }
 
 void Renderer::drawControlsOverlay(const Simulation&)

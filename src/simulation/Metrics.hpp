@@ -2,6 +2,31 @@
 
 #include <cstdint>
 
+struct FlowMetrics {
+    double inputRatePerSecond = 0.0;
+    double processedPerSecond = 0.0;
+    double averageLatencySeconds = 0.0;
+};
+
+struct ResourceMetrics {
+    double apiUtilization = 0.0;
+    double databaseUtilization = 0.0;
+};
+
+struct ReliabilityMetrics {
+    double timeoutRatePerSecond = 0.0;
+    double retryRatePerSecond = 0.0;
+};
+
+struct ComplexityMetrics {
+    double placeholderScore = 0.0;
+};
+
+struct ObservabilityMetrics {
+    int enabledLayerCount = 0;
+    int initializedSystemCount = 0;
+};
+
 struct MetricsSnapshot {
     double inputRatePerSecond = 0.0;
     double processedPerSecond = 0.0;
@@ -20,6 +45,11 @@ struct MetricsSnapshot {
     std::uint64_t totalRetries = 0;
     std::uint64_t totalCacheHits = 0;
     std::uint64_t totalCacheLookups = 0;
+    FlowMetrics flow;
+    ResourceMetrics resource;
+    ReliabilityMetrics reliability;
+    ComplexityMetrics complexity;
+    ObservabilityMetrics observability;
 };
 
 class Metrics {
@@ -32,6 +62,7 @@ public:
     void recordCacheLookup(bool hit);
     void setNodeStates(int apiQueueDepth, double apiUtilization, int databaseQueueDepth, double databaseUtilization);
     void setSimulationSpeed(double speed);
+    void setLayerSystemCounts(int enabledLayerCount, int initializedSystemCount);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;

@@ -58,11 +58,19 @@ void Metrics::setNodeStates(int apiQueueDepth, double apiUtilization, int databa
     snapshot_.apiUtilization = apiUtilization;
     snapshot_.databaseQueueDepth = databaseQueueDepth;
     snapshot_.databaseUtilization = databaseUtilization;
+    snapshot_.resource.apiUtilization = apiUtilization;
+    snapshot_.resource.databaseUtilization = databaseUtilization;
 }
 
 void Metrics::setSimulationSpeed(double speed)
 {
     snapshot_.simulationSpeed = speed;
+}
+
+void Metrics::setLayerSystemCounts(int enabledLayerCount, int initializedSystemCount)
+{
+    snapshot_.observability.enabledLayerCount = enabledLayerCount;
+    snapshot_.observability.initializedSystemCount = initializedSystemCount;
 }
 
 void Metrics::update(double dt)
@@ -76,6 +84,10 @@ void Metrics::update(double dt)
     snapshot_.processedPerSecond = processedInWindow_ / windowElapsed_;
     snapshot_.timeoutRatePerSecond = timedOutInWindow_ / windowElapsed_;
     snapshot_.retryRatePerSecond = retriesInWindow_ / windowElapsed_;
+    snapshot_.flow.inputRatePerSecond = snapshot_.inputRatePerSecond;
+    snapshot_.flow.processedPerSecond = snapshot_.processedPerSecond;
+    snapshot_.reliability.timeoutRatePerSecond = snapshot_.timeoutRatePerSecond;
+    snapshot_.reliability.retryRatePerSecond = snapshot_.retryRatePerSecond;
     if (cacheLookupsInWindow_ > 0) {
         snapshot_.cacheHitRate = static_cast<double>(cacheHitsInWindow_) / cacheLookupsInWindow_;
     } else {
@@ -84,6 +96,7 @@ void Metrics::update(double dt)
     if (latencySamplesInWindow_ > 0) {
         snapshot_.averageLatencySeconds = latencySumInWindow_ / latencySamplesInWindow_;
     }
+    snapshot_.flow.averageLatencySeconds = snapshot_.averageLatencySeconds;
 
     windowElapsed_ = 0.0;
     generatedInWindow_ = 0;

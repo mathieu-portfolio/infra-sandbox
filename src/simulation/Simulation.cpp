@@ -4,7 +4,8 @@
 #include <cmath>
 #include <utility>
 
-Simulation::Simulation(const ScenarioDefinition& scenario)
+Simulation::Simulation(const ScenarioDefinition& scenario, SimulationConfig config)
+    : config_(config)
 {
     buildFromScenario(scenario);
 }
@@ -12,6 +13,7 @@ Simulation::Simulation(const ScenarioDefinition& scenario)
 void Simulation::update(double dt)
 {
     timeSeconds_ += dt;
+    layerSystems_.update(dt);
     expireCacheEntries();
     generateClientRequests(dt);
     updateRetryWaits();
@@ -21,6 +23,7 @@ void Simulation::update(double dt)
     updateMetricsNodeStates();
 
     metrics_.setSimulationSpeed(simulationSpeed_);
+    metrics_.setLayerSystemCounts(layerSystems_.enabledCount(), static_cast<int>(layerSystems_.states().size()));
     metrics_.update(dt);
     pruneOldRequests();
 }
@@ -112,6 +115,16 @@ double Simulation::simulationSpeed() const
     return simulationSpeed_;
 }
 
+const LayerSystems& Simulation::layerSystems() const
+{
+    return layerSystems_;
+}
+
+const SimulationConfig& Simulation::config() const
+{
+    return config_;
+}
+
 void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
 {
     scenario_ = scenario;
@@ -124,6 +137,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     simulationSpeed_ = 1.0;
     cacheEnabled_ = scenario.cache.enabled;
     burstModeEnabled_ = scenario.bursts.enabled;
+    layerSystems_.initialize(config_);
 
     for (const auto& nodeScenario : scenario.nodes) {
         const auto& definition = NodeRegistry::definition(nodeScenario.type);

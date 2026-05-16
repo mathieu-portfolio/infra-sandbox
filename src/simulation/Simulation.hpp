@@ -2,8 +2,10 @@
 
 #include "gameplay/Scenario.hpp"
 #include "simulation/InfrastructureGraph.hpp"
+#include "simulation/LayerSystems.hpp"
 #include "simulation/Metrics.hpp"
 #include "simulation/Request.hpp"
+#include "simulation/SimulationConfig.hpp"
 
 #include <cstdint>
 #include <deque>
@@ -12,7 +14,7 @@
 
 class Simulation {
 public:
-    explicit Simulation(const ScenarioDefinition& scenario);
+    explicit Simulation(const ScenarioDefinition& scenario, SimulationConfig config = {});
 
     void update(double dt);
     void adjustClientRequestRates(double deltaPerSecond);
@@ -30,6 +32,8 @@ public:
     [[nodiscard]] bool cacheEnabled() const;
     [[nodiscard]] bool burstModeEnabled() const;
     [[nodiscard]] double simulationSpeed() const;
+    [[nodiscard]] const LayerSystems& layerSystems() const;
+    [[nodiscard]] const SimulationConfig& config() const;
 
 private:
     struct CacheEntry {
@@ -65,6 +69,8 @@ private:
 
     InfrastructureGraph graph_;
     ScenarioDefinition scenario_;
+    SimulationConfig config_;
+    LayerSystems layerSystems_;
     Metrics metrics_;
     std::unordered_map<std::uint64_t, Request> requests_;
     std::deque<CacheEntry> cacheEntries_;

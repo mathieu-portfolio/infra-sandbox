@@ -26,6 +26,25 @@ TEST(NodeRegistryTests, RegistersFutureNodeSkeletons)
     EXPECT_TRUE(NodeRegistry::storesState(NodeType::SecretVault));
 }
 
+TEST(LayerRegistryTests, RegistersSimulationLayerSkeletons)
+{
+    EXPECT_EQ(LayerRegistry::definitions().size(), 13U);
+    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::Topology).displayName, "Topology");
+    EXPECT_EQ(LayerRegistry::definition(SimulationLayer::EconomicEnergy).displayName, "Economic/Energy");
+    EXPECT_TRUE(LayerRegistry::definition(SimulationLayer::Flow).enabledByDefault);
+}
+
+TEST(LayerSystemsTests, InitializesAndUpdatesEnabledSystems)
+{
+    Simulation simulation(Scenario::createDefault());
+
+    simulation.update(1.0 / 60.0);
+
+    EXPECT_EQ(simulation.layerSystems().states().size(), 13U);
+    EXPECT_EQ(simulation.layerSystems().enabledCount(), 13);
+    EXPECT_EQ(simulation.metrics().observability.enabledLayerCount, 13);
+}
+
 ScenarioDefinition saturatedScenario()
 {
     ScenarioDefinition scenario;
