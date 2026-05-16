@@ -15,6 +15,15 @@ Vector2 worldToScreen(Vec2 world, int screenWidth, int screenHeight)
     };
 }
 
+Vector2 worldToScreen(Vec2 world, int screenWidth, int screenHeight, const CameraController& camera)
+{
+    const Vector2 offset = camera.offset();
+    return {
+        static_cast<float>(screenWidth) * 0.5f + (world.x + offset.x) * camera.zoom(),
+        static_cast<float>(screenHeight) * 0.5f + (world.y + offset.y) * camera.zoom(),
+    };
+}
+
 Vec2 lerp(Vec2 a, Vec2 b, float t)
 {
     const float clamped = std::clamp(t, 0.0f, 1.0f);

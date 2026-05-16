@@ -50,6 +50,9 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 - `1`: simulation speed 1x
 - `3`: simulation speed 2x
 - `5`: simulation speed 5x
+- `I` / `J` / `K` / `L`: pan camera
+- Mouse wheel: zoom camera
+- `Home`: reset camera
 - `A`: scale API processing capacity up
 - `2`: toggle cache on/off
 - `T`: toggle retries on/off
@@ -58,4 +61,6 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 - `4`: reset API capacity, cache state, and burst state
 - `F1`-`F7`: switch overlay mode
 - `F8`: clear overlay mode
+- `F9`: toggle debug UI
+- `F10`: toggle metrics UI
 - Left click a node: select it and show minimal node details

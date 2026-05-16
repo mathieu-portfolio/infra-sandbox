@@ -47,6 +47,12 @@ if(INFRA_BUILD_APP)
     add_executable(infra_sandbox
         src/main.cpp
         src/app/Application.cpp
+        src/control/InterventionController.cpp
+        src/control/OverlayController.cpp
+        src/control/SelectionController.cpp
+        src/control/SimulationController.cpp
+        src/control/UiController.cpp
+        src/input/InputManager.cpp
         src/rendering/CameraController.cpp
         src/rendering/Renderer.cpp
         src/rendering/RenderPrimitives.cpp

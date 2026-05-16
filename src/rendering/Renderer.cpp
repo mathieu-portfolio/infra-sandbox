@@ -49,23 +49,33 @@ Renderer::Renderer(const ScenarioDefinition& scenario)
 {
 }
 
-void Renderer::draw(const Simulation& simulation, bool paused)
+void Renderer::draw(const Simulation& simulation, bool paused, const CameraController& camera)
 {
     uiManager_.update(simulation, paused);
 
     BeginDrawing();
     ClearBackground(kBackground);
 
-    drawLinks(simulation);
-    drawRequests(simulation);
-    drawNodes(simulation);
-    drawQueueBars(simulation);
+    drawLinks(simulation, camera);
+    drawRequests(simulation, camera);
+    drawNodes(simulation, camera);
+    drawQueueBars(simulation, camera);
     uiManager_.draw(simulation, paused);
 
     EndDrawing();
 }
 
-void Renderer::drawLinks(const Simulation& simulation)
+UiManager& Renderer::uiManager()
+{
+    return uiManager_;
+}
+
+const UiManager& Renderer::uiManager() const
+{
+    return uiManager_;
+}
+
+void Renderer::drawLinks(const Simulation& simulation, const CameraController& camera)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -77,21 +87,21 @@ void Renderer::drawLinks(const Simulation& simulation)
             continue;
         }
 
-        const Vector2 start = worldToScreen(source->position, width, height);
-        const Vector2 end = worldToScreen(target->position, width, height);
+        const Vector2 start = worldToScreen(source->position, width, height, camera);
+        const Vector2 end = worldToScreen(target->position, width, height, camera);
         const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f);
         DrawLineEx(start, end, thickness, kLink);
     }
 }
 
-void Renderer::drawNodes(const Simulation& simulation)
+void Renderer::drawNodes(const Simulation& simulation, const CameraController& camera)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
 
     for (const auto& node : simulation.graph().nodes()) {
         const auto& definition = NodeRegistry::definition(node.type);
-        const Vector2 center = worldToScreen(node.position, width, height);
+        const Vector2 center = worldToScreen(node.position, width, height, camera);
         const Color healthColor = colorForHealth(node.health);
         const Color definitionColor = toRaylib(definition.color);
         const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
@@ -150,7 +160,7 @@ void Renderer::drawNodes(const Simulation& simulation)
     }
 }
 
-void Renderer::drawRequests(const Simulation& simulation)
+void Renderer::drawRequests(const Simulation& simulation, const CameraController& camera)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -171,7 +181,7 @@ void Renderer::drawRequests(const Simulation& simulation)
             }
 
             const Vec2 world = lerp(source->position, target->position, static_cast<float>(request.transitProgress));
-            const Vector2 position = worldToScreen(world, width, height);
+            const Vector2 position = worldToScreen(world, width, height, camera);
             const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
             const Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);
             const float radius = databaseHeavy ? 5.5f : 4.0f;
@@ -180,20 +190,20 @@ void Renderer::drawRequests(const Simulation& simulation)
         } else if (request.state == RequestState::RetryWaiting) {
             const Node* source = simulation.graph().node(request.sourceNodeId);
             if (source != nullptr) {
-                const Vector2 position = worldToScreen(source->position, width, height);
+                const Vector2 position = worldToScreen(source->position, width, height, camera);
                 DrawCircleLines(static_cast<int>(position.x), static_cast<int>(position.y), 42.0f, {235, 86, 100, 140});
             }
         } else if (request.state == RequestState::TimedOut && simulation.timeSeconds() - request.completedTime < 0.6) {
             const Node* node = simulation.graph().node(request.currentNodeId);
             if (node != nullptr) {
-                const Vector2 position = worldToScreen(node->position, width, height);
+                const Vector2 position = worldToScreen(node->position, width, height, camera);
                 DrawCircleLines(static_cast<int>(position.x), static_cast<int>(position.y), 62.0f, kTimeout);
             }
         }
     }
 }
 
-void Renderer::drawQueueBars(const Simulation& simulation)
+void Renderer::drawQueueBars(const Simulation& simulation, const CameraController& camera)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -203,7 +213,7 @@ void Renderer::drawQueueBars(const Simulation& simulation)
             continue;
         }
 
-        const Vector2 center = worldToScreen(node.position, width, height);
+        const Vector2 center = worldToScreen(node.position, width, height, camera);
         const int visibleDots = std::min(20, static_cast<int>(node.queue.size()));
         const float x = center.x + 70.0f;
         const float bottom = center.y + 48.0f;

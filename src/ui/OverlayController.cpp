@@ -10,27 +10,6 @@ Color tint(Color color, float intensity)
 }
 }
 
-void OverlayController::update(UiState& state)
-{
-    if (IsKeyPressed(KEY_F1)) {
-        state.activeOverlay = OverlayMode::Flow;
-    } else if (IsKeyPressed(KEY_F2)) {
-        state.activeOverlay = OverlayMode::Latency;
-    } else if (IsKeyPressed(KEY_F3)) {
-        state.activeOverlay = OverlayMode::Utilization;
-    } else if (IsKeyPressed(KEY_F4)) {
-        state.activeOverlay = OverlayMode::Queues;
-    } else if (IsKeyPressed(KEY_F5)) {
-        state.activeOverlay = OverlayMode::Errors;
-    } else if (IsKeyPressed(KEY_F6)) {
-        state.activeOverlay = OverlayMode::Reliability;
-    } else if (IsKeyPressed(KEY_F7)) {
-        state.activeOverlay = OverlayMode::Complexity;
-    } else if (IsKeyPressed(KEY_F8)) {
-        state.activeOverlay = OverlayMode::None;
-    }
-}
-
 Color OverlayController::nodeTint(const Node& node, const Simulation& simulation, const UiState& state) const
 {
     switch (state.activeOverlay) {

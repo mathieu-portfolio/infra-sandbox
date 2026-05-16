@@ -35,66 +35,34 @@ void Application::run()
                 simulation_.update(kFixedStepSeconds);
                 fixedStepAccumulator_ -= kFixedStepSeconds;
             }
-        } else if (IsKeyPressed(KEY_PERIOD)) {
+        } else if (stepRequested_) {
             simulation_.update(kFixedStepSeconds);
         }
+        stepRequested_ = false;
 
-        renderer_.draw(simulation_, paused_);
+        renderer_.draw(simulation_, paused_, cameraController_);
     }
 }
 
 void Application::handleInput()
 {
-    if (IsKeyPressed(KEY_SPACE)) {
-        paused_ = !paused_;
-    }
-
-    if (IsKeyPressed(KEY_R)) {
+    const auto events = inputManager_.poll();
+    const auto simulationResult = simulationController_.handleActions(events, simulation_, paused_);
+    if (simulationResult.resetRequested) {
         resetScenario();
     }
+    stepRequested_ = simulationResult.stepRequested;
 
-    if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_EQUAL) || IsKeyPressed(KEY_KP_ADD)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::ThrottleTraffic, -1, 1.0});
-    }
+    interventionController_.handleActions(events, simulation_);
+    cameraController_.handleActions(events, GetFrameTime());
+    overlayController_.handleActions(events, renderer_.uiManager().state());
+    selectionController_.handleActions(events, simulation_, cameraController_, renderer_.uiManager().state());
+    uiController_.handleActions(events, renderer_.uiManager().state());
 
-    if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_MINUS) || IsKeyPressed(KEY_KP_SUBTRACT)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::ThrottleTraffic, -1, -1.0});
-    }
-
-    if (IsKeyPressed(KEY_ONE)) {
-        simulation_.setSimulationSpeed(1.0);
-    }
-
-    if (IsKeyPressed(KEY_TWO)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::EnableCache});
-    }
-
-    if (IsKeyPressed(KEY_THREE)) {
-        simulation_.setSimulationSpeed(2.0);
-    }
-
-    if (IsKeyPressed(KEY_FIVE)) {
-        simulation_.setSimulationSpeed(5.0);
-    }
-
-    if (IsKeyPressed(KEY_A)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::ScaleUp, -1, 1.5});
-    }
-
-    if (IsKeyPressed(KEY_FOUR)) {
-        simulation_.resetProcessingCapacity();
-    }
-
-    if (IsKeyPressed(KEY_C)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::ClearCache});
-    }
-
-    if (IsKeyPressed(KEY_B)) {
-        simulation_.toggleBurstMode();
-    }
-
-    if (IsKeyPressed(KEY_T)) {
-        mechanicExecutor_.execute(simulation_, {MechanicType::ToggleRetries});
+    for (const auto& event : events) {
+        if (event.action == InputAction::ResetSimulation && event.phase == InputPhase::Pressed) {
+            fixedStepAccumulator_ = 0.0;
+        }
     }
 }
 

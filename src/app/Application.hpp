@@ -1,9 +1,14 @@
 #pragma once
 
+#include "control/InterventionController.hpp"
+#include "control/OverlayController.hpp"
+#include "control/SelectionController.hpp"
+#include "control/SimulationController.hpp"
+#include "control/UiController.hpp"
 #include "gameplay/Scenario.hpp"
+#include "input/InputManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/Renderer.hpp"
-#include "simulation/Mechanics.hpp"
 #include "simulation/Simulation.hpp"
 
 class Application {
@@ -17,11 +22,17 @@ private:
     void handleInput();
     void resetScenario();
 
+    InputManager inputManager_;
     ScenarioDefinition scenarioDefinition_;
     Simulation simulation_;
     Renderer renderer_;
     CameraController cameraController_;
-    MechanicExecutor mechanicExecutor_;
+    SimulationController simulationController_;
+    InterventionController interventionController_;
+    SelectionController selectionController_;
+    OverlayInputController overlayController_;
+    UiController uiController_;
     bool paused_ = false;
+    bool stepRequested_ = false;
     double fixedStepAccumulator_ = 0.0;
 };

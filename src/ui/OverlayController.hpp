@@ -8,7 +8,5 @@
 
 class OverlayController {
 public:
-    void update(UiState& state);
-
     [[nodiscard]] Color nodeTint(const Node& node, const Simulation& simulation, const UiState& state) const;
 };

@@ -16,12 +16,10 @@ public:
     void draw(const Simulation& simulation, bool paused) const;
 
     [[nodiscard]] const UiState& state() const;
+    [[nodiscard]] UiState& state();
     [[nodiscard]] const OverlayController& overlayController() const;
 
 private:
-    void updateSelection(const Simulation& simulation);
-    [[nodiscard]] bool mouseOverScreenPanel() const;
-
     UiState state_{};
     OverlayController overlayController_{};
     HudPanel hudPanel_{};
