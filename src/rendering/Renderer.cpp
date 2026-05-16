@@ -3,6 +3,7 @@
 #include "rendering/RenderPrimitives.hpp"
 #include "simulation/Geography.hpp"
 #include "ui/ActionPanelModel.hpp"
+#include "ui/IconRegistry.hpp"
 
 #include "raylib.h"
 
@@ -67,6 +68,27 @@ void drawArc(Vec2 start, Vec2 end, int screenWidth, int screenHeight, const Came
         previous = current;
     }
 }
+
+std::string iconIdForNode(NodeType type)
+{
+    switch (type) {
+    case NodeType::ClientCluster:
+        return "node.client";
+    case NodeType::ApiService:
+    case NodeType::Microservice:
+        return "node.service";
+    case NodeType::Database:
+    case NodeType::ReadReplica:
+        return "node.database";
+    case NodeType::Cache:
+    case NodeType::CDNEdge:
+        return "node.cache";
+    case NodeType::QueueBroker:
+        return "node.queue";
+    default:
+        return "node.generic";
+    }
+}
 }
 
 Renderer::Renderer(const ScenarioDefinition& scenario)
@@ -98,6 +120,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
 void Renderer::releaseResources()
 {
     mapRenderer_.release();
+    uiManager_.releaseResources();
 }
 
 UiManager& Renderer::uiManager()
@@ -150,8 +173,15 @@ void Renderer::drawNodes(const Simulation& simulation, const CameraController& c
         const Color healthColor = colorForHealth(node.health);
         const Color definitionColor = toRaylib(definition.color);
         const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
+        const std::string iconId = iconIdForNode(node.type);
+        const bool hasIcon = IconRegistry::instance().hasIcon(iconId);
 
-        if (definition.renderStyle == NodeRenderStyle::DemandPulse) {
+        if (hasIcon) {
+            const float radius = definition.defaultVisualSize * 0.5f;
+            DrawCircleV(center, radius + 12.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 35});
+            IconRegistry::instance().drawIcon(iconId, {center.x - radius, center.y - radius, radius * 2.0f, radius * 2.0f}, definitionColor);
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius + 8.0f, healthColor);
+        } else if (definition.renderStyle == NodeRenderStyle::DemandPulse) {
             const float trafficPulse = pulse(simulation.timeSeconds(), 4.0, node.id);
             const float radius = 28.0f + static_cast<float>(node.requestRatePerSecond) * 2.0f + trafficPulse * 8.0f;
             DrawCircleV(center, radius + 12.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 35});

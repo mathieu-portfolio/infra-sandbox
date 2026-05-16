@@ -1,5 +1,8 @@
 #include "ui/HudPanel.hpp"
 
+#include "ui/IconRegistry.hpp"
+#include "ui/UiLayout.hpp"
+
 #include "raylib.h"
 
 #include <cstdio>
@@ -8,49 +11,38 @@ void HudPanel::update(UiContext&, const Simulation&)
 {
 }
 
-void HudPanel::draw(const UiContext& context, const Simulation&, const ScenarioManager& scenarioManager) const
+void HudPanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager) const
 {
     if (context.state == nullptr || !context.state->showHud) {
         return;
     }
 
-    char controls[256];
-    std::snprintf(
-        controls,
-        sizeof(controls),
-        "Space pause | . step | +/- demand | 1/3/5 speed | IJKL pan | wheel zoom | A scale | 7-0 topology | 2 cache | T retries | G geo grid | F1-F8 overlays | Overlay: %s",
-        overlayModeName(context.state->activeOverlay));
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
+    DrawLineEx({0.0f, layout.topBar.height}, {static_cast<float>(context.screenWidth), layout.topBar.height}, 1.0f, {70, 86, 104, 110});
 
-    const int size = 16;
-    const int width = MeasureText(controls, size);
-    DrawRectangleRounded({12.0f, static_cast<float>(context.screenHeight - 42), static_cast<float>(width + 18), 30.0f}, 0.15f, 8, {22, 27, 34, 210});
-    DrawText(controls, 21, context.screenHeight - 35, size, {139, 148, 158, 255});
+    auto& icons = IconRegistry::instance();
+    icons.drawIcon("topbar.logo", {18.0f, 14.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
+    DrawText("INFRA SANDBOX", 52, 18, 18, {230, 237, 243, 255});
 
-    const auto* phase = scenarioManager.currentPhase();
-    const char* phaseName = phase != nullptr ? phase->name.c_str() : "Free run";
-    DrawRectangleRounded({10.0f, 338.0f, 480.0f, 218.0f}, 0.04f, 8, {22, 27, 34, 225});
-    DrawText(scenarioManager.definition().name.c_str(), 18, 348, 18, {230, 237, 243, 255});
-    char metadata[220];
-    std::snprintf(
-        metadata,
-        sizeof(metadata),
-        "%s | %s | seed %u",
-        scenarioManager.archetypeSummary().c_str(),
-        scenarioManager.progressionTierSummary().c_str(),
-        scenarioManager.run().seed);
-    DrawText(metadata, 18, 374, 16, {139, 148, 158, 255});
-    char timeBuffer[160];
-    std::snprintf(
-        timeBuffer,
-        sizeof(timeBuffer),
-        "%.0fs  phase: %s  events: %zu",
-        scenarioManager.elapsedSeconds(),
-        phaseName,
-        scenarioManager.eventManager().activeEvents().size());
-    DrawText(timeBuffer, 18, 400, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.objectiveSummary().c_str(), 18, 424, 16, {230, 237, 243, 255});
-    DrawText(scenarioManager.focusSummary().c_str(), 18, 450, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.availableMechanicsSummary().c_str(), 18, 476, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.activeModifiersSummary().c_str(), 18, 502, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.eventManager().latestEventName().c_str(), 18, 528, 16, {245, 184, 76, 255});
+    const Rectangle scenarioBox{206.0f, 11.0f, 270.0f, 32.0f};
+    DrawRectangleRounded(scenarioBox, 0.12f, 6, {22, 27, 34, 235});
+    DrawText("Scenario:", 220, 20, 14, {139, 148, 158, 255});
+    DrawText(scenarioManager.definition().name.c_str(), 292, 20, 14, {230, 237, 243, 255});
+
+    char buffer[160];
+    std::snprintf(buffer, sizeof(buffer), "Time %.0fs", scenarioManager.elapsedSeconds());
+    DrawText(buffer, 512, 20, 15, {230, 237, 243, 255});
+    std::snprintf(buffer, sizeof(buffer), "Speed %.0fx", simulation.simulationSpeed());
+    DrawText(buffer, 610, 20, 15, {230, 237, 243, 255});
+    DrawText(context.paused ? "Paused" : "Running", 704, 20, 15, context.paused ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+
+    icons.drawIcon("metric.objective", {842.0f, 14.0f, 24.0f, 24.0f}, {245, 184, 76, 255});
+    DrawText("Objective", 874, 11, 13, {89, 196, 255, 255});
+    DrawText(scenarioManager.objectiveSummary().c_str(), 874, 28, 14, {230, 237, 243, 255});
+
+    icons.drawIcon("topbar.feedback", {static_cast<float>(context.screenWidth - 210), 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Feedback", context.screenWidth - 182, 20, 14, {139, 148, 158, 255});
+    icons.drawIcon("topbar.help", {static_cast<float>(context.screenWidth - 104), 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Help", context.screenWidth - 78, 20, 14, {139, 148, 158, 255});
 }

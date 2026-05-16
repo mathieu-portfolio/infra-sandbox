@@ -19,9 +19,11 @@ public:
     [[nodiscard]] const UiState& state() const;
     [[nodiscard]] UiState& state();
     [[nodiscard]] const OverlayController& overlayController() const;
+    void releaseResources();
 
 private:
     void updateActionObservations(const Simulation& simulation);
+    void updateMetricHistory(const Simulation& simulation);
 
     UiState state_{};
     OverlayController overlayController_{};

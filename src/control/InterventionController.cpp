@@ -1,6 +1,7 @@
 #include "control/InterventionController.hpp"
 
 #include "ui/ActionPanelModel.hpp"
+#include "ui/UiLayout.hpp"
 
 #include <algorithm>
 #include <string>
@@ -129,6 +130,38 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
 {
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, uiState, GetScreenWidth(), GetScreenHeight());
+    const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
+    const Rectangle sidebar = layout.rightSidebar;
+    const float buttonY = sidebar.y + sidebar.height - 54.0f;
+    const Rectangle actionButton{sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f};
+    if (CheckCollisionPointRec(event.mousePosition, actionButton)) {
+        if (uiState.placementActive) {
+            confirmPlacement(simulation, uiState);
+            return;
+        }
+        if (uiState.selectedActionIndex >= 0 && uiState.selectedActionIndex < static_cast<int>(cards.size())) {
+            const auto& card = cards[static_cast<std::size_t>(uiState.selectedActionIndex)];
+            if (card.available && card.kind == ActionCardKind::Mechanic) {
+                executeMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, 1.5}, card.name, card.target);
+            } else if (card.available && card.kind == ActionCardKind::TopologyMutation) {
+                startPlacement(simulation, uiState, card.mutation);
+            }
+        }
+        return;
+    }
+
+    const Rectangle preview{sidebar.x + 10.0f, buttonY - UiTheme::gap - 170.0f, sidebar.width - 20.0f, 170.0f};
+    if (uiState.placementActive) {
+        if (CheckCollisionPointRec(event.mousePosition, {preview.x + 14.0f, preview.y + 116.0f, 28.0f, 24.0f})) {
+            moveCandidate(simulation, uiState, -1);
+            return;
+        }
+        if (CheckCollisionPointRec(event.mousePosition, {preview.x + preview.width - 42.0f, preview.y + 116.0f, 28.0f, 24.0f})) {
+            moveCandidate(simulation, uiState, 1);
+            return;
+        }
+    }
+
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         const auto& card = cards[static_cast<std::size_t>(i)];
         if (!CheckCollisionPointRec(event.mousePosition, card.bounds)) {
@@ -143,7 +176,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
 
         switch (card.kind) {
         case ActionCardKind::Mechanic:
-            executeMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, 1.5}, card.name, card.target);
+            uiState.latestFeedback = card.name + " selected. Use the action button to apply.";
             break;
         case ActionCardKind::TopologyMutation:
             startPlacement(simulation, uiState, card.mutation);

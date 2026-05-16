@@ -1,11 +1,14 @@
 #include "ui/UiManager.hpp"
 
+#include "ui/IconRegistry.hpp"
+
 #include "raylib.h"
 
 void UiManager::update(const Simulation& simulation, const ScenarioManager&, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     updateActionObservations(simulation);
+    updateMetricHistory(simulation);
     hudPanel_.update(context, simulation);
     metricsPanel_.update(context, simulation);
     selectionPanel_.update(context, simulation);
@@ -47,15 +50,28 @@ void UiManager::updateActionObservations(const Simulation& simulation)
     }
 }
 
+void UiManager::updateMetricHistory(const Simulation& simulation)
+{
+    const double now = simulation.timeSeconds();
+    if (state_.lastMetricSampleTime >= 0.0 && now - state_.lastMetricSampleTime < 0.5) {
+        return;
+    }
+    state_.lastMetricSampleTime = now;
+    state_.metricsHistory.push_back(simulation.metrics());
+    while (state_.metricsHistory.size() > 48) {
+        state_.metricsHistory.pop_front();
+    }
+}
+
 void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused) const
 {
     UiState* mutableState = const_cast<UiState*>(&state_);
     UiContext context{mutableState, GetScreenWidth(), GetScreenHeight(), paused};
-    hudPanel_.draw(context, simulation, scenarioManager);
     metricsPanel_.draw(context, simulation);
-    selectionPanel_.draw(context, simulation);
+    hudPanel_.draw(context, simulation, scenarioManager);
     interventionPanel_.draw(context, simulation);
     timelinePanel_.draw(context, simulation, scenarioManager);
+    selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
 }
 
@@ -72,4 +88,9 @@ UiState& UiManager::state()
 const OverlayController& UiManager::overlayController() const
 {
     return overlayController_;
+}
+
+void UiManager::releaseResources()
+{
+    IconRegistry::instance().release();
 }

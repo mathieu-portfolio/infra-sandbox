@@ -67,12 +67,15 @@ if(INFRA_BUILD_APP)
         src/ui/ActionPanelModel.cpp
         src/ui/DebugPanel.cpp
         src/ui/HudPanel.cpp
+        src/ui/IconRegistry.cpp
         src/ui/InterventionPanel.cpp
         src/ui/MetricsPanel.cpp
         src/ui/OverlayController.cpp
         src/ui/SelectionPanel.cpp
         src/ui/TimelinePanel.cpp
+        src/ui/UiLayout.cpp
         src/ui/UiManager.cpp
+        src/ui/UiPrimitives.cpp
         src/ui/UiTypes.cpp
     )
 

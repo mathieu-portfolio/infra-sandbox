@@ -1,5 +1,7 @@
 #include "ui/ActionPanelModel.hpp"
 
+#include "ui/UiLayout.hpp"
+
 #include <array>
 
 namespace {
@@ -49,7 +51,7 @@ ActionCard topologyCard(const Simulation& simulation, const UiState& state, Topo
 
 Rectangle ActionPanelModel::panelBounds(int screenWidth, int screenHeight) const
 {
-    return {static_cast<float>(screenWidth - 380), 252.0f, 368.0f, static_cast<float>(screenHeight - 274)};
+    return computeUiLayout(screenWidth, screenHeight).rightSidebar;
 }
 
 std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const
@@ -85,10 +87,16 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
     }
 
     const Rectangle panel = panelBounds(screenWidth, screenHeight);
-    float y = panel.y + 38.0f;
+    const Rectangle target{panel.x + 10.0f, panel.y + 10.0f, panel.width - 20.0f, 198.0f};
+    const float buttonY = panel.y + panel.height - 54.0f;
+    const float previewY = buttonY - UiTheme::gap - 170.0f;
+    const Rectangle actions{panel.x + 10.0f, target.y + target.height + UiTheme::gap, panel.width - 20.0f, previewY - (target.y + target.height + UiTheme::gap) - UiTheme::gap};
+    float y = actions.y + 38.0f;
+    const float cardHeight = 58.0f;
+    const float step = 62.0f;
     for (auto& card : cards) {
-        card.bounds = {panel.x + 12.0f, y, panel.width - 24.0f, 66.0f};
-        y += 70.0f;
+        card.bounds = {panel.x + 12.0f, y, panel.width - 24.0f, cardHeight};
+        y += step;
     }
     return cards;
 }

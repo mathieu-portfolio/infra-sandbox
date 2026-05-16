@@ -1,6 +1,9 @@
 #include "ui/InterventionPanel.hpp"
 
 #include "ui/ActionPanelModel.hpp"
+#include "ui/IconRegistry.hpp"
+#include "ui/UiLayout.hpp"
+#include "ui/UiPrimitives.hpp"
 
 #include "raylib.h"
 
@@ -8,14 +11,35 @@
 #include <cstdio>
 
 namespace {
-Color textColor(bool available)
+void section(Rectangle bounds, const char* title, int step)
+{
+    DrawRectangleRounded(bounds, 0.04f, 8, {22, 27, 34, 224});
+    DrawRectangleRoundedLines(bounds, 0.04f, 8, {70, 86, 104, 95});
+    char label[96];
+    std::snprintf(label, sizeof(label), "%d.  %s", step, title);
+    drawTextClipped(label, {bounds.x + 12.0f, bounds.y + 10.0f, bounds.width - 24.0f, 20.0f}, 16, {89, 196, 255, 255});
+}
+
+Color availableText(bool available)
 {
     return available ? Color{230, 237, 243, 255} : Color{139, 148, 158, 170};
 }
 
-void drawWrappedLine(const std::string& text, int x, int y, int size, Color color)
+const char* iconForAction(const ActionCard& card)
 {
-    DrawText(text.c_str(), x, y, size, color);
+    if (card.name.find("Scale") != std::string::npos) {
+        return "action.scale_up";
+    }
+    if (card.name.find("Cache") != std::string::npos) {
+        return "action.add_cache";
+    }
+    if (card.name.find("Replica") != std::string::npos) {
+        return "action.replica";
+    }
+    if (card.name.find("Queue") != std::string::npos) {
+        return "action.queue";
+    }
+    return "action.generic";
 }
 }
 
@@ -42,50 +66,81 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         return;
     }
 
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const Rectangle sidebar = layout.rightSidebar;
+    DrawRectangleRounded(sidebar, 0.025f, 8, {13, 17, 23, 225});
+    DrawRectangleRoundedLines(sidebar, 0.025f, 8, {70, 86, 104, 100});
+
+    const Rectangle target{sidebar.x + 10.0f, sidebar.y + 10.0f, sidebar.width - 20.0f, 198.0f};
+    section(target, "SELECT A TARGET", 1);
+    const Node* selected = simulation.graph().node(context.state->selection.nodeId);
+    if (selected != nullptr) {
+        IconRegistry::instance().drawIcon("node.service", {target.x + 14.0f, target.y + 44.0f, 24.0f, 24.0f}, {89, 196, 255, 255});
+        drawTextClipped(selected->name, {target.x + 46.0f, target.y + 42.0f, target.width - 66.0f, 20.0f}, 16, {230, 237, 243, 255});
+        const char* region = selected->hasGeoLocation ? selected->geoLocation.regionName.c_str() : "local";
+        drawTextClipped(region, {target.x + 46.0f, target.y + 62.0f, target.width - 66.0f, 16.0f}, 13, {139, 148, 158, 255});
+        char buffer[120];
+        std::snprintf(buffer, sizeof(buffer), "Utilization %.0f%%", selected->currentUtilization * 100.0);
+        DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 96.0f), 14, {230, 237, 243, 255});
+        std::snprintf(buffer, sizeof(buffer), "Queue Depth %zu", selected->queue.size());
+        DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 118.0f), 14, {230, 237, 243, 255});
+        std::snprintf(buffer, sizeof(buffer), "Wait %.2fs", selected->averageQueueWaitSeconds);
+        DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 140.0f), 14, {230, 237, 243, 255});
+    } else {
+        drawTextClipped("Click a node or choose a global action.", {target.x + 14.0f, target.y + 48.0f, target.width - 28.0f, 20.0f}, 14, {139, 148, 158, 255});
+    }
+
+    const float buttonY = sidebar.y + sidebar.height - 54.0f;
+    const Rectangle preview{sidebar.x + 10.0f, buttonY - UiTheme::gap - 170.0f, sidebar.width - 20.0f, 170.0f};
+    const Rectangle actions{sidebar.x + 10.0f, target.y + target.height + UiTheme::gap, sidebar.width - 20.0f, preview.y - (target.y + target.height + UiTheme::gap) - UiTheme::gap};
+    section(actions, "CHOOSE AN ACTION", 2);
     const ActionPanelModel model;
-    const Rectangle panel = model.panelBounds(context.screenWidth, context.screenHeight);
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-
-    DrawRectangleRounded(panel, 0.035f, 8, {22, 27, 34, 232});
-    DrawText("Actions", static_cast<int>(panel.x + 12.0f), static_cast<int>(panel.y + 10.0f), 18, {230, 237, 243, 255});
-
-    const int maxCards = std::min(static_cast<int>(cards.size()), 7);
+    const int maxCards = std::min(static_cast<int>(cards.size()), std::max(0, static_cast<int>((actions.height - 44.0f) / 62.0f)));
+    BeginScissorMode(static_cast<int>(actions.x), static_cast<int>(actions.y), static_cast<int>(actions.width), static_cast<int>(actions.height));
     for (int i = 0; i < maxCards; ++i) {
         const auto& card = cards[static_cast<std::size_t>(i)];
         const bool highlighted = i == context.state->hoveredActionIndex || i == context.state->selectedActionIndex;
-        const Color border = highlighted ? Color{89, 196, 255, 200} : Color{70, 86, 104, 130};
-        const Color fill = card.available ? Color{30, 36, 44, 230} : Color{24, 28, 35, 180};
-        DrawRectangleRounded(card.bounds, 0.06f, 6, fill);
+        const Color border = highlighted ? Color{37, 120, 255, 240} : Color{70, 86, 104, 115};
+        DrawRectangleRounded(card.bounds, 0.06f, 6, card.available ? Color{30, 36, 44, 235} : Color{24, 28, 35, 180});
         DrawRectangleRoundedLines(card.bounds, 0.06f, 6, border);
-        DrawText(card.name.c_str(), static_cast<int>(card.bounds.x + 10.0f), static_cast<int>(card.bounds.y + 7.0f), 16, textColor(card.available));
-        DrawText(card.target.c_str(), static_cast<int>(card.bounds.x + card.bounds.width - MeasureText(card.target.c_str(), 13) - 10.0f), static_cast<int>(card.bounds.y + 9.0f), 13, {139, 148, 158, 210});
-        drawWrappedLine(("Helps: " + card.helps), static_cast<int>(card.bounds.x + 10.0f), static_cast<int>(card.bounds.y + 29.0f), 13, textColor(card.available));
-        const std::string bottom = card.available ? ("Trade-off: " + card.tradeOff) : card.unavailableReason;
-        drawWrappedLine(bottom, static_cast<int>(card.bounds.x + 10.0f), static_cast<int>(card.bounds.y + 47.0f), 12, card.available ? Color{245, 184, 76, 220} : Color{235, 86, 100, 220});
+        IconRegistry::instance().drawIcon(iconForAction(card), {card.bounds.x + 10.0f, card.bounds.y + 10.0f, 24.0f, 24.0f}, card.available ? Color{89, 196, 255, 255} : Color{139, 148, 158, 160});
+        drawTextClipped(card.name, {card.bounds.x + 42.0f, card.bounds.y + 8.0f, card.bounds.width - 52.0f, 18.0f}, 15, availableText(card.available));
+        drawTextClipped(card.description, {card.bounds.x + 42.0f, card.bounds.y + 28.0f, card.bounds.width - 52.0f, 15.0f}, 12, {139, 148, 158, 255});
+        drawTextClipped(card.available ? card.helps : card.unavailableReason, {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 15.0f}, 12, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
+    }
+    EndScissorMode();
+
+    section(preview, "PREVIEW IMPACT", 3);
+    const int selectedIndex = context.state->hoveredActionIndex >= 0 ? context.state->hoveredActionIndex : context.state->selectedActionIndex;
+    if (selectedIndex >= 0 && selectedIndex < static_cast<int>(cards.size())) {
+        const auto& card = cards[static_cast<std::size_t>(selectedIndex)];
+        drawTextClipped(card.name, {preview.x + 14.0f, preview.y + 42.0f, preview.width - 28.0f, 20.0f}, 16, {230, 237, 243, 255});
+        drawTextClipped("Helps: " + card.helps, {preview.x + 14.0f, preview.y + 70.0f, preview.width - 28.0f, 18.0f}, 14, {86, 210, 151, 255});
+        drawTextClipped("Trade-off: " + card.tradeOff, {preview.x + 14.0f, preview.y + 94.0f, preview.width - 28.0f, 18.0f}, 14, {245, 184, 76, 255});
+    } else {
+        drawTextClipped("Hover or select an action to inspect effects.", {preview.x + 14.0f, preview.y + 46.0f, preview.width - 28.0f, 18.0f}, 14, {139, 148, 158, 255});
     }
 
     if (context.state->placementActive) {
         const PlacementCandidateGenerator generator;
-        const MutationValidator validator;
         const auto candidates = generator.generate(simulation, context.state->activeMutation);
         if (!candidates.empty()) {
             const int index = std::clamp(context.state->placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
-            const auto& option = candidates[static_cast<std::size_t>(index)];
-            const MutationPreview preview = validator.preview(simulation, context.state->activeMutation, option);
-            const int y = static_cast<int>(panel.y + panel.height - 138.0f);
-            DrawText("Placement Preview", static_cast<int>(panel.x + 12.0f), y, 16, {89, 196, 255, 255});
-            char buffer[180];
-            std::snprintf(buffer, sizeof(buffer), "%d/%zu  %s", index + 1, candidates.size(), option.displayName.c_str());
-            DrawText(buffer, static_cast<int>(panel.x + 12.0f), y + 22, 15, {230, 237, 243, 255});
-            DrawText(option.latencyImpact.c_str(), static_cast<int>(panel.x + 12.0f), y + 44, 14, {139, 148, 158, 255});
-            DrawText(option.trafficImpact.c_str(), static_cast<int>(panel.x + 12.0f), y + 64, 14, {139, 148, 158, 255});
-            DrawText(preview.validationMessage.c_str(), static_cast<int>(panel.x + 12.0f), y + 86, 14, preview.valid ? Color{86, 210, 151, 255} : Color{235, 86, 100, 255});
-            DrawText("Left/Right choose | Enter confirm | Backspace cancel", static_cast<int>(panel.x + 12.0f), y + 108, 13, {139, 148, 158, 255});
+            DrawRectangleRounded({preview.x + 14.0f, preview.y + 116.0f, 28.0f, 24.0f}, 0.2f, 6, {30, 36, 44, 230});
+            DrawText("<", static_cast<int>(preview.x + 23.0f), static_cast<int>(preview.y + 120.0f), 16, {230, 237, 243, 255});
+            DrawRectangleRounded({preview.x + preview.width - 42.0f, preview.y + 116.0f, 28.0f, 24.0f}, 0.2f, 6, {30, 36, 44, 230});
+            DrawText(">", static_cast<int>(preview.x + preview.width - 33.0f), static_cast<int>(preview.y + 120.0f), 16, {230, 237, 243, 255});
+            drawTextClipped(candidates[static_cast<std::size_t>(index)].displayName, {preview.x + 48.0f, preview.y + 120.0f, preview.width - 96.0f, 18.0f}, 14, {89, 196, 255, 255});
+            drawTextClipped("Use arrows to choose a region, then apply below.", {preview.x + 14.0f, preview.y + 142.0f, preview.width - 28.0f, 15.0f}, 12, {139, 148, 158, 255});
         }
     }
 
+    DrawRectangleRounded({sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f}, 0.08f, 8, {37, 120, 255, static_cast<unsigned char>(context.state->placementActive ? 255 : 120)});
+    const bool hasSelectedAction = context.state->selectedActionIndex >= 0;
+    DrawText(context.state->placementActive ? "Apply Action" : (hasSelectedAction ? "Apply Selected Action" : "Select an Action"), static_cast<int>(sidebar.x + sidebar.width * 0.5f - 76.0f), static_cast<int>(buttonY + 12.0f), 15, {230, 237, 243, 255});
+
     if (!context.state->latestFeedback.empty()) {
-        DrawText("Latest feedback", static_cast<int>(panel.x + 12.0f), static_cast<int>(panel.y + panel.height - 42.0f), 14, {245, 184, 76, 255});
-        DrawText(context.state->latestFeedback.c_str(), static_cast<int>(panel.x + 12.0f), static_cast<int>(panel.y + panel.height - 22.0f), 13, {230, 237, 243, 255});
+        drawTextClipped(context.state->latestFeedback, {sidebar.x + 12.0f, buttonY - 24.0f, sidebar.width - 24.0f, 18.0f}, 13, {245, 184, 76, 255});
     }
 }

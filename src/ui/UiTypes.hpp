@@ -19,6 +19,11 @@ enum class UiLayer {
     Timeline,
     Explanation,
     Debug,
+    Flow,
+    Resources,
+    Persistence,
+    Reliability,
+    Geography,
     Count
 };
 
@@ -56,7 +61,7 @@ struct UiState {
     OverlayMode activeOverlay = OverlayMode::None;
     UiSelection selection{};
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};
-    bool showDebug = true;
+    bool showDebug = false;
     bool showMetrics = true;
     bool showHud = true;
     bool showGeoGrid = true;
@@ -67,6 +72,8 @@ struct UiState {
     int selectedActionIndex = -1;
     std::string latestFeedback;
     std::deque<ActionFeedback> actionHistory;
+    std::deque<MetricsSnapshot> metricsHistory;
+    double lastMetricSampleTime = -1.0;
 
     UiState()
     {

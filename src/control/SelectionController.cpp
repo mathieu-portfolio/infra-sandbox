@@ -2,6 +2,7 @@
 
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/RenderPrimitives.hpp"
+#include "ui/UiLayout.hpp"
 
 #include "raylib.h"
 
@@ -44,14 +45,5 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
 
 bool SelectionController::mouseOverScreenPanel(Vector2 mouse, int screenWidth, int screenHeight) const
 {
-    if (mouse.x <= 380.0f && mouse.y <= 340.0f) {
-        return true;
-    }
-    if (mouse.x >= static_cast<float>(screenWidth - 392)) {
-        return true;
-    }
-    if (mouse.y >= static_cast<float>(screenHeight - 55)) {
-        return true;
-    }
-    return false;
+    return pointInUiPanel(mouse, computeUiLayout(screenWidth, screenHeight));
 }
