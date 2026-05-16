@@ -1,0 +1,128 @@
+#pragma once
+
+#include "simulation/Mechanics.hpp"
+#include "simulation/PressureAnalysis.hpp"
+
+#include <deque>
+#include <optional>
+#include <string>
+#include <vector>
+
+class Simulation;
+
+enum class EventCategory {
+    TrafficEvent,
+    InfrastructureEvent,
+    ReliabilityEvent,
+    GeographicEvent,
+    DemandEvent,
+    FailureEvent,
+    RecoveryEvent,
+    EducationalEvent
+};
+
+enum class EventTriggerType {
+    TimeBased,
+    MetricThreshold,
+    PressureThreshold,
+    ScenarioPhase
+};
+
+enum class EventMetric {
+    AverageLatency,
+    TimeoutRate,
+    RetryRate,
+    DatabaseQueue,
+    ApiQueue,
+    CacheHitRate
+};
+
+enum class EventEffectType {
+    TrafficSpike,
+    ViralGrowth,
+    DatabaseSlowdown,
+    RetryStorm,
+    CacheWarmup,
+    PartialRecovery,
+    MechanicUnlock
+};
+
+struct EventTrigger {
+    EventTriggerType type = EventTriggerType::TimeBased;
+    double timeSeconds = 0.0;
+    EventMetric metric = EventMetric::AverageLatency;
+    PressureCategory pressure = PressureCategory::None;
+    double threshold = 0.0;
+    int phaseIndex = -1;
+    double delaySeconds = 0.0;
+};
+
+struct EventEffect {
+    EventEffectType type = EventEffectType::TrafficSpike;
+    double trafficMultiplier = 1.0;
+    double burstMultiplier = 1.0;
+    double databaseCapacityMultiplier = 1.0;
+    double retryDelayMultiplier = 1.0;
+    std::optional<double> databaseHeavyShare;
+    std::vector<MechanicType> unlockMechanics;
+};
+
+struct EventDefinition {
+    std::string name;
+    std::string description;
+    EventCategory category = EventCategory::TrafficEvent;
+    EventTrigger trigger;
+    EventEffect effect;
+    double durationSeconds = 10.0;
+    bool repeatable = false;
+};
+
+struct ActiveEvent {
+    const EventDefinition* definition = nullptr;
+    double startedAtSeconds = 0.0;
+    double remainingSeconds = 0.0;
+};
+
+struct EventModifiers {
+    double trafficMultiplier = 1.0;
+    double burstMultiplier = 1.0;
+    double databaseCapacityMultiplier = 1.0;
+    double retryDelayMultiplier = 1.0;
+    std::optional<double> databaseHeavyShare;
+    std::vector<MechanicType> unlockedMechanics;
+};
+
+struct EventLogEntry {
+    double timeSeconds = 0.0;
+    EventCategory category = EventCategory::TrafficEvent;
+    std::string name;
+};
+
+class EventManager {
+public:
+    void reset(std::vector<EventDefinition> definitions);
+    void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
+
+    [[nodiscard]] const std::vector<ActiveEvent>& activeEvents() const;
+    [[nodiscard]] const std::deque<EventLogEntry>& recentEvents() const;
+    [[nodiscard]] EventModifiers modifiers() const;
+    [[nodiscard]] std::string latestEventName() const;
+
+private:
+    struct PendingEvent {
+        std::size_t definitionIndex = 0;
+        double fireAtSeconds = 0.0;
+    };
+
+    [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
+    [[nodiscard]] double metricValue(EventMetric metric, const Simulation& simulation) const;
+    void activate(std::size_t definitionIndex, double scenarioTimeSeconds);
+
+    std::vector<EventDefinition> definitions_;
+    std::vector<ActiveEvent> activeEvents_;
+    std::vector<PendingEvent> pendingEvents_;
+    std::vector<bool> fired_;
+    std::deque<EventLogEntry> recentEvents_;
+};
+
+const char* eventCategoryName(EventCategory category);

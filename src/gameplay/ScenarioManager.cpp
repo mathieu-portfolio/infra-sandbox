@@ -44,6 +44,7 @@ void ScenarioManager::reset()
     state_ = ScenarioRunState::Running;
     elapsedSeconds_ = 0.0;
     currentPhaseIndex_ = scenario_.phases.empty() ? -1 : 0;
+    eventManager_.reset(scenario_.events);
 }
 
 void ScenarioManager::update(double dt, Simulation& simulation)
@@ -57,6 +58,11 @@ void ScenarioManager::update(double dt, Simulation& simulation)
         }
     }
 
+    eventManager_.update(dt, elapsedSeconds_, currentPhaseIndex_, simulation);
+    const double phaseElapsed = currentPhase() != nullptr
+        ? elapsedSeconds_ - currentPhase()->startTimeSeconds
+        : elapsedSeconds_;
+    simulation.setScenarioTime(elapsedSeconds_, phaseElapsed);
     applyPhaseToSimulation(simulation);
     updateState(simulation);
 }
@@ -106,6 +112,11 @@ std::string ScenarioManager::availableMechanicsSummary() const
     return stream.str();
 }
 
+const EventManager& ScenarioManager::eventManager() const
+{
+    return eventManager_;
+}
+
 ScenarioRunState ScenarioManager::state() const
 {
     return state_;
@@ -134,8 +145,28 @@ void ScenarioManager::applyPhaseToSimulation(Simulation& simulation) const
         simulation.clearScenarioBurstOverride();
     }
 
+    const auto eventModifiers = eventManager_.modifiers();
+    multiplier *= eventModifiers.trafficMultiplier;
+    if (eventModifiers.burstMultiplier != 1.0) {
+        auto burst = scenario_.bursts;
+        if (const auto* phase = currentPhase(); phase != nullptr && phase->burstOverride) {
+            burst = *phase->burstOverride;
+        }
+        burst.enabled = true;
+        burst.multiplier *= eventModifiers.burstMultiplier;
+        simulation.setScenarioBurst(burst);
+    }
+    simulation.setScenarioDatabaseCapacityMultiplier(eventModifiers.databaseCapacityMultiplier);
+    simulation.setScenarioDatabaseHeavyShareOverride(eventModifiers.databaseHeavyShare);
+    simulation.setScenarioRetryDelayMultiplier(eventModifiers.retryDelayMultiplier);
+
+    auto allowedMechanics = scenario_.allowedMechanics;
+    allowedMechanics.insert(
+        allowedMechanics.end(),
+        eventModifiers.unlockedMechanics.begin(),
+        eventModifiers.unlockedMechanics.end());
     simulation.setScenarioTrafficMultiplier(multiplier);
-    simulation.setAllowedMechanics(scenario_.allowedMechanics);
+    simulation.setAllowedMechanics(allowedMechanics);
 }
 
 void ScenarioManager::updateState(const Simulation& simulation)

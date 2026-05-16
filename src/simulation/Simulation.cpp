@@ -1,5 +1,7 @@
 #include "simulation/Simulation.hpp"
 
+#include "simulation/Geography.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -12,7 +14,8 @@ Simulation::Simulation(const ScenarioDefinition& scenario, SimulationConfig conf
 
 void Simulation::update(double dt)
 {
-    timeSeconds_ += dt;
+    timeSystem_.update(dt);
+    timeSeconds_ = timeSystem_.state().elapsedSeconds;
     runtimeSystems_.update(dt);
     expireCacheEntries();
     generateClientRequests(dt);
@@ -43,9 +46,10 @@ void Simulation::scaleApiCapacity(double multiplier)
 {
     for (auto& node : graph_.nodes()) {
         if (node.type == NodeType::ApiService) {
-            node.processingCapacityPerSecond = std::max(0.1, node.processingCapacityPerSecond * multiplier);
+            node.mechanicCapacityMultiplier = std::max(0.1, node.mechanicCapacityMultiplier * multiplier);
         }
     }
+    refreshEffectiveCapacities();
 }
 
 void Simulation::toggleCache()
@@ -75,14 +79,17 @@ void Simulation::resetProcessingCapacity()
     cacheEntries_.clear();
     for (auto& node : graph_.nodes()) {
         if (node.isProcessor()) {
-            node.processingCapacityPerSecond = node.baseProcessingCapacityPerSecond;
+            node.mechanicCapacityMultiplier = 1.0;
+            node.eventCapacityMultiplier = 1.0;
         }
     }
+    refreshEffectiveCapacities();
 }
 
 void Simulation::setSimulationSpeed(double speed)
 {
     simulationSpeed_ = std::max(0.0, speed);
+    timeSystem_.setSpeed(simulationSpeed_);
     metrics_.setSimulationSpeed(simulationSpeed_);
 }
 
@@ -96,9 +103,41 @@ void Simulation::setScenarioBurst(const BurstScenario& burst)
     scenarioBurstOverride_ = burst;
 }
 
+void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
+{
+    scenarioDatabaseCapacityMultiplier_ = std::max(0.1, multiplier);
+    for (auto& node : graph_.nodes()) {
+        if (node.type == NodeType::Database) {
+            node.eventCapacityMultiplier = scenarioDatabaseCapacityMultiplier_;
+        }
+    }
+    refreshEffectiveCapacities();
+}
+
+void Simulation::setScenarioDatabaseHeavyShareOverride(std::optional<double> share)
+{
+    scenarioDatabaseHeavyShareOverride_ = share;
+}
+
+void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
+{
+    scenarioRetryDelayMultiplier_ = std::max(0.1, multiplier);
+}
+
+void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds)
+{
+    timeSystem_.setScenarioElapsed(elapsedSeconds);
+    timeSystem_.setPhaseElapsed(phaseElapsedSeconds);
+}
+
 void Simulation::clearScenarioBurstOverride()
 {
     scenarioBurstOverride_.reset();
+}
+
+void Simulation::setPaused(bool paused)
+{
+    timeSystem_.setPaused(paused);
 }
 
 void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
@@ -186,6 +225,11 @@ const RuntimeSystems& Simulation::runtimeSystems() const
     return runtimeSystems_;
 }
 
+const TimeState& Simulation::timeState() const
+{
+    return timeSystem_.state();
+}
+
 const SimulationConfig& Simulation::config() const
 {
     return config_;
@@ -202,10 +246,15 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     nextRequestId_ = 1;
     timeSeconds_ = 0.0;
     simulationSpeed_ = 1.0;
+    timeSystem_.reset();
+    timeSystem_.setSpeed(simulationSpeed_);
     scenarioTrafficMultiplier_ = 1.0;
+    scenarioDatabaseCapacityMultiplier_ = 1.0;
+    scenarioRetryDelayMultiplier_ = 1.0;
     cacheEnabled_ = scenario.cache.enabled;
     burstModeEnabled_ = scenario.bursts.enabled;
     scenarioBurstOverride_.reset();
+    scenarioDatabaseHeavyShareOverride_.reset();
     setAllowedMechanics(scenario.allowedMechanics);
     runtimeSystems_.initialize(config_);
 
@@ -215,6 +264,12 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         node.name = nodeScenario.name;
         node.type = nodeScenario.type;
         node.position = nodeScenario.position;
+        if (nodeScenario.geoLocation) {
+            node.geoLocation = *nodeScenario.geoLocation;
+            node.hasGeoLocation = true;
+            node.position = MapProjection::projectEquirectangular(node.geoLocation);
+        }
+        node.networkIdentity = nodeScenario.networkIdentity;
         node.requestRatePerSecond = nodeScenario.requestRatePerSecond > 0.0
             ? nodeScenario.requestRatePerSecond
             : definition.defaultRequestRatePerSecond;
@@ -233,6 +288,15 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         link.targetNodeId = linkScenario.targetNode;
         link.baseLatencySeconds = linkScenario.baseLatencySeconds;
         link.bandwidthPerSecond = linkScenario.bandwidthPerSecond;
+        const Node* source = graph_.node(link.sourceNodeId);
+        const Node* target = graph_.node(link.targetNodeId);
+        if (source != nullptr && target != nullptr && source->hasGeoLocation && target->hasGeoLocation) {
+            const GeographicSystem geography;
+            const double geographicLatency = geography.latencySeconds(source->geoLocation, target->geoLocation, link.baseLatencySeconds);
+            link.geographicDistanceKm = MapProjection::greatCircleKilometers(source->geoLocation, target->geoLocation);
+            link.geographicLatencyContributionSeconds = std::max(0.0, geographicLatency - link.baseLatencySeconds);
+            link.baseLatencySeconds = geographicLatency;
+        }
         graph_.addLink(std::move(link));
     }
 }
@@ -279,7 +343,10 @@ void Simulation::createRequest(Node& clientNode, Link& link)
     request.stateEnteredTime = timeSeconds_;
 
     const int sequence = static_cast<int>(request.id % 100);
-    const int lightThreshold = static_cast<int>(scenario_.requestTypes.lightweightShare * 100.0);
+    const double lightweightShare = scenarioDatabaseHeavyShareOverride_
+        ? 1.0 - *scenarioDatabaseHeavyShareOverride_
+        : scenario_.requestTypes.lightweightShare;
+    const int lightThreshold = static_cast<int>(lightweightShare * 100.0);
     request.type = sequence < lightThreshold ? RequestType::Lightweight : RequestType::DatabaseHeavy;
     const int cacheRoll = static_cast<int>((request.id * 37U) % 100U);
     request.cacheKey = static_cast<int>(request.id % std::max(1, scenario_.requestTypes.cacheKeySpace));
@@ -480,7 +547,7 @@ void Simulation::timeOutRequest(Request& request)
         request.state = RequestState::RetryWaiting;
         request.currentLinkId = -1;
         request.completedTime = timeSeconds_;
-        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds;
+        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_;
         request.stateEnteredTime = timeSeconds_;
         metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
         return;
@@ -678,6 +745,18 @@ void Simulation::updateMetricsNodeStates()
     }
 
     metrics_.setNodeStates(apiQueueDepth, apiUtilization, databaseQueueDepth, databaseUtilization);
+}
+
+void Simulation::refreshEffectiveCapacities()
+{
+    for (auto& node : graph_.nodes()) {
+        if (!node.isProcessor()) {
+            continue;
+        }
+        node.processingCapacityPerSecond = std::max(
+            0.1,
+            node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier);
+    }
 }
 
 void Simulation::pruneOldRequests()

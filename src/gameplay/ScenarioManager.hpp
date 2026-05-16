@@ -1,5 +1,6 @@
 #pragma once
 
+#include "gameplay/Event.hpp"
 #include "gameplay/Scenario.hpp"
 #include "simulation/Simulation.hpp"
 
@@ -24,6 +25,7 @@ public:
     [[nodiscard]] std::string objectiveSummary() const;
     [[nodiscard]] std::string focusSummary() const;
     [[nodiscard]] std::string availableMechanicsSummary() const;
+    [[nodiscard]] const EventManager& eventManager() const;
     [[nodiscard]] ScenarioRunState state() const;
     [[nodiscard]] double elapsedSeconds() const;
 
@@ -33,6 +35,7 @@ private:
 
     ScenarioDefinition scenario_;
     ScenarioRunState state_ = ScenarioRunState::Running;
+    EventManager eventManager_;
     double elapsedSeconds_ = 0.0;
     int currentPhaseIndex_ = -1;
 };

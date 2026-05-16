@@ -42,6 +42,29 @@ void drawDiamond(Vector2 center, float radius, Color fill, Color outline)
     DrawLineEx(points[2], points[3], 2.0f, outline);
     DrawLineEx(points[3], points[0], 2.0f, outline);
 }
+
+Vec2 arcPoint(Vec2 start, Vec2 end, float t)
+{
+    const float clamped = std::clamp(t, 0.0f, 1.0f);
+    const Vec2 linear = lerp(start, end, clamped);
+    const float dx = end.x - start.x;
+    const float dy = end.y - start.y;
+    const float distance = std::sqrt(dx * dx + dy * dy);
+    const float lift = std::clamp(distance * 0.18f, 18.0f, 105.0f) * 4.0f * clamped * (1.0f - clamped);
+    return {linear.x, linear.y - lift};
+}
+
+void drawArc(Vec2 start, Vec2 end, int screenWidth, int screenHeight, const CameraController& camera, float thickness, Color color)
+{
+    constexpr int segments = 18;
+    Vector2 previous = worldToScreen(arcPoint(start, end, 0.0f), screenWidth, screenHeight, camera);
+    for (int i = 1; i <= segments; ++i) {
+        const float t = static_cast<float>(i) / static_cast<float>(segments);
+        const Vector2 current = worldToScreen(arcPoint(start, end, t), screenWidth, screenHeight, camera);
+        DrawLineEx(previous, current, thickness, color);
+        previous = current;
+    }
+}
 }
 
 Renderer::Renderer(const ScenarioDefinition& scenario)
@@ -56,6 +79,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
     BeginDrawing();
     ClearBackground(kBackground);
 
+    mapRenderer_.draw(camera);
     drawLinks(simulation, camera);
     drawRequests(simulation, camera);
     drawNodes(simulation, camera);
@@ -63,6 +87,11 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
     uiManager_.draw(simulation, scenarioManager, paused);
 
     EndDrawing();
+}
+
+void Renderer::releaseResources()
+{
+    mapRenderer_.release();
 }
 
 UiManager& Renderer::uiManager()
@@ -87,10 +116,8 @@ void Renderer::drawLinks(const Simulation& simulation, const CameraController& c
             continue;
         }
 
-        const Vector2 start = worldToScreen(source->position, width, height, camera);
-        const Vector2 end = worldToScreen(target->position, width, height, camera);
         const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f);
-        DrawLineEx(start, end, thickness, kLink);
+        drawArc(source->position, target->position, width, height, camera, thickness, kLink);
     }
 }
 
@@ -180,7 +207,7 @@ void Renderer::drawRequests(const Simulation& simulation, const CameraController
                 continue;
             }
 
-            const Vec2 world = lerp(source->position, target->position, static_cast<float>(request.transitProgress));
+            const Vec2 world = arcPoint(source->position, target->position, static_cast<float>(request.transitProgress));
             const Vector2 position = worldToScreen(world, width, height, camera);
             const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
             const Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);

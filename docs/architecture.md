@@ -8,6 +8,7 @@ The project keeps these concepts separate:
 - **Mechanics/interventions** are actions that transform the simulation, such as scaling up, enabling cache, clearing cache, toggling retries, or throttling traffic. Inputs should dispatch mechanic commands instead of directly mutating simulation state where practical.
 - **Input actions** are normalized commands produced by `InputManager`. Controllers consume actions; they do not poll raylib directly. Intervention actions pass through `InterventionController` into `MechanicExecutor`.
 - **Scenarios** define pressure progression, educational focus, objectives, allowed mechanics, traffic profiles, and phases. `ScenarioManager` applies timed phase modifiers to the simulation without owning low-level request processing.
+- **Events and time** provide temporal pressure changes. `SimulationTimeSystem` tracks deterministic simulation/scenario time, while `EventManager` activates traffic, reliability, infrastructure, and recovery events from time, metric, pressure, or phase triggers.
 - **Pressure analysis** interprets raw metrics and graph state into bottleneck, queue, latency, retry, and failure pressure. It produces hints/events for diagnosis UI without deciding a correct solution.
 - **Overlay modes** are UI/debug views. They are independent from simulation layers and can visualize flow, latency, utilization, queues, errors, reliability, or complexity.
 

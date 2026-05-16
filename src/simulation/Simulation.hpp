@@ -7,6 +7,7 @@
 #include "simulation/Request.hpp"
 #include "simulation/RuntimeSystems.hpp"
 #include "simulation/SimulationConfig.hpp"
+#include "simulation/SimulationTime.hpp"
 
 #include <cstdint>
 #include <array>
@@ -30,7 +31,12 @@ public:
     void setScenarioTrafficMultiplier(double multiplier);
     void setScenarioBurst(const BurstScenario& burst);
     void clearScenarioBurstOverride();
+    void setScenarioDatabaseCapacityMultiplier(double multiplier);
+    void setScenarioDatabaseHeavyShareOverride(std::optional<double> share);
+    void setScenarioRetryDelayMultiplier(double multiplier);
+    void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds);
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
+    void setPaused(bool paused);
 
     [[nodiscard]] const InfrastructureGraph& graph() const;
     [[nodiscard]] const std::unordered_map<std::uint64_t, Request>& requests() const;
@@ -43,6 +49,7 @@ public:
     [[nodiscard]] bool retriesEnabled() const;
     [[nodiscard]] double simulationSpeed() const;
     [[nodiscard]] bool isMechanicAllowed(MechanicType mechanic) const;
+    [[nodiscard]] const TimeState& timeState() const;
     [[nodiscard]] const RuntimeSystems& runtimeSystems() const;
     [[nodiscard]] const SimulationConfig& config() const;
 
@@ -76,12 +83,14 @@ private:
     void expireCacheEntries();
     void updateNodeHealth();
     void updateMetricsNodeStates();
+    void refreshEffectiveCapacities();
     void pruneOldRequests();
 
     InfrastructureGraph graph_;
     ScenarioDefinition scenario_;
     SimulationConfig config_;
     RuntimeSystems runtimeSystems_;
+    SimulationTimeSystem timeSystem_;
     Metrics metrics_;
     PressureAnalysisSystem pressureAnalysis_;
     std::unordered_map<std::uint64_t, Request> requests_;
@@ -90,8 +99,11 @@ private:
     double timeSeconds_ = 0.0;
     double simulationSpeed_ = 1.0;
     double scenarioTrafficMultiplier_ = 1.0;
+    double scenarioDatabaseCapacityMultiplier_ = 1.0;
+    double scenarioRetryDelayMultiplier_ = 1.0;
     bool cacheEnabled_ = false;
     bool burstModeEnabled_ = false;
     std::optional<BurstScenario> scenarioBurstOverride_;
+    std::optional<double> scenarioDatabaseHeavyShareOverride_;
     std::array<bool, static_cast<std::size_t>(MechanicType::Count)> allowedMechanics_{};
 };

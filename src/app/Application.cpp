@@ -21,6 +21,7 @@ Application::Application()
 
 Application::~Application()
 {
+    renderer_.releaseResources();
     CloseWindow();
 }
 
@@ -28,6 +29,7 @@ void Application::run()
 {
     while (!WindowShouldClose()) {
         handleInput();
+        simulation_.setPaused(paused_);
         cameraController_.update(GetFrameTime());
 
         if (!paused_) {

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "gameplay/Event.hpp"
 #include "simulation/Mechanics.hpp"
+#include "simulation/Geography.hpp"
 #include "simulation/InfrastructureGraph.hpp"
 
 #include <optional>
@@ -11,6 +13,8 @@ struct NodeScenario {
     std::string name;
     NodeType type = NodeType::ApiService;
     Vec2 position{};
+    std::optional<GeoLocation> geoLocation;
+    NetworkIdentity networkIdentity;
     double requestRatePerSecond = 0.0;
     double processingCapacityPerSecond = 0.0;
     double timeoutSeconds = 6.0;
@@ -115,6 +119,7 @@ struct ScenarioDefinition {
     std::vector<ScenarioObjective> objectives;
     std::vector<ScenarioObjective> failureConditions;
     std::vector<ScenarioPhase> phases;
+    std::vector<EventDefinition> events;
     double requestTimeoutSeconds = 5.5;
 };
 

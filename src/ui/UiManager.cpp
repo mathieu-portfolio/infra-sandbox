@@ -21,7 +21,7 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     metricsPanel_.draw(context, simulation);
     selectionPanel_.draw(context, simulation);
     interventionPanel_.draw(context, simulation);
-    timelinePanel_.draw(context, simulation);
+    timelinePanel_.draw(context, simulation, scenarioManager);
     debugPanel_.draw(context, simulation);
 }
 

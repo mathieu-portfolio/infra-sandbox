@@ -29,6 +29,7 @@ endif()
 
 add_library(infra_simulation
     src/simulation/InfrastructureGraph.cpp
+    src/simulation/Geography.cpp
     src/simulation/Link.cpp
     src/simulation/Mechanics.cpp
     src/simulation/Metrics.cpp
@@ -39,6 +40,8 @@ add_library(infra_simulation
     src/simulation/SimulationConfig.cpp
     src/simulation/SimulationLayer.cpp
     src/simulation/Simulation.cpp
+    src/simulation/SimulationTime.cpp
+    src/gameplay/Event.cpp
     src/gameplay/Scenario.cpp
     src/gameplay/ScenarioManager.cpp
 )
@@ -56,6 +59,7 @@ if(INFRA_BUILD_APP)
         src/control/UiController.cpp
         src/input/InputManager.cpp
         src/rendering/CameraController.cpp
+        src/rendering/MapRenderer.cpp
         src/rendering/Renderer.cpp
         src/rendering/RenderPrimitives.cpp
         src/ui/DebugPanel.cpp

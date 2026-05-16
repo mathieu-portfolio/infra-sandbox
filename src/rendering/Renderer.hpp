@@ -3,6 +3,7 @@
 #include "gameplay/Scenario.hpp"
 #include "gameplay/ScenarioManager.hpp"
 #include "rendering/CameraController.hpp"
+#include "rendering/MapRenderer.hpp"
 #include "simulation/Simulation.hpp"
 #include "ui/UiManager.hpp"
 
@@ -11,6 +12,7 @@ public:
     explicit Renderer(const ScenarioDefinition& scenario);
 
     void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera);
+    void releaseResources();
 
 private:
     void drawLinks(const Simulation& simulation, const CameraController& camera);
@@ -24,5 +26,6 @@ public:
 
 private:
     ScenarioDefinition scenarioDefinition_;
+    MapRenderer mapRenderer_;
     UiManager uiManager_;
 };

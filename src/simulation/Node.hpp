@@ -1,5 +1,6 @@
 #pragma once
 
+#include "simulation/Geography.hpp"
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/Request.hpp"
 
@@ -24,10 +25,15 @@ struct Node {
     std::string name;
     NodeType type = NodeType::ApiService;
     Vec2 position{};
+    GeoLocation geoLocation{};
+    NetworkIdentity networkIdentity{};
+    bool hasGeoLocation = false;
     double requestRatePerSecond = 0.0;
     double baseRequestRatePerSecond = 0.0;
     double processingCapacityPerSecond = 0.0;
     double baseProcessingCapacityPerSecond = 0.0;
+    double mechanicCapacityMultiplier = 1.0;
+    double eventCapacityMultiplier = 1.0;
     double timeoutSeconds = 6.0;
     double generationAccumulator = 0.0;
     double processingAccumulator = 0.0;
