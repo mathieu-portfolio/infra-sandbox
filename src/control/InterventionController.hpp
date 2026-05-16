@@ -7,6 +7,7 @@
 #include "ui/UiTypes.hpp"
 
 #include <span>
+#include <string>
 
 class InterventionController {
 public:
@@ -16,6 +17,9 @@ private:
     void startPlacement(const Simulation& simulation, UiState& uiState, TopologyMutationType type) const;
     void moveCandidate(const Simulation& simulation, UiState& uiState, int delta) const;
     void confirmPlacement(Simulation& simulation, UiState& uiState) const;
+    void handleActionPanelClick(const InputEvent& event, Simulation& simulation, UiState& uiState) const;
+    void executeMechanic(Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const;
+    void recordFeedback(UiState& uiState, const Simulation& simulation, std::string actionName, std::string target, std::string message) const;
 
     MechanicExecutor mechanicExecutor_;
     PlacementCandidateGenerator candidateGenerator_;

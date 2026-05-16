@@ -1,9 +1,12 @@
 #pragma once
 
+#include "simulation/Metrics.hpp"
 #include "simulation/TopologyMutation.hpp"
 
 #include <array>
 #include <cstddef>
+#include <deque>
+#include <string>
 
 enum class UiLayer {
     WorldView,
@@ -38,6 +41,17 @@ struct UiSelection {
     int linkId = -1;
 };
 
+struct ActionFeedback {
+    double timeSeconds = 0.0;
+    std::string actionName;
+    std::string target;
+    std::string message;
+    MetricsSnapshot beforeMetrics{};
+    bool observationPending = false;
+    bool observationRecorded = false;
+    double observeAfterSeconds = 4.0;
+};
+
 struct UiState {
     OverlayMode activeOverlay = OverlayMode::None;
     UiSelection selection{};
@@ -49,6 +63,10 @@ struct UiState {
     bool placementActive = false;
     TopologyMutationType activeMutation = TopologyMutationType::AddCache;
     int placementCandidateIndex = 0;
+    int hoveredActionIndex = -1;
+    int selectedActionIndex = -1;
+    std::string latestFeedback;
+    std::deque<ActionFeedback> actionHistory;
 
     UiState()
     {

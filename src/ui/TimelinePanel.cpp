@@ -10,7 +10,7 @@ void TimelinePanel::update(UiContext&, const Simulation&)
 
 void TimelinePanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager) const
 {
-    if (simulation.pressure().recentEvents.empty() && scenarioManager.eventManager().recentEvents().empty()) {
+    if (context.state == nullptr || (simulation.pressure().recentEvents.empty() && scenarioManager.eventManager().recentEvents().empty() && context.state->actionHistory.empty())) {
         return;
     }
 
@@ -20,7 +20,14 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
     DrawText("Timeline", x + 12, y + 10, 18, {230, 237, 243, 255});
 
     int row = 0;
-    for (auto it = scenarioManager.eventManager().recentEvents().rbegin(); it != scenarioManager.eventManager().recentEvents().rend() && row < 2; ++it) {
+    for (auto it = context.state->actionHistory.rbegin(); it != context.state->actionHistory.rend() && row < 2; ++it) {
+        char buffer[160];
+        std::snprintf(buffer, sizeof(buffer), "%.0fs  %s: %s", it->timeSeconds, it->actionName.c_str(), it->target.c_str());
+        DrawText(buffer, x + 12, y + 38 + row * 20, 15, {89, 196, 255, 255});
+        ++row;
+    }
+
+    for (auto it = scenarioManager.eventManager().recentEvents().rbegin(); it != scenarioManager.eventManager().recentEvents().rend() && row < 3; ++it) {
         char buffer[128];
         std::snprintf(buffer, sizeof(buffer), "%.0fs  %s", it->timeSeconds, it->name.c_str());
         DrawText(buffer, x + 12, y + 38 + row * 20, 15, {245, 184, 76, 255});

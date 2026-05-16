@@ -21,6 +21,8 @@ public:
     [[nodiscard]] const OverlayController& overlayController() const;
 
 private:
+    void updateActionObservations(const Simulation& simulation);
+
     UiState state_{};
     OverlayController overlayController_{};
     HudPanel hudPanel_{};

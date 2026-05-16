@@ -47,7 +47,7 @@ bool SelectionController::mouseOverScreenPanel(Vector2 mouse, int screenWidth, i
     if (mouse.x <= 380.0f && mouse.y <= 340.0f) {
         return true;
     }
-    if (mouse.x >= static_cast<float>(screenWidth - 324) && mouse.y <= 260.0f) {
+    if (mouse.x >= static_cast<float>(screenWidth - 392)) {
         return true;
     }
     if (mouse.y >= static_cast<float>(screenHeight - 55)) {

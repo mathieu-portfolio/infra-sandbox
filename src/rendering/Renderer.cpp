@@ -2,6 +2,7 @@
 
 #include "rendering/RenderPrimitives.hpp"
 #include "simulation/Geography.hpp"
+#include "ui/ActionPanelModel.hpp"
 
 #include "raylib.h"
 
@@ -334,20 +335,31 @@ void Renderer::drawLabels(const Simulation& simulation, const CameraController& 
 void Renderer::drawMutationPreview(const Simulation& simulation, const CameraController& camera) const
 {
     const UiState& state = uiManager_.state();
-    if (!state.placementActive) {
-        return;
-    }
-
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
     const PlacementCandidateGenerator generator;
     const MutationValidator validator;
-    const auto candidates = generator.generate(simulation, state.activeMutation);
+    TopologyMutationType mutation = state.activeMutation;
+    bool activePreview = state.placementActive;
+    if (!activePreview) {
+        const ActionPanelModel model;
+        const auto cards = model.buildCards(simulation, state, width, height);
+        const int index = state.hoveredActionIndex >= 0 ? state.hoveredActionIndex : state.selectedActionIndex;
+        if (index >= 0 && index < static_cast<int>(cards.size()) && cards[static_cast<std::size_t>(index)].kind == ActionCardKind::TopologyMutation && cards[static_cast<std::size_t>(index)].available) {
+            mutation = cards[static_cast<std::size_t>(index)].mutation;
+            activePreview = true;
+        }
+    }
+    if (!activePreview) {
+        return;
+    }
+
+    const auto candidates = generator.generate(simulation, mutation);
     if (candidates.empty()) {
         return;
     }
 
-    const int selected = std::clamp(state.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
+    const int selected = state.placementActive ? std::clamp(state.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1) : 0;
     for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
         const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
         const Vector2 center = worldToScreen(world, width, height, camera);
@@ -359,7 +371,7 @@ void Renderer::drawMutationPreview(const Simulation& simulation, const CameraCon
     }
 
     const auto& option = candidates[static_cast<std::size_t>(selected)];
-    const MutationPreview preview = validator.preview(simulation, state.activeMutation, option);
+    const MutationPreview preview = validator.preview(simulation, mutation, option);
     const Color ghost{89, 196, 255, 150};
     for (const auto& node : preview.mutation.nodesToCreate) {
         const Vector2 center = worldToScreen(node.position, width, height, camera);
