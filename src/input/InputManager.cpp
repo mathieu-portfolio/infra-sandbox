@@ -42,6 +42,7 @@ InputMap::InputMap()
         {InputAction::ClearCache, InputDevice::Keyboard, KEY_C, InputTrigger::Pressed},
         {InputAction::ToggleRetries, InputDevice::Keyboard, KEY_T, InputTrigger::Pressed},
         {InputAction::ToggleTrafficBurst, InputDevice::Keyboard, KEY_B, InputTrigger::Pressed},
+        {InputAction::ToggleGeoGrid, InputDevice::Keyboard, KEY_G, InputTrigger::Pressed},
         {InputAction::ToggleDebugUI, InputDevice::Keyboard, KEY_F9, InputTrigger::Pressed},
         {InputAction::ToggleMetricsUI, InputDevice::Keyboard, KEY_F10, InputTrigger::Pressed},
     };

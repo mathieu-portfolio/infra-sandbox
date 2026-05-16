@@ -43,6 +43,7 @@ struct UiState {
     bool showDebug = true;
     bool showMetrics = true;
     bool showHud = true;
+    bool showGeoGrid = true;
 
     UiState()
     {

@@ -59,6 +59,7 @@ if(INFRA_BUILD_APP)
         src/control/UiController.cpp
         src/input/InputManager.cpp
         src/rendering/CameraController.cpp
+        src/rendering/GeoLayoutSystem.cpp
         src/rendering/MapRenderer.cpp
         src/rendering/Renderer.cpp
         src/rendering/RenderPrimitives.cpp

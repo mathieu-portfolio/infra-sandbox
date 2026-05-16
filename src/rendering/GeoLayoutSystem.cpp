@@ -1,0 +1,224 @@
+#include "rendering/GeoLayoutSystem.hpp"
+
+#include "rendering/RenderPrimitives.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <unordered_map>
+
+namespace {
+float distanceSquared(Vector2 a, Vector2 b)
+{
+    const float dx = a.x - b.x;
+    const float dy = a.y - b.y;
+    return dx * dx + dy * dy;
+}
+
+bool overlapsAny(Rectangle candidate, const std::vector<Rectangle>& occupied)
+{
+    return std::any_of(occupied.begin(), occupied.end(), [candidate](Rectangle rect) {
+        return CheckCollisionRecs(candidate, rect);
+    });
+}
+
+Rectangle labelRect(Vector2 origin, const char* text)
+{
+    return {origin.x - 4.0f, origin.y - 3.0f, static_cast<float>(MeasureText(text, 16)) + 8.0f, 22.0f};
+}
+
+Vec2 screenDeltaToWorld(Vector2 delta, const CameraController& camera)
+{
+    return {delta.x / camera.zoom(), delta.y / camera.zoom()};
+}
+
+Vec2 screenToWorld(Vector2 screen, const CameraController& camera, int screenWidth, int screenHeight)
+{
+    const Vector2 offset = camera.offset();
+    return {
+        (screen.x - static_cast<float>(screenWidth) * 0.5f) / camera.zoom() - offset.x,
+        (screen.y - static_cast<float>(screenHeight) * 0.5f) / camera.zoom() - offset.y,
+    };
+}
+}
+
+const GeoNodeLayout* GeoLayoutFrame::node(int nodeId) const
+{
+    const auto it = std::find_if(nodes.begin(), nodes.end(), [nodeId](const GeoNodeLayout& layout) {
+        return layout.nodeId == nodeId;
+    });
+    return it != nodes.end() ? &*it : nullptr;
+}
+
+GeoLayoutFrame GeoLayoutSystem::compute(const Simulation& simulation, const CameraController& camera, const UiState& state, int screenWidth, int screenHeight) const
+{
+    GeoLayoutFrame frame;
+    frame.nodes.reserve(simulation.graph().nodes().size());
+
+    for (const auto& node : simulation.graph().nodes()) {
+        frame.nodes.push_back({
+            .nodeId = node.id,
+            .anchorPosition = node.position,
+            .displayPosition = node.position,
+        });
+    }
+
+    if (shouldCluster(camera)) {
+        std::unordered_map<std::string, std::vector<int>> byRegion;
+        for (const auto& node : simulation.graph().nodes()) {
+            if (state.selection.nodeId == node.id || !node.hasGeoLocation) {
+                continue;
+            }
+            byRegion[node.geoLocation.regionName].push_back(node.id);
+        }
+
+        for (const auto& [region, nodeIds] : byRegion) {
+            if (nodeIds.size() < 2) {
+                continue;
+            }
+
+            Vec2 average{};
+            for (const int nodeId : nodeIds) {
+                const Node* node = simulation.graph().node(nodeId);
+                if (node == nullptr) {
+                    continue;
+                }
+                average.x += node->position.x;
+                average.y += node->position.y;
+            }
+            average.x /= static_cast<float>(nodeIds.size());
+            average.y /= static_cast<float>(nodeIds.size());
+
+            frame.clusters.push_back({region + " x" + std::to_string(nodeIds.size()), nodeIds, average, average});
+            for (auto& layout : frame.nodes) {
+                if (std::find(nodeIds.begin(), nodeIds.end(), layout.nodeId) != nodeIds.end()) {
+                    layout.hiddenByCluster = true;
+                }
+            }
+        }
+    }
+
+    const std::array<Vector2, 8> offsets{{
+        {62.0f, 0.0f},
+        {-62.0f, 0.0f},
+        {0.0f, -62.0f},
+        {0.0f, 62.0f},
+        {50.0f, -50.0f},
+        {-50.0f, -50.0f},
+        {50.0f, 50.0f},
+        {-50.0f, 50.0f},
+    }};
+
+    for (std::size_t i = 0; i < frame.nodes.size(); ++i) {
+        auto& current = frame.nodes[i];
+        if (current.hiddenByCluster) {
+            continue;
+        }
+
+        bool needsOffset = false;
+        const Vector2 currentScreen = worldToScreen(current.displayPosition, screenWidth, screenHeight, camera);
+        for (std::size_t j = 0; j < i; ++j) {
+            const auto& previous = frame.nodes[j];
+            if (previous.hiddenByCluster) {
+                continue;
+            }
+            const Vector2 previousScreen = worldToScreen(previous.displayPosition, screenWidth, screenHeight, camera);
+            if (distanceSquared(currentScreen, previousScreen) < 82.0f * 82.0f) {
+                needsOffset = true;
+                break;
+            }
+        }
+
+        if (!needsOffset) {
+            continue;
+        }
+
+        float bestScore = -1.0f;
+        Vec2 bestPosition = current.displayPosition;
+        for (const Vector2 offset : offsets) {
+            const Vec2 worldOffset = screenDeltaToWorld(offset, camera);
+            const Vec2 candidate{current.anchorPosition.x + worldOffset.x, current.anchorPosition.y + worldOffset.y};
+            const Vector2 candidateScreen = worldToScreen(candidate, screenWidth, screenHeight, camera);
+            float nearest = 1000000.0f;
+            for (std::size_t j = 0; j < i; ++j) {
+                const auto& previous = frame.nodes[j];
+                if (previous.hiddenByCluster) {
+                    continue;
+                }
+                nearest = std::min(nearest, distanceSquared(candidateScreen, worldToScreen(previous.displayPosition, screenWidth, screenHeight, camera)));
+            }
+            if (nearest > bestScore) {
+                bestScore = nearest;
+                bestPosition = candidate;
+            }
+        }
+        current.displayPosition = bestPosition;
+        current.hasOffset = true;
+    }
+
+    std::vector<Rectangle> occupiedLabels;
+    for (auto& layout : frame.nodes) {
+        if (layout.hiddenByCluster) {
+            continue;
+        }
+        const Node* node = simulation.graph().node(layout.nodeId);
+        if (node == nullptr || !shouldConsiderLabel(*node, state, camera)) {
+            continue;
+        }
+        layout.label = placeLabel(*node, layout.displayPosition, state, camera, screenWidth, screenHeight, occupiedLabels);
+    }
+
+    return frame;
+}
+
+bool GeoLayoutSystem::shouldCluster(const CameraController& camera) const
+{
+    return camera.zoom() < 0.62f;
+}
+
+bool GeoLayoutSystem::shouldConsiderLabel(const Node& node, const UiState& state, const CameraController& camera) const
+{
+    if (state.selection.nodeId == node.id) {
+        return true;
+    }
+    if (camera.zoom() < 0.72f) {
+        return node.isProcessor();
+    }
+    if (camera.zoom() < 0.92f) {
+        return node.isProcessor() || node.type == NodeType::Cache;
+    }
+    return true;
+}
+
+GeoLabelLayout GeoLayoutSystem::placeLabel(const Node& node, Vec2 displayPosition, const UiState& state, const CameraController& camera, int screenWidth, int screenHeight, std::vector<Rectangle>& occupiedLabels) const
+{
+    const Vector2 center = worldToScreen(displayPosition, screenWidth, screenHeight, camera);
+    const char* text = node.name.c_str();
+    const float labelWidth = static_cast<float>(MeasureText(text, 16));
+    const std::array<Vector2, 4> candidates{{
+        {center.x - labelWidth * 0.5f, center.y - 74.0f},
+        {center.x + 62.0f, center.y - 8.0f},
+        {center.x - labelWidth * 0.5f, center.y + 58.0f},
+        {center.x - labelWidth - 62.0f, center.y - 8.0f},
+    }};
+
+    const bool selected = state.selection.nodeId == node.id;
+    for (const Vector2 candidate : candidates) {
+        const Rectangle rect = labelRect(candidate, text);
+        const bool inBounds = rect.x >= 4.0f && rect.y >= 4.0f
+            && rect.x + rect.width <= static_cast<float>(screenWidth - 4)
+            && rect.y + rect.height <= static_cast<float>(screenHeight - 4);
+        if ((selected || inBounds) && !overlapsAny(rect, occupiedLabels)) {
+            occupiedLabels.push_back(rect);
+            return {true, screenToWorld(candidate, camera, screenWidth, screenHeight)};
+        }
+    }
+
+    if (selected) {
+        const Vector2 fallback{std::clamp(center.x + 58.0f, 8.0f, static_cast<float>(screenWidth - 140)), std::clamp(center.y - 8.0f, 8.0f, static_cast<float>(screenHeight - 28))};
+        occupiedLabels.push_back(labelRect(fallback, text));
+        return {true, screenToWorld(fallback, camera, screenWidth, screenHeight)};
+    }
+
+    return {};
+}

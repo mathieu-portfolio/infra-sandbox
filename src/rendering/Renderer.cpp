@@ -79,11 +79,14 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
     BeginDrawing();
     ClearBackground(kBackground);
 
-    mapRenderer_.draw(camera);
-    drawLinks(simulation, camera);
-    drawRequests(simulation, camera);
-    drawNodes(simulation, camera);
-    drawQueueBars(simulation, camera);
+    const GeoLayoutFrame geoLayout = geoLayoutSystem_.compute(simulation, camera, uiManager_.state(), GetScreenWidth(), GetScreenHeight());
+    mapRenderer_.draw(camera, uiManager_.state().showGeoGrid);
+    drawLinks(simulation, camera, geoLayout);
+    drawRequests(simulation, camera, geoLayout);
+    drawClusters(camera, geoLayout);
+    drawNodes(simulation, camera, geoLayout);
+    drawQueueBars(simulation, camera, geoLayout);
+    drawLabels(simulation, camera, geoLayout);
     uiManager_.draw(simulation, scenarioManager, paused);
 
     EndDrawing();
@@ -104,7 +107,7 @@ const UiManager& Renderer::uiManager() const
     return uiManager_;
 }
 
-void Renderer::drawLinks(const Simulation& simulation, const CameraController& camera)
+void Renderer::drawLinks(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -116,19 +119,28 @@ void Renderer::drawLinks(const Simulation& simulation, const CameraController& c
             continue;
         }
 
+        const GeoNodeLayout* sourceLayout = layout.node(source->id);
+        const GeoNodeLayout* targetLayout = layout.node(target->id);
+        if (sourceLayout == nullptr || targetLayout == nullptr || sourceLayout->hiddenByCluster || targetLayout->hiddenByCluster) {
+            continue;
+        }
         const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f);
-        drawArc(source->position, target->position, width, height, camera, thickness, kLink);
+        drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, kLink);
     }
 }
 
-void Renderer::drawNodes(const Simulation& simulation, const CameraController& camera)
+void Renderer::drawNodes(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
 
     for (const auto& node : simulation.graph().nodes()) {
+        const GeoNodeLayout* nodeLayout = layout.node(node.id);
+        if (nodeLayout == nullptr || nodeLayout->hiddenByCluster) {
+            continue;
+        }
         const auto& definition = NodeRegistry::definition(node.type);
-        const Vector2 center = worldToScreen(node.position, width, height, camera);
+        const Vector2 center = worldToScreen(nodeLayout->displayPosition, width, height, camera);
         const Color healthColor = colorForHealth(node.health);
         const Color definitionColor = toRaylib(definition.color);
         const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
@@ -183,11 +195,15 @@ void Renderer::drawNodes(const Simulation& simulation, const CameraController& c
             DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 64.0f, {230, 237, 243, 230});
         }
 
-        DrawText(node.name.c_str(), static_cast<int>(center.x - MeasureText(node.name.c_str(), 18) * 0.5f), static_cast<int>(center.y + 62.0f), 18, kText);
+        if (nodeLayout->hasOffset) {
+            const Vector2 anchor = worldToScreen(nodeLayout->anchorPosition, width, height, camera);
+            DrawLineEx(anchor, center, 1.0f, {139, 148, 158, 80});
+            DrawCircleV(anchor, 3.0f, {139, 148, 158, 120});
+        }
     }
 }
 
-void Renderer::drawRequests(const Simulation& simulation, const CameraController& camera)
+void Renderer::drawRequests(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -206,8 +222,13 @@ void Renderer::drawRequests(const Simulation& simulation, const CameraController
             if (source == nullptr || target == nullptr) {
                 continue;
             }
+            const GeoNodeLayout* sourceLayout = layout.node(source->id);
+            const GeoNodeLayout* targetLayout = layout.node(target->id);
+            if (sourceLayout == nullptr || targetLayout == nullptr || sourceLayout->hiddenByCluster || targetLayout->hiddenByCluster) {
+                continue;
+            }
 
-            const Vec2 world = arcPoint(source->position, target->position, static_cast<float>(request.transitProgress));
+            const Vec2 world = arcPoint(sourceLayout->displayPosition, targetLayout->displayPosition, static_cast<float>(request.transitProgress));
             const Vector2 position = worldToScreen(world, width, height, camera);
             const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
             const Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);
@@ -217,20 +238,28 @@ void Renderer::drawRequests(const Simulation& simulation, const CameraController
         } else if (request.state == RequestState::RetryWaiting) {
             const Node* source = simulation.graph().node(request.sourceNodeId);
             if (source != nullptr) {
-                const Vector2 position = worldToScreen(source->position, width, height, camera);
+                const GeoNodeLayout* sourceLayout = layout.node(source->id);
+                if (sourceLayout == nullptr || sourceLayout->hiddenByCluster) {
+                    continue;
+                }
+                const Vector2 position = worldToScreen(sourceLayout->displayPosition, width, height, camera);
                 DrawCircleLines(static_cast<int>(position.x), static_cast<int>(position.y), 42.0f, {235, 86, 100, 140});
             }
         } else if (request.state == RequestState::TimedOut && simulation.timeSeconds() - request.completedTime < 0.6) {
             const Node* node = simulation.graph().node(request.currentNodeId);
             if (node != nullptr) {
-                const Vector2 position = worldToScreen(node->position, width, height, camera);
+                const GeoNodeLayout* nodeLayout = layout.node(node->id);
+                if (nodeLayout == nullptr || nodeLayout->hiddenByCluster) {
+                    continue;
+                }
+                const Vector2 position = worldToScreen(nodeLayout->displayPosition, width, height, camera);
                 DrawCircleLines(static_cast<int>(position.x), static_cast<int>(position.y), 62.0f, kTimeout);
             }
         }
     }
 }
 
-void Renderer::drawQueueBars(const Simulation& simulation, const CameraController& camera)
+void Renderer::drawQueueBars(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
 {
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -239,8 +268,12 @@ void Renderer::drawQueueBars(const Simulation& simulation, const CameraControlle
         if (!node.isProcessor()) {
             continue;
         }
+        const GeoNodeLayout* nodeLayout = layout.node(node.id);
+        if (nodeLayout == nullptr || nodeLayout->hiddenByCluster) {
+            continue;
+        }
 
-        const Vector2 center = worldToScreen(node.position, width, height, camera);
+        const Vector2 center = worldToScreen(nodeLayout->displayPosition, width, height, camera);
         const int visibleDots = std::min(20, static_cast<int>(node.queue.size()));
         const float x = center.x + 70.0f;
         const float bottom = center.y + 48.0f;
@@ -255,5 +288,40 @@ void Renderer::drawQueueBars(const Simulation& simulation, const CameraControlle
         if (node.queue.size() > 20) {
             DrawText("+", static_cast<int>(x - 5.0f), static_cast<int>(bottom - 142.0f), 18, kTimeout);
         }
+    }
+}
+
+void Renderer::drawClusters(const CameraController& camera, const GeoLayoutFrame& layout)
+{
+    const int width = GetScreenWidth();
+    const int height = GetScreenHeight();
+    for (const auto& cluster : layout.clusters) {
+        const Vector2 center = worldToScreen(cluster.displayPosition, width, height, camera);
+        const float radius = 22.0f + static_cast<float>(cluster.nodeIds.size()) * 3.0f;
+        DrawCircleV(center, radius + 10.0f, {89, 196, 255, 28});
+        DrawCircleV(center, radius, {32, 38, 45, 235});
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, {89, 196, 255, 190});
+        const std::string count = std::to_string(cluster.nodeIds.size());
+        DrawText(count.c_str(), static_cast<int>(center.x - MeasureText(count.c_str(), 18) * 0.5f), static_cast<int>(center.y - 9.0f), 18, kText);
+        DrawText(cluster.label.c_str(), static_cast<int>(center.x - MeasureText(cluster.label.c_str(), 14) * 0.5f), static_cast<int>(center.y + radius + 8.0f), 14, {139, 148, 158, 180});
+    }
+}
+
+void Renderer::drawLabels(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
+{
+    const int width = GetScreenWidth();
+    const int height = GetScreenHeight();
+    for (const auto& nodeLayout : layout.nodes) {
+        if (!nodeLayout.label.visible || nodeLayout.hiddenByCluster) {
+            continue;
+        }
+        const Node* node = simulation.graph().node(nodeLayout.nodeId);
+        if (node == nullptr) {
+            continue;
+        }
+        const Vector2 label = worldToScreen(nodeLayout.label.position, width, height, camera);
+        const int textWidth = MeasureText(node->name.c_str(), 16);
+        DrawRectangleRounded({label.x - 5.0f, label.y - 3.0f, static_cast<float>(textWidth) + 10.0f, 22.0f}, 0.18f, 6, {13, 17, 23, 180});
+        DrawText(node->name.c_str(), static_cast<int>(label.x), static_cast<int>(label.y), 16, kText);
     }
 }

@@ -3,6 +3,7 @@
 #include "gameplay/Scenario.hpp"
 #include "gameplay/ScenarioManager.hpp"
 #include "rendering/CameraController.hpp"
+#include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
 #include "simulation/Simulation.hpp"
 #include "ui/UiManager.hpp"
@@ -15,10 +16,12 @@ public:
     void releaseResources();
 
 private:
-    void drawLinks(const Simulation& simulation, const CameraController& camera);
-    void drawNodes(const Simulation& simulation, const CameraController& camera);
-    void drawRequests(const Simulation& simulation, const CameraController& camera);
-    void drawQueueBars(const Simulation& simulation, const CameraController& camera);
+    void drawLinks(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawNodes(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawRequests(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawQueueBars(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawClusters(const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawLabels(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
 
 public:
     [[nodiscard]] UiManager& uiManager();
@@ -27,5 +30,6 @@ public:
 private:
     ScenarioDefinition scenarioDefinition_;
     MapRenderer mapRenderer_;
+    GeoLayoutSystem geoLayoutSystem_;
     UiManager uiManager_;
 };

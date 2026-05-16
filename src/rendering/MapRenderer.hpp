@@ -12,7 +12,7 @@ public:
     MapRenderer(const MapRenderer&) = delete;
     MapRenderer& operator=(const MapRenderer&) = delete;
 
-    void draw(const CameraController& camera) const;
+    void draw(const CameraController& camera, bool showGeoGrid) const;
     void release();
 
 private:

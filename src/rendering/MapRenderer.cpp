@@ -5,6 +5,8 @@
 
 #include "raylib.h"
 
+#include <string>
+
 namespace {
 Color kMapFill{16, 23, 31, 255};
 Color kMapBorder{70, 86, 104, 150};
@@ -26,7 +28,7 @@ MapRenderer::~MapRenderer()
     release();
 }
 
-void MapRenderer::draw(const CameraController& camera) const
+void MapRenderer::draw(const CameraController& camera, bool showGeoGrid) const
 {
     if (!attemptedLoad_) {
         attemptedLoad_ = true;
@@ -61,16 +63,26 @@ void MapRenderer::draw(const CameraController& camera) const
 
     DrawRectangleLinesEx(mapRect, 1.0f, kMapBorder);
 
+    if (!showGeoGrid) {
+        return;
+    }
+
     for (int longitude = -150; longitude <= 150; longitude += 30) {
         const Vector2 a = worldToScreen(mapPoint(-75.0, longitude), screenWidth, screenHeight, camera);
         const Vector2 b = worldToScreen(mapPoint(75.0, longitude), screenWidth, screenHeight, camera);
-        DrawLineEx(a, b, 1.0f, kGridLine);
+        DrawLineEx(a, b, longitude == 0 ? 1.8f : 1.0f, longitude == 0 ? kEquator : kGridLine);
     }
 
     for (int latitude = -60; latitude <= 60; latitude += 30) {
         const Vector2 a = worldToScreen(mapPoint(latitude, -180.0), screenWidth, screenHeight, camera);
         const Vector2 b = worldToScreen(mapPoint(latitude, 180.0), screenWidth, screenHeight, camera);
         DrawLineEx(a, b, 1.0f, latitude == 0 ? kEquator : kGridLine);
+    }
+
+    for (const auto& region : GeographicRegistry::definitions()) {
+        const Vector2 label = worldToScreen(MapProjection::projectEquirectangular(region.center), screenWidth, screenHeight, camera);
+        const std::string name{region.name};
+        DrawText(name.c_str(), static_cast<int>(label.x + 8.0f), static_cast<int>(label.y - 7.0f), 14, {139, 148, 158, 105});
     }
 }
 

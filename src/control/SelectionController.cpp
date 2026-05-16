@@ -1,5 +1,6 @@
 #include "control/SelectionController.hpp"
 
+#include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/RenderPrimitives.hpp"
 
 #include "raylib.h"
@@ -15,15 +16,22 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
             continue;
         }
 
+        UiState selectionState = state;
+        selectionState.selection.nodeId = -1;
+        const GeoLayoutFrame layout = GeoLayoutSystem{}.compute(simulation, camera, selectionState, GetScreenWidth(), GetScreenHeight());
+
         int selectedNodeId = -1;
         float bestDistanceSquared = 3600.0f;
-        for (const auto& node : simulation.graph().nodes()) {
-            const Vector2 center = worldToScreen(node.position, GetScreenWidth(), GetScreenHeight(), camera);
+        for (const auto& nodeLayout : layout.nodes) {
+            if (nodeLayout.hiddenByCluster) {
+                continue;
+            }
+            const Vector2 center = worldToScreen(nodeLayout.displayPosition, GetScreenWidth(), GetScreenHeight(), camera);
             const float dx = event.mousePosition.x - center.x;
             const float dy = event.mousePosition.y - center.y;
             const float distanceSquared = dx * dx + dy * dy;
             if (distanceSquared < bestDistanceSquared) {
-                selectedNodeId = node.id;
+                selectedNodeId = nodeLayout.nodeId;
                 bestDistanceSquared = distanceSquared;
             }
         }
