@@ -28,8 +28,17 @@ void HudPanel::draw(const UiContext& context, const Simulation&, const ScenarioM
 
     const auto* phase = scenarioManager.currentPhase();
     const char* phaseName = phase != nullptr ? phase->name.c_str() : "Free run";
-    DrawRectangleRounded({10.0f, 338.0f, 420.0f, 166.0f}, 0.04f, 8, {22, 27, 34, 225});
+    DrawRectangleRounded({10.0f, 338.0f, 480.0f, 218.0f}, 0.04f, 8, {22, 27, 34, 225});
     DrawText(scenarioManager.definition().name.c_str(), 18, 348, 18, {230, 237, 243, 255});
+    char metadata[220];
+    std::snprintf(
+        metadata,
+        sizeof(metadata),
+        "%s | %s | seed %u",
+        scenarioManager.archetypeSummary().c_str(),
+        scenarioManager.progressionTierSummary().c_str(),
+        scenarioManager.run().seed);
+    DrawText(metadata, 18, 374, 16, {139, 148, 158, 255});
     char timeBuffer[160];
     std::snprintf(
         timeBuffer,
@@ -38,9 +47,10 @@ void HudPanel::draw(const UiContext& context, const Simulation&, const ScenarioM
         scenarioManager.elapsedSeconds(),
         phaseName,
         scenarioManager.eventManager().activeEvents().size());
-    DrawText(timeBuffer, 18, 374, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.objectiveSummary().c_str(), 18, 398, 16, {230, 237, 243, 255});
-    DrawText(scenarioManager.focusSummary().c_str(), 18, 424, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.availableMechanicsSummary().c_str(), 18, 450, 16, {139, 148, 158, 255});
-    DrawText(scenarioManager.eventManager().latestEventName().c_str(), 18, 476, 16, {245, 184, 76, 255});
+    DrawText(timeBuffer, 18, 400, 16, {139, 148, 158, 255});
+    DrawText(scenarioManager.objectiveSummary().c_str(), 18, 424, 16, {230, 237, 243, 255});
+    DrawText(scenarioManager.focusSummary().c_str(), 18, 450, 16, {139, 148, 158, 255});
+    DrawText(scenarioManager.availableMechanicsSummary().c_str(), 18, 476, 16, {139, 148, 158, 255});
+    DrawText(scenarioManager.activeModifiersSummary().c_str(), 18, 502, 16, {139, 148, 158, 255});
+    DrawText(scenarioManager.eventManager().latestEventName().c_str(), 18, 528, 16, {245, 184, 76, 255});
 }

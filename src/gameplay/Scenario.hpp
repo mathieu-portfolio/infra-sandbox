@@ -4,10 +4,54 @@
 #include "simulation/Mechanics.hpp"
 #include "simulation/Geography.hpp"
 #include "simulation/InfrastructureGraph.hpp"
+#include "simulation/PressureAnalysis.hpp"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
+
+enum class ProgressionTier {
+    Foundations,
+    LocalScale,
+    StateAndCache,
+    FailureFeedback,
+    GeographicScale,
+    DistributedSystems,
+    Complexity
+};
+
+enum class ScenarioArchetype {
+    FirstRequest,
+    LocalStartup,
+    DatabasePressure,
+    BurstTraffic,
+    TransatlanticLatency,
+    GlobalReadPlatform
+};
+
+enum class ScenarioModifierType {
+    MobileRefreshWave,
+    ReadHeavyBehavior,
+    AggressiveRetries,
+    RegionalTrafficSpike,
+    SlowDatabaseWindow
+};
+
+enum class ScenarioRunState {
+    Running,
+    Succeeded,
+    RecoverableFailure
+};
+
+struct ProgressionTierDefinition {
+    ProgressionTier tier = ProgressionTier::Foundations;
+    std::string name;
+    std::vector<std::string> visibleMetrics;
+    std::vector<MechanicType> availableMechanics;
+    std::vector<PressureCategory> allowedPressures;
+    std::vector<NodeType> allowedNodeTypes;
+};
 
 struct NodeScenario {
     std::string name;
@@ -49,6 +93,17 @@ struct BurstScenario {
     double durationSeconds = 3.0;
 };
 
+struct ScenarioModifierDefinition {
+    ScenarioModifierType type = ScenarioModifierType::MobileRefreshWave;
+    std::string name;
+    std::string description;
+    double selectionWeight = 1.0;
+    double trafficMultiplier = 1.0;
+    std::optional<double> databaseHeavyShare;
+    std::optional<BurstScenario> burstOverride;
+    std::vector<EventDefinition> events;
+};
+
 enum class EducationalFocus {
     Queues,
     Caching,
@@ -67,6 +122,7 @@ enum class TrafficProfileType {
 };
 
 struct TrafficProfile {
+    std::string name = "Constant";
     TrafficProfileType type = TrafficProfileType::Constant;
     double baseMultiplier = 1.0;
     double growthPerSecond = 0.0;
@@ -107,8 +163,14 @@ struct LinkScenario {
 struct ScenarioDefinition {
     std::string name;
     std::string description;
+    ScenarioArchetype archetype = ScenarioArchetype::LocalStartup;
+    ProgressionTier minimumTier = ProgressionTier::Foundations;
     std::vector<EducationalFocus> educationalFocus;
+    std::string initialTopologyTemplate = "default-regional-api";
+    std::vector<PressureCategory> guaranteedPressures;
+    std::vector<ScenarioModifierDefinition> optionalModifiers;
     std::vector<MechanicType> allowedMechanics;
+    std::vector<MechanicType> recommendedMechanics;
     std::vector<NodeScenario> nodes;
     std::vector<LinkScenario> links;
     TrafficProfile trafficProfile;
@@ -123,6 +185,22 @@ struct ScenarioDefinition {
     double requestTimeoutSeconds = 5.5;
 };
 
+struct ScenarioRun {
+    std::uint32_t seed = 0;
+    std::vector<ScenarioModifierDefinition> selectedModifiers;
+    ScenarioRunState state = ScenarioRunState::Running;
+    double elapsedSeconds = 0.0;
+    double objectiveProgress = 0.0;
+    int currentPhaseIndex = -1;
+    ScenarioDefinition activeDefinition;
+};
+
+class ProgressionRegistry {
+public:
+    [[nodiscard]] static const std::vector<ProgressionTierDefinition>& definitions();
+    [[nodiscard]] static const ProgressionTierDefinition& definition(ProgressionTier tier);
+};
+
 class Scenario {
 public:
     static ScenarioDefinition createDefault();
@@ -135,3 +213,6 @@ public:
     static ScenarioDefinition databaseBottleneck();
     static ScenarioDefinition burstTraffic();
 };
+
+const char* progressionTierName(ProgressionTier tier);
+const char* scenarioArchetypeName(ScenarioArchetype archetype);

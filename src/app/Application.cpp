@@ -11,8 +11,8 @@ constexpr double kFixedStepSeconds = 1.0 / 60.0;
 Application::Application()
     : scenarioDefinition_(Scenario::createDefault()),
       scenarioManager_(scenarioDefinition_),
-      simulation_(scenarioDefinition_),
-      renderer_(scenarioDefinition_)
+      simulation_(scenarioManager_.definition()),
+      renderer_(scenarioManager_.definition())
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(kWindowWidth, kWindowHeight, "Infra Sandbox");

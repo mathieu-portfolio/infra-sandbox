@@ -1,6 +1,45 @@
 #include "gameplay/Scenario.hpp"
 
+#include <algorithm>
+
 namespace {
+EventDefinition trafficSpike(double atSeconds);
+EventDefinition databaseSlowdown();
+EventDefinition retryStorm();
+
+ScenarioModifierDefinition mobileRefreshWave()
+{
+    return {
+        .type = ScenarioModifierType::MobileRefreshWave,
+        .name = "Mobile refresh wave",
+        .description = "A mild burst of client refreshes shifts timing without changing the lesson.",
+        .selectionWeight = 0.35,
+        .burstOverride = BurstScenario{true, 1.45, 22.0, 3.0},
+    };
+}
+
+ScenarioModifierDefinition readHeavyBehavior()
+{
+    return {
+        .type = ScenarioModifierType::ReadHeavyBehavior,
+        .name = "Read-heavy behavior",
+        .description = "Repeated read patterns make cache effects easier to observe.",
+        .selectionWeight = 0.45,
+        .databaseHeavyShare = 0.72,
+    };
+}
+
+ScenarioModifierDefinition aggressiveRetries()
+{
+    return {
+        .type = ScenarioModifierType::AggressiveRetries,
+        .name = "Aggressive retries",
+        .description = "Retry timing varies the feedback pressure.",
+        .selectionWeight = 0.3,
+        .events = {retryStorm()},
+    };
+}
+
 EventDefinition trafficSpike(double atSeconds)
 {
     return {
@@ -73,6 +112,28 @@ EventDefinition partialRecovery(double atSeconds)
     };
 }
 
+ScenarioModifierDefinition regionalTrafficSpike(double atSeconds)
+{
+    return {
+        .type = ScenarioModifierType::RegionalTrafficSpike,
+        .name = "Regional traffic spike",
+        .description = "A traffic event varies the pressure cadence.",
+        .selectionWeight = 0.4,
+        .events = {trafficSpike(atSeconds)},
+    };
+}
+
+ScenarioModifierDefinition slowDatabaseWindow()
+{
+    return {
+        .type = ScenarioModifierType::SlowDatabaseWindow,
+        .name = "Slow database window",
+        .description = "A temporary storage slowdown varies persistence pressure.",
+        .selectionWeight = 0.35,
+        .events = {databaseSlowdown()},
+    };
+}
+
 ScenarioDefinition baseTopology()
 {
     ScenarioDefinition scenario;
@@ -136,6 +197,78 @@ ScenarioDefinition baseTopology()
 }
 }
 
+const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
+{
+    static const std::vector<ProgressionTierDefinition> definitions{
+        {
+            .tier = ProgressionTier::Foundations,
+            .name = "Foundations",
+            .visibleMetrics = {"Input rate", "Processed req/s", "Queue depth", "Latency"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::LatencyPressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService},
+        },
+        {
+            .tier = ProgressionTier::LocalScale,
+            .name = "Local Scale",
+            .visibleMetrics = {"Input rate", "Processed req/s", "API utilization", "Queue depth", "Latency"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ScaleOut, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::ComputePressure, PressureCategory::LatencyPressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::LoadBalancer},
+        },
+        {
+            .tier = ProgressionTier::StateAndCache,
+            .name = "State and Cache",
+            .visibleMetrics = {"DB queue", "Cache hit rate", "Timeout rate", "Latency"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::QueuePressure, PressureCategory::PersistencePressure, PressureCategory::LatencyPressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache},
+        },
+        {
+            .tier = ProgressionTier::FailureFeedback,
+            .name = "Failure Feedback",
+            .visibleMetrics = {"Timeout rate", "Retry rate", "Queue depth", "Latency"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::RetryPressure, PressureCategory::FailurePressure, PressureCategory::QueuePressure, PressureCategory::LatencyPressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::RetryController},
+        },
+        {
+            .tier = ProgressionTier::GeographicScale,
+            .name = "Geographic Scale",
+            .visibleMetrics = {"Latency", "Regional traffic", "Queue depth", "Error rate"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::LatencyPressure, PressureCategory::PersistencePressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache, NodeType::CDNEdge},
+        },
+        {
+            .tier = ProgressionTier::DistributedSystems,
+            .name = "Distributed Systems",
+            .visibleMetrics = {"Latency", "Retry rate", "DB queue", "Cache hit rate"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::AddReadReplica, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic},
+            .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::PersistencePressure, PressureCategory::RetryPressure},
+            .allowedNodeTypes = {NodeType::ClientCluster, NodeType::ApiService, NodeType::Database, NodeType::Cache, NodeType::ReadReplica, NodeType::LoadBalancer},
+        },
+        {
+            .tier = ProgressionTier::Complexity,
+            .name = "Complexity",
+            .visibleMetrics = {"All core metrics"},
+            .availableMechanics = {MechanicType::ScaleUp, MechanicType::ScaleOut, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::AddReadReplica, MechanicType::AddLoadBalancer, MechanicType::ThrottleTraffic, MechanicType::EnableTracing},
+            .allowedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::ComputePressure, PressureCategory::PersistencePressure, PressureCategory::RetryPressure, PressureCategory::LatencyPressure, PressureCategory::FailurePressure},
+            .allowedNodeTypes = {},
+        },
+    };
+    return definitions;
+}
+
+const ProgressionTierDefinition& ProgressionRegistry::definition(ProgressionTier tier)
+{
+    const auto& entries = definitions();
+    const auto it = std::find_if(entries.begin(), entries.end(), [tier](const ProgressionTierDefinition& definition) {
+        return definition.tier == tier;
+    });
+    return it != entries.end() ? *it : entries.front();
+}
+
 ScenarioDefinition Scenario::createDefault()
 {
     return ScenarioRegistry::singleServiceOverload();
@@ -155,9 +288,13 @@ ScenarioDefinition ScenarioRegistry::singleServiceOverload()
     auto scenario = baseTopology();
     scenario.name = "Single Service Overload";
     scenario.description = "Traffic gradually outgrows API processing capacity.";
+    scenario.archetype = ScenarioArchetype::LocalStartup;
+    scenario.minimumTier = ProgressionTier::LocalScale;
     scenario.educationalFocus = {EducationalFocus::Scaling, EducationalFocus::Queues, EducationalFocus::Latency};
+    scenario.guaranteedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::ComputePressure};
     scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::ThrottleTraffic};
-    scenario.trafficProfile = {.type = TrafficProfileType::GradualGrowth, .baseMultiplier = 0.75, .growthPerSecond = 0.012};
+    scenario.recommendedMechanics = {MechanicType::ScaleUp};
+    scenario.trafficProfile = {.name = "Gradual growth", .type = TrafficProfileType::GradualGrowth, .baseMultiplier = 0.75, .growthPerSecond = 0.012};
     scenario.nodes[3].processingCapacityPerSecond = 5.0;
     scenario.requestTypes.lightweightShare = 0.82;
     scenario.phases = {
@@ -177,6 +314,10 @@ ScenarioDefinition ScenarioRegistry::singleServiceOverload()
         viralGrowth(76.0),
         partialRecovery(116.0),
     };
+    scenario.optionalModifiers = {
+        mobileRefreshWave(),
+        regionalTrafficSpike(58.0),
+    };
     return scenario;
 }
 
@@ -185,9 +326,13 @@ ScenarioDefinition ScenarioRegistry::databaseBottleneck()
     auto scenario = baseTopology();
     scenario.name = "Database Bottleneck";
     scenario.description = "API scaling cannot remove downstream database pressure.";
+    scenario.archetype = ScenarioArchetype::DatabasePressure;
+    scenario.minimumTier = ProgressionTier::StateAndCache;
     scenario.educationalFocus = {EducationalFocus::Persistence, EducationalFocus::Caching, EducationalFocus::Reliability};
+    scenario.guaranteedPressures = {PressureCategory::PersistencePressure, PressureCategory::QueuePressure, PressureCategory::LatencyPressure};
     scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::EnableCache, MechanicType::ClearCache, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
-    scenario.trafficProfile = {.type = TrafficProfileType::GradualGrowth, .baseMultiplier = 0.85, .growthPerSecond = 0.006};
+    scenario.recommendedMechanics = {MechanicType::EnableCache, MechanicType::ClearCache};
+    scenario.trafficProfile = {.name = "Read pressure growth", .type = TrafficProfileType::GradualGrowth, .baseMultiplier = 0.85, .growthPerSecond = 0.006};
     scenario.nodes[3].processingCapacityPerSecond = 10.0;
     scenario.nodes[4].processingCapacityPerSecond = 2.4;
     scenario.requestTypes.lightweightShare = 0.28;
@@ -210,6 +355,11 @@ ScenarioDefinition ScenarioRegistry::databaseBottleneck()
         cacheWarmup(),
         partialRecovery(120.0),
     };
+    scenario.optionalModifiers = {
+        readHeavyBehavior(),
+        slowDatabaseWindow(),
+        aggressiveRetries(),
+    };
     return scenario;
 }
 
@@ -218,9 +368,13 @@ ScenarioDefinition ScenarioRegistry::burstTraffic()
     auto scenario = baseTopology();
     scenario.name = "Burst Traffic";
     scenario.description = "Short traffic spikes expose queues, timeouts, and retry amplification.";
+    scenario.archetype = ScenarioArchetype::BurstTraffic;
+    scenario.minimumTier = ProgressionTier::FailureFeedback;
     scenario.educationalFocus = {EducationalFocus::Queues, EducationalFocus::Reliability, EducationalFocus::Latency};
+    scenario.guaranteedPressures = {PressureCategory::TrafficPressure, PressureCategory::QueuePressure, PressureCategory::RetryPressure};
     scenario.allowedMechanics = {MechanicType::ScaleUp, MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
-    scenario.trafficProfile = {.type = TrafficProfileType::Bursty, .baseMultiplier = 0.9, .growthPerSecond = 0.0};
+    scenario.recommendedMechanics = {MechanicType::ToggleRetries, MechanicType::ThrottleTraffic};
+    scenario.trafficProfile = {.name = "Bursty", .type = TrafficProfileType::Bursty, .baseMultiplier = 0.9, .growthPerSecond = 0.0};
     scenario.nodes[3].processingCapacityPerSecond = 6.0;
     scenario.requestTypes.lightweightShare = 0.7;
     scenario.bursts = {.enabled = true, .multiplier = 2.4, .periodSeconds = 16.0, .durationSeconds = 4.0};
@@ -241,5 +395,50 @@ ScenarioDefinition ScenarioRegistry::burstTraffic()
         trafficSpike(64.0),
         partialRecovery(106.0),
     };
+    scenario.optionalModifiers = {
+        mobileRefreshWave(),
+        regionalTrafficSpike(44.0),
+        aggressiveRetries(),
+    };
     return scenario;
+}
+
+const char* progressionTierName(ProgressionTier tier)
+{
+    switch (tier) {
+    case ProgressionTier::Foundations:
+        return "Foundations";
+    case ProgressionTier::LocalScale:
+        return "Local Scale";
+    case ProgressionTier::StateAndCache:
+        return "State and Cache";
+    case ProgressionTier::FailureFeedback:
+        return "Failure Feedback";
+    case ProgressionTier::GeographicScale:
+        return "Geographic Scale";
+    case ProgressionTier::DistributedSystems:
+        return "Distributed Systems";
+    case ProgressionTier::Complexity:
+        return "Complexity";
+    }
+    return "Unknown";
+}
+
+const char* scenarioArchetypeName(ScenarioArchetype archetype)
+{
+    switch (archetype) {
+    case ScenarioArchetype::FirstRequest:
+        return "First Request";
+    case ScenarioArchetype::LocalStartup:
+        return "Local Startup";
+    case ScenarioArchetype::DatabasePressure:
+        return "Database Pressure";
+    case ScenarioArchetype::BurstTraffic:
+        return "Burst Traffic";
+    case ScenarioArchetype::TransatlanticLatency:
+        return "Transatlantic Latency";
+    case ScenarioArchetype::GlobalReadPlatform:
+        return "Global Read Platform";
+    }
+    return "Unknown";
 }
