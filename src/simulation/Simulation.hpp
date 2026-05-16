@@ -3,6 +3,7 @@
 #include "gameplay/Scenario.hpp"
 #include "simulation/InfrastructureGraph.hpp"
 #include "simulation/Metrics.hpp"
+#include "simulation/PressureAnalysis.hpp"
 #include "simulation/Request.hpp"
 #include "simulation/RuntimeSystems.hpp"
 #include "simulation/SimulationConfig.hpp"
@@ -34,6 +35,8 @@ public:
     [[nodiscard]] const InfrastructureGraph& graph() const;
     [[nodiscard]] const std::unordered_map<std::uint64_t, Request>& requests() const;
     [[nodiscard]] const MetricsSnapshot& metrics() const;
+    [[nodiscard]] const PressureSnapshot& pressure() const;
+    [[nodiscard]] const PressureAnalysisSystem& pressureAnalysis() const;
     [[nodiscard]] double timeSeconds() const;
     [[nodiscard]] bool cacheEnabled() const;
     [[nodiscard]] bool burstModeEnabled() const;
@@ -80,6 +83,7 @@ private:
     SimulationConfig config_;
     RuntimeSystems runtimeSystems_;
     Metrics metrics_;
+    PressureAnalysisSystem pressureAnalysis_;
     std::unordered_map<std::uint64_t, Request> requests_;
     std::deque<CacheEntry> cacheEntries_;
     std::uint64_t nextRequestId_ = 1;

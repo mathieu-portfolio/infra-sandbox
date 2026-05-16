@@ -12,6 +12,7 @@ Color tint(Color color, float intensity)
 
 Color OverlayController::nodeTint(const Node& node, const Simulation& simulation, const UiState& state) const
 {
+    const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(node.id);
     switch (state.activeOverlay) {
     case OverlayMode::None:
         return {0, 0, 0, 0};
@@ -29,6 +30,16 @@ Color OverlayController::nodeTint(const Node& node, const Simulation& simulation
         return tint({235, 86, 100, 255}, node.health == HealthState::Healthy ? 0.15f : 0.75f);
     case OverlayMode::Complexity:
         return tint({187, 128, 255, 255}, NodeRegistry::routesRequests(node.type) ? 0.45f : 0.2f);
+    case OverlayMode::Bottlenecks:
+        if (node.id == simulation.pressure().topOverloadedNodeId || node.id == simulation.pressure().mostUnstableNodeId) {
+            return tint({255, 214, 102, 255}, 0.9f);
+        }
+        return tint({255, 214, 102, 255}, pressure != nullptr ? static_cast<float>(pressure->instability * 0.45) : 0.1f);
+    case OverlayMode::RetryAmplification:
+        if (node.id == simulation.pressure().retryAmplificationNodeId) {
+            return tint({235, 86, 100, 255}, 0.9f);
+        }
+        return tint({235, 86, 100, 255}, pressure != nullptr ? static_cast<float>(pressure->retryContribution) : 0.0f);
     }
 
     return {0, 0, 0, 0};

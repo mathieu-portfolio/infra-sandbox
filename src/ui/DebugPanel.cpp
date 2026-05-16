@@ -43,14 +43,24 @@ void DebugPanel::draw(const UiContext& context, const Simulation& simulation) co
         DrawText(state.name, x + 30, lineY, 16, {139, 148, 158, 255});
 
         ++row;
-        if (row >= 8) {
+        if (row >= 5) {
             break;
         }
     }
 
     const int remaining = metrics.observability.enabledSystemCount - row;
     if (remaining > 0) {
-        std::snprintf(buffer, sizeof(buffer), "+ %d more layers", remaining);
+        std::snprintf(buffer, sizeof(buffer), "+ %d more systems", remaining);
         DrawText(buffer, x + 30, y + 42 + row * 22, 16, {139, 148, 158, 255});
+    }
+
+    int hintY = y + 186;
+    int hintCount = 0;
+    for (const auto& hint : simulation.pressure().hints) {
+        if (hintCount >= 2) {
+            break;
+        }
+        DrawText(hint.c_str(), x + 10, hintY + hintCount * 20, 14, {245, 184, 76, 255});
+        ++hintCount;
     }
 }

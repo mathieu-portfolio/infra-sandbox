@@ -94,6 +94,16 @@ TEST(ScenarioManagerTests, AppliesPhaseTrafficAndMechanicRestrictions)
     EXPECT_FALSE(simulation.isMechanicAllowed(MechanicType::EnableCache));
 }
 
+TEST(PressureAnalysisTests, TracksBottlenecksAndHints)
+{
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
+    runFor(simulation, 4.0);
+
+    EXPECT_GE(simulation.pressure().topOverloadedNodeId, 0);
+    EXPECT_GE(simulation.pressure().dominantLatencyNodeId, 0);
+    EXPECT_FALSE(simulation.pressure().nodes.empty());
+}
+
 ScenarioDefinition saturatedScenario()
 {
     ScenarioDefinition scenario;

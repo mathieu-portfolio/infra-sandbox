@@ -28,6 +28,8 @@ enum class InputAction {
     OverlayErrors,
     OverlayReliability,
     OverlayComplexity,
+    OverlayBottlenecks,
+    OverlayRetryAmplification,
     OverlayNone,
     ScaleUp,
     ScaleOut,

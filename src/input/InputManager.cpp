@@ -34,6 +34,8 @@ InputMap::InputMap()
         {InputAction::OverlayReliability, InputDevice::Keyboard, KEY_F6, InputTrigger::Pressed},
         {InputAction::OverlayComplexity, InputDevice::Keyboard, KEY_F7, InputTrigger::Pressed},
         {InputAction::OverlayNone, InputDevice::Keyboard, KEY_F8, InputTrigger::Pressed},
+        {InputAction::OverlayBottlenecks, InputDevice::Keyboard, KEY_F11, InputTrigger::Pressed},
+        {InputAction::OverlayRetryAmplification, InputDevice::Keyboard, KEY_F12, InputTrigger::Pressed},
         {InputAction::ScaleUp, InputDevice::Keyboard, KEY_A, InputTrigger::Pressed},
         {InputAction::ResetInterventions, InputDevice::Keyboard, KEY_FOUR, InputTrigger::Pressed},
         {InputAction::ToggleCache, InputDevice::Keyboard, KEY_TWO, InputTrigger::Pressed},

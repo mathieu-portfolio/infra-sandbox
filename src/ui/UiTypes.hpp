@@ -25,7 +25,9 @@ enum class OverlayMode {
     Queues,
     Errors,
     Reliability,
-    Complexity
+    Complexity,
+    Bottlenecks,
+    RetryAmplification
 };
 
 struct UiSelection {

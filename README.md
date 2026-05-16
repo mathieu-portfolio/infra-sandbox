@@ -62,6 +62,8 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 - `4`: reset API capacity, cache state, and burst state
 - `F1`-`F7`: switch overlay mode
 - `F8`: clear overlay mode
+- `F11`: bottleneck pressure overlay
+- `F12`: retry amplification overlay
 - `F9`: toggle debug UI
 - `F10`: toggle metrics UI
 - Left click a node: select it and show minimal node details

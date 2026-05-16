@@ -34,6 +34,7 @@ add_library(infra_simulation
     src/simulation/Metrics.cpp
     src/simulation/Node.cpp
     src/simulation/NodeDefinition.cpp
+    src/simulation/PressureAnalysis.cpp
     src/simulation/RuntimeSystems.cpp
     src/simulation/SimulationConfig.cpp
     src/simulation/SimulationLayer.cpp

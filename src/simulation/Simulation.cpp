@@ -25,6 +25,7 @@ void Simulation::update(double dt)
     metrics_.setSimulationSpeed(simulationSpeed_);
     metrics_.setRuntimeSystemCounts(runtimeSystems_.enabledCount(), static_cast<int>(runtimeSystems_.states().size()));
     metrics_.update(dt);
+    pressureAnalysis_.update(timeSeconds_, dt, graph_, metrics_.snapshot());
     pruneOldRequests();
 }
 
@@ -136,6 +137,16 @@ const MetricsSnapshot& Simulation::metrics() const
     return metrics_.snapshot();
 }
 
+const PressureSnapshot& Simulation::pressure() const
+{
+    return pressureAnalysis_.snapshot();
+}
+
+const PressureAnalysisSystem& Simulation::pressureAnalysis() const
+{
+    return pressureAnalysis_;
+}
+
 double Simulation::timeSeconds() const
 {
     return timeSeconds_;
@@ -187,6 +198,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     requests_.clear();
     cacheEntries_.clear();
     metrics_.reset();
+    pressureAnalysis_.reset();
     nextRequestId_ = 1;
     timeSeconds_ = 0.0;
     simulationSpeed_ = 1.0;

@@ -19,6 +19,10 @@ const char* overlayModeName(OverlayMode mode)
         return "Reliability";
     case OverlayMode::Complexity:
         return "Complexity";
+    case OverlayMode::Bottlenecks:
+        return "Bottlenecks";
+    case OverlayMode::RetryAmplification:
+        return "Retry";
     }
     return "Unknown";
 }

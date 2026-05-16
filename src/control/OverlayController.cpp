@@ -29,6 +29,12 @@ void OverlayInputController::handleActions(std::span<const InputEvent> events, U
         case InputAction::OverlayComplexity:
             state.activeOverlay = OverlayMode::Complexity;
             break;
+        case InputAction::OverlayBottlenecks:
+            state.activeOverlay = OverlayMode::Bottlenecks;
+            break;
+        case InputAction::OverlayRetryAmplification:
+            state.activeOverlay = OverlayMode::RetryAmplification;
+            break;
         case InputAction::OverlayNone:
             state.activeOverlay = OverlayMode::None;
             break;
