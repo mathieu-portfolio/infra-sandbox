@@ -49,6 +49,15 @@ if(INFRA_BUILD_APP)
         src/rendering/CameraController.cpp
         src/rendering/Renderer.cpp
         src/rendering/RenderPrimitives.cpp
+        src/ui/DebugPanel.cpp
+        src/ui/HudPanel.cpp
+        src/ui/InterventionPanel.cpp
+        src/ui/MetricsPanel.cpp
+        src/ui/OverlayController.cpp
+        src/ui/SelectionPanel.cpp
+        src/ui/TimelinePanel.cpp
+        src/ui/UiManager.cpp
+        src/ui/UiTypes.cpp
     )
 
     target_include_directories(infra_sandbox PRIVATE src)

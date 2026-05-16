@@ -2,6 +2,7 @@
 
 #include "gameplay/Scenario.hpp"
 #include "simulation/Simulation.hpp"
+#include "ui/UiManager.hpp"
 
 class Renderer {
 public:
@@ -14,9 +15,7 @@ private:
     void drawNodes(const Simulation& simulation);
     void drawRequests(const Simulation& simulation);
     void drawQueueBars(const Simulation& simulation);
-    void drawMetricsOverlay(const Simulation& simulation, bool paused);
-    void drawLayerDebugOverlay(const Simulation& simulation);
-    void drawControlsOverlay(const Simulation& simulation);
 
     ScenarioDefinition scenarioDefinition_;
+    UiManager uiManager_;
 };

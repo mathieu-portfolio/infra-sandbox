@@ -6,13 +6,10 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdio>
 #include <string>
 
 namespace {
 Color kBackground{13, 17, 23, 255};
-Color kPanel{22, 27, 34, 235};
-Color kMutedText{139, 148, 158, 255};
 Color kText{230, 237, 243, 255};
 Color kLink{75, 94, 115, 170};
 Color kParticle{89, 196, 255, 255};
@@ -23,11 +20,6 @@ Color kTimeout{235, 86, 100, 190};
 float pulse(double timeSeconds, double speed, double phase)
 {
     return 0.5f + 0.5f * std::sin(static_cast<float>(timeSeconds * speed + phase));
-}
-
-void drawTextLine(const std::string& text, int x, int y, int size, Color color)
-{
-    DrawText(text.c_str(), x, y, size, color);
 }
 
 Color toRaylib(NodeVisualColor color)
@@ -59,6 +51,8 @@ Renderer::Renderer(const ScenarioDefinition& scenario)
 
 void Renderer::draw(const Simulation& simulation, bool paused)
 {
+    uiManager_.update(simulation, paused);
+
     BeginDrawing();
     ClearBackground(kBackground);
 
@@ -66,9 +60,7 @@ void Renderer::draw(const Simulation& simulation, bool paused)
     drawRequests(simulation);
     drawNodes(simulation);
     drawQueueBars(simulation);
-    drawMetricsOverlay(simulation, paused);
-    drawLayerDebugOverlay(simulation);
-    drawControlsOverlay(simulation);
+    uiManager_.draw(simulation, paused);
 
     EndDrawing();
 }
@@ -102,6 +94,7 @@ void Renderer::drawNodes(const Simulation& simulation)
         const Vector2 center = worldToScreen(node.position, width, height);
         const Color healthColor = colorForHealth(node.health);
         const Color definitionColor = toRaylib(definition.color);
+        const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
 
         if (definition.renderStyle == NodeRenderStyle::DemandPulse) {
             const float trafficPulse = pulse(simulation.timeSeconds(), 4.0, node.id);
@@ -143,6 +136,14 @@ void Renderer::drawNodes(const Simulation& simulation)
             const Rectangle rect{center.x - 34.0f, center.y - 34.0f, 68.0f, 68.0f};
             DrawRectangleRounded(rect, 0.08f, 8, {32, 38, 45, 235});
             DrawRectangleRoundedLines(rect, 0.08f, 8, definitionColor);
+        }
+
+        if (overlayTint.a > 0) {
+            DrawCircleV(center, 58.0f, overlayTint);
+        }
+
+        if (uiManager_.state().selection.nodeId == node.id) {
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 64.0f, {230, 237, 243, 230});
         }
 
         DrawText(node.name.c_str(), static_cast<int>(center.x - MeasureText(node.name.c_str(), 18) * 0.5f), static_cast<int>(center.y + 62.0f), 18, kText);
@@ -218,90 +219,4 @@ void Renderer::drawQueueBars(const Simulation& simulation)
             DrawText("+", static_cast<int>(x - 5.0f), static_cast<int>(bottom - 142.0f), 18, kTimeout);
         }
     }
-}
-
-void Renderer::drawMetricsOverlay(const Simulation& simulation, bool paused)
-{
-    const auto& metrics = simulation.metrics();
-    const int x = 18;
-    const int y = 18;
-    DrawRectangleRounded({10.0f, 10.0f, 360.0f, 318.0f}, 0.04f, 8, kPanel);
-
-    char buffer[128];
-    std::snprintf(buffer, sizeof(buffer), "FPS %d  |  %s  |  %.0fx", GetFPS(), paused ? "PAUSED" : "RUNNING", simulation.simulationSpeed());
-    drawTextLine(buffer, x, y, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Input rate: %.1f req/s", metrics.inputRatePerSecond);
-    drawTextLine(buffer, x, y + 30, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "API queue: %d", metrics.apiQueueDepth);
-    drawTextLine(buffer, x, y + 56, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "DB queue: %d", metrics.databaseQueueDepth);
-    drawTextLine(buffer, x, y + 82, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Processed: %.1f req/s", metrics.processedPerSecond);
-    drawTextLine(buffer, x, y + 108, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Avg latency: %.2fs", metrics.averageLatencySeconds);
-    drawTextLine(buffer, x, y + 134, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Timeouts: %.1f req/s", metrics.timeoutRatePerSecond);
-    drawTextLine(buffer, x, y + 160, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Retries: %.1f req/s", metrics.retryRatePerSecond);
-    drawTextLine(buffer, x, y + 186, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "API utilization: %.0f%%", metrics.apiUtilization * 100.0);
-    drawTextLine(buffer, x, y + 212, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "DB utilization: %.0f%%", metrics.databaseUtilization * 100.0);
-    drawTextLine(buffer, x, y + 238, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Cache: %s  hit %.0f%%", simulation.cacheEnabled() ? "on" : "off", metrics.cacheHitRate * 100.0);
-    drawTextLine(buffer, x, y + 264, 18, kText);
-    std::snprintf(buffer, sizeof(buffer), "Bursts: %s", simulation.burstModeEnabled() ? "on" : "off");
-    drawTextLine(buffer, x, y + 290, 18, kText);
-}
-
-void Renderer::drawLayerDebugOverlay(const Simulation& simulation)
-{
-    const int panelWidth = 300;
-    const int x = GetScreenWidth() - panelWidth - 12;
-    const int y = 12;
-    DrawRectangleRounded({static_cast<float>(x), static_cast<float>(y), static_cast<float>(panelWidth), 238.0f}, 0.04f, 8, kPanel);
-
-    char buffer[128];
-    const auto& metrics = simulation.metrics();
-    std::snprintf(
-        buffer,
-        sizeof(buffer),
-        "Layers %d/%d  |  %.0fx",
-        metrics.observability.enabledLayerCount,
-        metrics.observability.initializedSystemCount,
-        simulation.simulationSpeed());
-    drawTextLine(buffer, x + 10, y + 10, 18, kText);
-
-    int row = 0;
-    for (const auto& state : simulation.layerSystems().states()) {
-        if (!state.enabled) {
-            continue;
-        }
-
-        const auto& definition = LayerRegistry::definition(state.layer);
-        const Color color{definition.debugColor.r, definition.debugColor.g, definition.debugColor.b, 255};
-        const int lineY = y + 42 + row * 22;
-        DrawCircleV({static_cast<float>(x + 18), static_cast<float>(lineY + 8)}, 4.0f, color);
-        DrawText(definition.displayName.data(), x + 30, lineY, 16, kMutedText);
-
-        ++row;
-        if (row >= 8) {
-            break;
-        }
-    }
-
-    const int remaining = metrics.observability.enabledLayerCount - row;
-    if (remaining > 0) {
-        std::snprintf(buffer, sizeof(buffer), "+ %d more layers", remaining);
-        drawTextLine(buffer, x + 30, y + 42 + row * 22, 16, kMutedText);
-    }
-}
-
-void Renderer::drawControlsOverlay(const Simulation&)
-{
-    const char* controls = "Space pause | . step | R reset | +/- demand | 1/3/5 speed | A scale API | 2 cache | C clear | B bursts | 4 reset";
-    const int size = 16;
-    const int width = MeasureText(controls, size);
-    DrawRectangleRounded({12.0f, static_cast<float>(GetScreenHeight() - 42), static_cast<float>(width + 18), 30.0f}, 0.15f, 8, {22, 27, 34, 210});
-    DrawText(controls, 21, GetScreenHeight() - 35, size, kMutedText);
 }

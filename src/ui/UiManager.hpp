@@ -1,0 +1,33 @@
+#pragma once
+
+#include "simulation/Simulation.hpp"
+#include "ui/DebugPanel.hpp"
+#include "ui/HudPanel.hpp"
+#include "ui/InterventionPanel.hpp"
+#include "ui/MetricsPanel.hpp"
+#include "ui/OverlayController.hpp"
+#include "ui/SelectionPanel.hpp"
+#include "ui/TimelinePanel.hpp"
+#include "ui/UiTypes.hpp"
+
+class UiManager {
+public:
+    void update(const Simulation& simulation, bool paused);
+    void draw(const Simulation& simulation, bool paused) const;
+
+    [[nodiscard]] const UiState& state() const;
+    [[nodiscard]] const OverlayController& overlayController() const;
+
+private:
+    void updateSelection(const Simulation& simulation);
+    [[nodiscard]] bool mouseOverScreenPanel() const;
+
+    UiState state_{};
+    OverlayController overlayController_{};
+    HudPanel hudPanel_{};
+    MetricsPanel metricsPanel_{};
+    SelectionPanel selectionPanel_{};
+    InterventionPanel interventionPanel_{};
+    TimelinePanel timelinePanel_{};
+    DebugPanel debugPanel_{};
+};

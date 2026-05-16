@@ -51,3 +51,6 @@ Use `-DINFRA_FETCH_RAYLIB=OFF` if you want raylib configuration to fail instead.
 - `C`: clear cache entries
 - `B`: toggle traffic bursts
 - `4`: reset API capacity, cache state, and burst state
+- `F1`-`F7`: switch overlay mode
+- `F8`: clear overlay mode
+- Left click a node: select it and show minimal node details
