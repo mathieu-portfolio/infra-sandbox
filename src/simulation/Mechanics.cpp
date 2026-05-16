@@ -76,6 +76,10 @@ std::span<const MechanicDefinition> MechanicRegistry::definitions()
 
 void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& command) const
 {
+    if (!simulation.isMechanicAllowed(command.type)) {
+        return;
+    }
+
     switch (command.type) {
     case MechanicType::ScaleUp:
         simulation.scaleApiCapacity(command.amount > 0.0 ? command.amount : 1.5);

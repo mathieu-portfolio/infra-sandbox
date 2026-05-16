@@ -1,4 +1,5 @@
 #include "gameplay/Scenario.hpp"
+#include "gameplay/ScenarioManager.hpp"
 #include "simulation/Mechanics.hpp"
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/Simulation.hpp"
@@ -56,7 +57,7 @@ TEST(MechanicRegistryTests, RegistersInterventionDefinitions)
 
 TEST(MechanicExecutorTests, AppliesCurrentlyImplementedMechanics)
 {
-    Simulation simulation(Scenario::createDefault());
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
     MechanicExecutor executor;
 
     EXPECT_FALSE(simulation.cacheEnabled());
@@ -66,6 +67,31 @@ TEST(MechanicExecutorTests, AppliesCurrentlyImplementedMechanics)
     executor.execute(simulation, {MechanicType::ThrottleTraffic, -1, 2.0});
     runFor(simulation, 1.1);
     EXPECT_GT(simulation.metrics().totalGenerated, 0U);
+}
+
+TEST(ScenarioRegistryTests, ProvidesInitialScenarioSet)
+{
+    const auto scenarios = ScenarioRegistry::createAll();
+    ASSERT_EQ(scenarios.size(), 3U);
+    EXPECT_EQ(scenarios[0].name, "Single Service Overload");
+    EXPECT_EQ(scenarios[1].name, "Database Bottleneck");
+    EXPECT_EQ(scenarios[2].name, "Burst Traffic");
+    EXPECT_FALSE(scenarios[0].phases.empty());
+    EXPECT_FALSE(scenarios[0].allowedMechanics.empty());
+}
+
+TEST(ScenarioManagerTests, AppliesPhaseTrafficAndMechanicRestrictions)
+{
+    auto scenario = ScenarioRegistry::singleServiceOverload();
+    ScenarioManager manager(scenario);
+    Simulation simulation(scenario);
+
+    manager.update(30.0, simulation);
+
+    ASSERT_NE(manager.currentPhase(), nullptr);
+    EXPECT_EQ(manager.currentPhase()->name, "Demand exceeds API");
+    EXPECT_TRUE(simulation.isMechanicAllowed(MechanicType::ScaleUp));
+    EXPECT_FALSE(simulation.isMechanicAllowed(MechanicType::EnableCache));
 }
 
 ScenarioDefinition saturatedScenario()

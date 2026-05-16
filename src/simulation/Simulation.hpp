@@ -8,6 +8,7 @@
 #include "simulation/SimulationConfig.hpp"
 
 #include <cstdint>
+#include <array>
 #include <deque>
 #include <optional>
 #include <unordered_map>
@@ -25,6 +26,10 @@ public:
     void toggleRetries();
     void resetProcessingCapacity();
     void setSimulationSpeed(double speed);
+    void setScenarioTrafficMultiplier(double multiplier);
+    void setScenarioBurst(const BurstScenario& burst);
+    void clearScenarioBurstOverride();
+    void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
 
     [[nodiscard]] const InfrastructureGraph& graph() const;
     [[nodiscard]] const std::unordered_map<std::uint64_t, Request>& requests() const;
@@ -34,6 +39,7 @@ public:
     [[nodiscard]] bool burstModeEnabled() const;
     [[nodiscard]] bool retriesEnabled() const;
     [[nodiscard]] double simulationSpeed() const;
+    [[nodiscard]] bool isMechanicAllowed(MechanicType mechanic) const;
     [[nodiscard]] const RuntimeSystems& runtimeSystems() const;
     [[nodiscard]] const SimulationConfig& config() const;
 
@@ -79,6 +85,9 @@ private:
     std::uint64_t nextRequestId_ = 1;
     double timeSeconds_ = 0.0;
     double simulationSpeed_ = 1.0;
+    double scenarioTrafficMultiplier_ = 1.0;
     bool cacheEnabled_ = false;
     bool burstModeEnabled_ = false;
+    std::optional<BurstScenario> scenarioBurstOverride_;
+    std::array<bool, static_cast<std::size_t>(MechanicType::Count)> allowedMechanics_{};
 };

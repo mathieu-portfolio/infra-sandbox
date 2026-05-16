@@ -7,7 +7,8 @@ clients generate traffic, requests move through links, backend queues build up,
 processors complete or time out work, and a debug overlay exposes core metrics.
 The current simulation distinguishes lightweight requests from database-heavy
 requests, models API and database queues separately, supports retries, and has
-a small TTL cache for repeat database-heavy work.
+a small TTL cache for repeat database-heavy work. Scenario definitions now drive
+traffic pressure, phases, educational focus, objectives, and available mechanics.
 
 ## Build
 

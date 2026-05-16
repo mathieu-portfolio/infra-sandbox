@@ -10,6 +10,7 @@ constexpr double kFixedStepSeconds = 1.0 / 60.0;
 
 Application::Application()
     : scenarioDefinition_(Scenario::createDefault()),
+      scenarioManager_(scenarioDefinition_),
       simulation_(scenarioDefinition_),
       renderer_(scenarioDefinition_)
 {
@@ -32,15 +33,17 @@ void Application::run()
         if (!paused_) {
             fixedStepAccumulator_ += GetFrameTime() * simulation_.simulationSpeed();
             while (fixedStepAccumulator_ >= kFixedStepSeconds) {
+                scenarioManager_.update(kFixedStepSeconds, simulation_);
                 simulation_.update(kFixedStepSeconds);
                 fixedStepAccumulator_ -= kFixedStepSeconds;
             }
         } else if (stepRequested_) {
+            scenarioManager_.update(kFixedStepSeconds, simulation_);
             simulation_.update(kFixedStepSeconds);
         }
         stepRequested_ = false;
 
-        renderer_.draw(simulation_, paused_, cameraController_);
+        renderer_.draw(simulation_, scenarioManager_, paused_, cameraController_);
     }
 }
 
@@ -68,6 +71,7 @@ void Application::handleInput()
 
 void Application::resetScenario()
 {
-    simulation_ = Simulation(scenarioDefinition_);
+    scenarioManager_.reset();
+    simulation_ = Simulation(scenarioManager_.definition());
     fixedStepAccumulator_ = 0.0;
 }

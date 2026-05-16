@@ -49,9 +49,9 @@ Renderer::Renderer(const ScenarioDefinition& scenario)
 {
 }
 
-void Renderer::draw(const Simulation& simulation, bool paused, const CameraController& camera)
+void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera)
 {
-    uiManager_.update(simulation, paused);
+    uiManager_.update(simulation, scenarioManager, paused);
 
     BeginDrawing();
     ClearBackground(kBackground);
@@ -60,7 +60,7 @@ void Renderer::draw(const Simulation& simulation, bool paused, const CameraContr
     drawRequests(simulation, camera);
     drawNodes(simulation, camera);
     drawQueueBars(simulation, camera);
-    uiManager_.draw(simulation, paused);
+    uiManager_.draw(simulation, scenarioManager, paused);
 
     EndDrawing();
 }

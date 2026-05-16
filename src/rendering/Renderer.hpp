@@ -1,6 +1,7 @@
 #pragma once
 
 #include "gameplay/Scenario.hpp"
+#include "gameplay/ScenarioManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "simulation/Simulation.hpp"
 #include "ui/UiManager.hpp"
@@ -9,7 +10,7 @@ class Renderer {
 public:
     explicit Renderer(const ScenarioDefinition& scenario);
 
-    void draw(const Simulation& simulation, bool paused, const CameraController& camera);
+    void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera);
 
 private:
     void drawLinks(const Simulation& simulation, const CameraController& camera);

@@ -39,6 +39,7 @@ add_library(infra_simulation
     src/simulation/SimulationLayer.cpp
     src/simulation/Simulation.cpp
     src/gameplay/Scenario.cpp
+    src/gameplay/ScenarioManager.cpp
 )
 
 target_include_directories(infra_simulation PUBLIC src)

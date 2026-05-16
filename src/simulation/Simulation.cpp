@@ -85,6 +85,42 @@ void Simulation::setSimulationSpeed(double speed)
     metrics_.setSimulationSpeed(simulationSpeed_);
 }
 
+void Simulation::setScenarioTrafficMultiplier(double multiplier)
+{
+    scenarioTrafficMultiplier_ = std::max(0.0, multiplier);
+}
+
+void Simulation::setScenarioBurst(const BurstScenario& burst)
+{
+    scenarioBurstOverride_ = burst;
+}
+
+void Simulation::clearScenarioBurstOverride()
+{
+    scenarioBurstOverride_.reset();
+}
+
+void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
+{
+    allowedMechanics_.fill(false);
+    if (mechanics.empty()) {
+        for (const auto& definition : MechanicRegistry::definitions()) {
+            const auto index = static_cast<std::size_t>(definition.type);
+            if (index < allowedMechanics_.size()) {
+                allowedMechanics_[index] = definition.available;
+            }
+        }
+        return;
+    }
+
+    for (const auto mechanic : mechanics) {
+        const auto index = static_cast<std::size_t>(mechanic);
+        if (index < allowedMechanics_.size()) {
+            allowedMechanics_[index] = true;
+        }
+    }
+}
+
 const InfrastructureGraph& Simulation::graph() const
 {
     return graph_;
@@ -125,6 +161,15 @@ double Simulation::simulationSpeed() const
     return simulationSpeed_;
 }
 
+bool Simulation::isMechanicAllowed(MechanicType mechanic) const
+{
+    const auto index = static_cast<std::size_t>(mechanic);
+    if (index >= allowedMechanics_.size()) {
+        return false;
+    }
+    return allowedMechanics_[index];
+}
+
 const RuntimeSystems& Simulation::runtimeSystems() const
 {
     return runtimeSystems_;
@@ -145,8 +190,11 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     nextRequestId_ = 1;
     timeSeconds_ = 0.0;
     simulationSpeed_ = 1.0;
+    scenarioTrafficMultiplier_ = 1.0;
     cacheEnabled_ = scenario.cache.enabled;
     burstModeEnabled_ = scenario.bursts.enabled;
+    scenarioBurstOverride_.reset();
+    setAllowedMechanics(scenario.allowedMechanics);
     runtimeSystems_.initialize(config_);
 
     for (const auto& nodeScenario : scenario.nodes) {
@@ -180,10 +228,11 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
 void Simulation::generateClientRequests(double dt)
 {
     double burstMultiplier = 1.0;
-    if (burstModeEnabled_) {
-        const double phase = std::fmod(timeSeconds_, scenario_.bursts.periodSeconds);
-        if (phase < scenario_.bursts.durationSeconds) {
-            burstMultiplier = scenario_.bursts.multiplier;
+    const BurstScenario activeBurst = scenarioBurstOverride_.value_or(scenario_.bursts);
+    if (burstModeEnabled_ || activeBurst.enabled) {
+        const double phase = std::fmod(timeSeconds_, activeBurst.periodSeconds);
+        if (phase < activeBurst.durationSeconds) {
+            burstMultiplier = activeBurst.multiplier;
         }
     }
 
@@ -197,7 +246,7 @@ void Simulation::generateClientRequests(double dt)
             continue;
         }
 
-        node.generationAccumulator += node.requestRatePerSecond * burstMultiplier * dt;
+        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * burstMultiplier * dt;
         while (node.generationAccumulator >= 1.0) {
             createRequest(node, *link);
             node.generationAccumulator -= 1.0;

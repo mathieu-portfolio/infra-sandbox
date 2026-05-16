@@ -6,6 +6,7 @@
 #include "control/SimulationController.hpp"
 #include "control/UiController.hpp"
 #include "gameplay/Scenario.hpp"
+#include "gameplay/ScenarioManager.hpp"
 #include "input/InputManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/Renderer.hpp"
@@ -24,6 +25,7 @@ private:
 
     InputManager inputManager_;
     ScenarioDefinition scenarioDefinition_;
+    ScenarioManager scenarioManager_;
     Simulation simulation_;
     Renderer renderer_;
     CameraController cameraController_;
