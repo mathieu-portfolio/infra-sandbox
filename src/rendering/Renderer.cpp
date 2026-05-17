@@ -304,6 +304,9 @@ void Renderer::drawQueueBars(const Simulation& simulation, const CameraControlle
         if (!node.isProcessor()) {
             continue;
         }
+        if (node.queue.empty()) {
+            continue;
+        }
         const GeoNodeLayout* nodeLayout = layout.node(node.id);
         if (nodeLayout == nullptr || nodeLayout->hiddenByCluster) {
             continue;
