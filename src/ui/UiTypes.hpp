@@ -100,6 +100,8 @@ struct UiState {
     bool showMetrics = true;
     bool showHud = true;
     bool showGeoGrid = true;
+    bool optionsMenuOpen = false;
+    bool fullscreenToggleRequested = false;
     bool scenarioDroplistOpen = false;
     bool objectivesDroplistOpen = false;
     int requestedScenarioIndex = -1;

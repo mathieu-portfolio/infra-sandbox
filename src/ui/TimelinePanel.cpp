@@ -144,12 +144,14 @@ struct ActivityRow {
 
 Rectangle categoryDroplistBounds(Rectangle panel)
 {
-    return {panel.x + panel.width - 246.0f, panel.y + 140.0f, 112.0f, 28.0f};
+    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
+    return {panel.x + panel.width - 246.0f, panel.y + 38.0f + chartHeight + 10.0f, 112.0f, 28.0f};
 }
 
 Rectangle filterDroplistBounds(Rectangle panel)
 {
-    return {panel.x + panel.width - 126.0f, panel.y + 140.0f, 112.0f, 28.0f};
+    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
+    return {panel.x + panel.width - 126.0f, panel.y + 38.0f + chartHeight + 10.0f, 112.0f, 28.0f};
 }
 
 Color categoryColor(TimelineCategory category)
@@ -203,7 +205,7 @@ bool rowMatches(const ActivityRow& row, const UiState& state)
     return true;
 }
 
-std::vector<ActivityRow> buildActivityRows(const UiState& state, const ScenarioManager& scenarioManager)
+std::vector<ActivityRow> buildActivityRows(const UiState& state, const Simulation& simulation, const ScenarioManager& scenarioManager)
 {
     std::vector<ActivityRow> rows;
     rows.push_back({0.0, TimelineCategory::System, "Scenario started", scenarioManager.staticDefinition().name, true});
@@ -227,6 +229,13 @@ std::vector<ActivityRow> buildActivityRows(const UiState& state, const ScenarioM
 
     for (const auto& entry : state.actionHistory) {
         rows.push_back({entry.timeSeconds, TimelineCategory::Change, entry.actionName, entry.message.empty() ? entry.target : entry.message, entry.observationPending});
+    }
+
+    for (const auto& pressureEvent : simulation.pressure().recentEvents) {
+        rows.push_back({pressureEvent.timeSeconds, TimelineCategory::System, "Pressure observed", pressureEvent.summary, true});
+    }
+    for (const auto& pattern : simulation.pressure().suspiciousPatterns) {
+        rows.push_back({simulation.timeSeconds(), TimelineCategory::System, "Suspicious pattern", pattern, true});
     }
 
     for (const auto& event : scenarioManager.eventManager().recentEvents()) {
@@ -345,7 +354,9 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
     DrawRectangleRounded(panel, 0.025f, 8, {13, 17, 23, 232});
     DrawRectangleRoundedLines(panel, 0.025f, 8, {70, 86, 104, 95});
     DrawText("Metrics", static_cast<int>(panel.x + 14.0f), static_cast<int>(panel.y + 10.0f), 16, {89, 196, 255, 255});
-    DrawText("Activity Timeline", static_cast<int>(panel.x + 14.0f), static_cast<int>(panel.y + 142.0f), 16, {89, 196, 255, 255});
+    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
+    const float timelineHeaderY = panel.y + 38.0f + chartHeight + 12.0f;
+    DrawText("Activity Timeline", static_cast<int>(panel.x + 14.0f), static_cast<int>(timelineHeaderY), 16, {89, 196, 255, 255});
     const Rectangle categoryField = categoryDroplistBounds(panel);
     const Rectangle filterField = filterDroplistBounds(panel);
     drawDroplist(categoryField, timelineCategoryName(context.state->timelineCategory), context.state->timelineCategoryDroplistOpen);
@@ -354,17 +365,18 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
     (void)simulation;
     const float chartY = panel.y + 38.0f;
     const float chartW = (panel.width - 64.0f) / 5.0f;
-    drawChart({panel.x + 12.0f, chartY, chartW, 92.0f}, "Traffic (req/s)", {89, 196, 255, 255}, context.state->metricsHistory, 0);
-    drawChart({panel.x + 24.0f + chartW, chartY, chartW, 92.0f}, "Latency (ms)", {245, 184, 76, 255}, context.state->metricsHistory, 1);
-    drawChart({panel.x + 36.0f + chartW * 2.0f, chartY, chartW, 92.0f}, "Queues (req)", {235, 105, 76, 255}, context.state->metricsHistory, 2);
-    drawChart({panel.x + 48.0f + chartW * 3.0f, chartY, chartW, 92.0f}, "Utilization (%)", {86, 210, 151, 255}, context.state->metricsHistory, 3);
-    drawChart({panel.x + 60.0f + chartW * 4.0f, chartY, chartW, 92.0f}, "Cache (%)", {151, 111, 255, 255}, context.state->metricsHistory, 4);
+    drawChart({panel.x + 12.0f, chartY, chartW, chartHeight}, "Traffic (req/s)", {89, 196, 255, 255}, context.state->metricsHistory, 0);
+    drawChart({panel.x + 24.0f + chartW, chartY, chartW, chartHeight}, "Latency (ms)", {245, 184, 76, 255}, context.state->metricsHistory, 1);
+    drawChart({panel.x + 36.0f + chartW * 2.0f, chartY, chartW, chartHeight}, "Queues (req)", {235, 105, 76, 255}, context.state->metricsHistory, 2);
+    drawChart({panel.x + 48.0f + chartW * 3.0f, chartY, chartW, chartHeight}, "Utilization (%)", {86, 210, 151, 255}, context.state->metricsHistory, 3);
+    drawChart({panel.x + 60.0f + chartW * 4.0f, chartY, chartW, chartHeight}, "Cache (%)", {151, 111, 255, 255}, context.state->metricsHistory, 4);
 
     int row = 0;
-    const int timelineY = static_cast<int>(panel.y + 172.0f);
-    const auto rows = buildActivityRows(*context.state, scenarioManager);
+    const int timelineY = static_cast<int>(timelineHeaderY + 30.0f);
+    const int maxRows = std::max(4, static_cast<int>((panel.y + panel.height - static_cast<float>(timelineY) - 12.0f) / 22.0f));
+    const auto rows = buildActivityRows(*context.state, simulation, scenarioManager);
     for (const auto& activity : rows) {
-        if (row >= 4 || !rowMatches(activity, *context.state)) {
+        if (row >= maxRows || !rowMatches(activity, *context.state)) {
             continue;
         }
         const float y = static_cast<float>(timelineY + row * 22);

@@ -19,10 +19,30 @@ Rectangle scenarioDroplistBounds()
 
 Rectangle objectivesDroplistBounds(int screenWidth)
 {
-    const float rightControlsX = static_cast<float>(screenWidth - 220);
-    const float x = 830.0f;
-    const float width = std::max(220.0f, rightControlsX - x);
+    const float rightControlsX = static_cast<float>(screenWidth - 264);
+    const float x = 812.0f;
+    const float width = std::max(190.0f, rightControlsX - x);
     return {x, 11.0f, width, 32.0f};
+}
+
+Rectangle feedbackBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth - 236), 11.0f, 98.0f, 32.0f};
+}
+
+Rectangle helpBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth - 126), 11.0f, 62.0f, 32.0f};
+}
+
+Rectangle optionsButtonBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth - 48), 10.0f, 34.0f, 34.0f};
+}
+
+Rectangle optionsMenuBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth - 264), 52.0f, 250.0f, 162.0f};
 }
 
 bool pointInDroplistOrMenu(Vector2 point, Rectangle field, Rectangle menu)
@@ -36,6 +56,13 @@ void drawTopButton(Rectangle bounds, const char* label, bool active)
     DrawRectangleRoundedLines(bounds, 0.16f, 6, active ? Color{89, 196, 255, 230} : Color{70, 86, 104, 120});
     const int textWidth = MeasureText(label, 14);
     DrawText(label, static_cast<int>(bounds.x + bounds.width * 0.5f - static_cast<float>(textWidth) * 0.5f), static_cast<int>(bounds.y + 8.0f), 14, active ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
+}
+
+void drawIconButton(Rectangle bounds, const char* iconId, bool active)
+{
+    DrawRectangleRounded(bounds, 0.16f, 6, active ? Color{37, 120, 255, 180} : Color{22, 27, 34, 200});
+    DrawRectangleRoundedLines(bounds, 0.16f, 6, active ? Color{89, 196, 255, 210} : Color{70, 86, 104, 95});
+    IconRegistry::instance().drawIcon(iconId, {bounds.x + 7.0f, bounds.y + 7.0f, bounds.width - 14.0f, bounds.height - 14.0f}, active ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
 }
 
 void drawChevron(Rectangle bounds, bool open)
@@ -86,6 +113,19 @@ Rectangle scenarioRowBounds(Rectangle menu, int index)
 {
     return {menu.x + 8.0f, menu.y + 120.0f + static_cast<float>(index) * 34.0f, menu.width - 16.0f, 30.0f};
 }
+
+Rectangle optionsRowBounds(Rectangle menu, int index)
+{
+    return {menu.x + 10.0f, menu.y + 34.0f + static_cast<float>(index) * 29.0f, menu.width - 20.0f, 25.0f};
+}
+
+void drawOptionRow(Rectangle row, const char* label, bool enabled)
+{
+    DrawRectangleRounded(row, 0.12f, 6, {22, 27, 34, 175});
+    DrawRectangleRoundedLines(row, 0.12f, 6, {70, 86, 104, 95});
+    DrawText(label, static_cast<int>(row.x + 10.0f), static_cast<int>(row.y + 6.0f), 12, {230, 237, 243, 255});
+    drawToggle({row.x + row.width - 44.0f, row.y + 4.0f, 34.0f, 17.0f}, enabled);
+}
 }
 
 void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManager& scenarioManager)
@@ -97,6 +137,8 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     const Vector2 mouse = GetMousePosition();
     const Rectangle scenarioField = scenarioDroplistBounds();
     const Rectangle objectiveField = objectivesDroplistBounds(context.screenWidth);
+    const Rectangle optionsButton = optionsButtonBounds(context.screenWidth);
+    const Rectangle optionsMenu = optionsMenuBounds(context.screenWidth);
     const auto scenarios = ScenarioRegistry::createAll();
     const Rectangle scenarioMenu{scenarioField.x, scenarioField.y + scenarioField.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
     const auto& run = scenarioManager.run();
@@ -106,12 +148,37 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     if (CheckCollisionPointRec(mouse, scenarioField)) {
         context.state->scenarioDroplistOpen = !context.state->scenarioDroplistOpen;
         context.state->objectivesDroplistOpen = false;
+        context.state->optionsMenuOpen = false;
         return;
     }
     if (CheckCollisionPointRec(mouse, objectiveField)) {
         context.state->objectivesDroplistOpen = !context.state->objectivesDroplistOpen;
         context.state->scenarioDroplistOpen = false;
+        context.state->optionsMenuOpen = false;
         return;
+    }
+    if (CheckCollisionPointRec(mouse, optionsButton)) {
+        context.state->optionsMenuOpen = !context.state->optionsMenuOpen;
+        context.state->scenarioDroplistOpen = false;
+        context.state->objectivesDroplistOpen = false;
+        return;
+    }
+    if (context.state->optionsMenuOpen) {
+        for (int i = 0; i < 4; ++i) {
+            if (!CheckCollisionPointRec(mouse, optionsRowBounds(optionsMenu, i))) {
+                continue;
+            }
+            if (i == 0) {
+                context.state->fullscreenToggleRequested = true;
+            } else if (i == 1) {
+                context.state->showMetrics = !context.state->showMetrics;
+            } else if (i == 2) {
+                context.state->showDebug = !context.state->showDebug;
+            } else if (i == 3) {
+                context.state->showGeoGrid = !context.state->showGeoGrid;
+            }
+            return;
+        }
     }
     if (context.state->scenarioDroplistOpen) {
         const int currentIndex = scenarioIndexForName(scenarioManager.staticDefinition().name);
@@ -132,6 +199,9 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     }
     if (context.state->objectivesDroplistOpen && !pointInDroplistOrMenu(mouse, objectiveField, objectiveMenu)) {
         context.state->objectivesDroplistOpen = false;
+    }
+    if (context.state->optionsMenuOpen && !pointInDroplistOrMenu(mouse, optionsButton, optionsMenu)) {
+        context.state->optionsMenuOpen = false;
     }
 }
 
@@ -167,10 +237,13 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     icons.drawIcon("metric.objective", {objectiveBox.x + 10.0f, 15.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
     drawDroplistField({objectiveBox.x + 38.0f, objectiveBox.y, objectiveBox.width - 38.0f, objectiveBox.height}, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
 
-    icons.drawIcon("topbar.feedback", {static_cast<float>(context.screenWidth - 210), 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Feedback", context.screenWidth - 182, 20, 14, {139, 148, 158, 255});
-    icons.drawIcon("topbar.help", {static_cast<float>(context.screenWidth - 104), 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Help", context.screenWidth - 78, 20, 14, {139, 148, 158, 255});
+    const Rectangle feedback = feedbackBounds(context.screenWidth);
+    icons.drawIcon("topbar.feedback", {feedback.x, 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Feedback", static_cast<int>(feedback.x + 28.0f), 20, 14, {139, 148, 158, 255});
+    const Rectangle help = helpBounds(context.screenWidth);
+    icons.drawIcon("topbar.help", {help.x, 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Help", static_cast<int>(help.x + 26.0f), 20, 14, {139, 148, 158, 255});
+    drawIconButton(optionsButtonBounds(context.screenWidth), "topbar.options", context.state->optionsMenuOpen);
 
     if (context.state->scenarioDroplistOpen) {
         const auto scenarios = ScenarioRegistry::createAll();
@@ -256,5 +329,15 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
         if (const ScenarioPhase* phase = scenarioManager.currentPhase()) {
             drawDetailRow("Phase", phase->name, menu.x + 14.0f, rowY, menu.width - 28.0f);
         }
+    }
+
+    if (context.state->optionsMenuOpen) {
+        const Rectangle menu = optionsMenuBounds(context.screenWidth);
+        drawMenuShell(menu);
+        DrawText("Options", static_cast<int>(menu.x + 12.0f), static_cast<int>(menu.y + 12.0f), 14, {89, 196, 255, 255});
+        drawOptionRow(optionsRowBounds(menu, 0), "Fullscreen", IsWindowFullscreen());
+        drawOptionRow(optionsRowBounds(menu, 1), "Metrics panel", context.state->showMetrics);
+        drawOptionRow(optionsRowBounds(menu, 2), "Debug UI", context.state->showDebug);
+        drawOptionRow(optionsRowBounds(menu, 3), "Map grid", context.state->showGeoGrid);
     }
 }

@@ -29,6 +29,9 @@ struct NodePressure {
     double timeoutContribution = 0.0;
     double retryContribution = 0.0;
     double instability = 0.0;
+    double dependencyPressure = 0.0;
+    std::string explanation;
+    std::string dependencySummary;
 };
 
 struct PressureEvent {
@@ -47,6 +50,9 @@ struct PressureSnapshot {
     int retryAmplificationNodeId = -1;
     std::vector<NodePressure> nodes;
     std::vector<std::string> hints;
+    std::vector<std::string> explanations;
+    std::vector<std::string> suspiciousPatterns;
+    std::deque<PressureEvent> pressureHistory;
     std::deque<PressureEvent> recentEvents;
 };
 

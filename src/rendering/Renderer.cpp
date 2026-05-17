@@ -111,6 +111,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
     const GeoLayoutFrame geoLayout = geoLayoutSystem_.compute(simulation, camera, uiManager_.state(), GetScreenWidth(), GetScreenHeight());
     mapRenderer_.draw(camera, uiManager_.state().showGeoGrid);
     drawMutationPreview(simulation, camera);
+    drawDependencyHighlights(simulation, camera, geoLayout);
     drawLinks(simulation, camera, geoLayout);
     drawRequests(simulation, camera, geoLayout);
     drawClusters(camera, geoLayout);
@@ -168,6 +169,35 @@ void Renderer::drawLinks(const Simulation& simulation, const CameraController& c
             static_cast<unsigned char>(std::min(235, 170 + static_cast<int>(feedback * 55.0f + activation * 65.0f))),
         };
         drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, color);
+    }
+}
+
+void Renderer::drawDependencyHighlights(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout)
+{
+    const int selectedNodeId = uiManager_.state().selection.nodeId;
+    if (selectedNodeId < 0) {
+        return;
+    }
+
+    const int width = GetScreenWidth();
+    const int height = GetScreenHeight();
+    for (const auto& link : simulation.graph().links()) {
+        if (!link.enabled || (link.sourceNodeId != selectedNodeId && link.targetNodeId != selectedNodeId)) {
+            continue;
+        }
+        const GeoNodeLayout* sourceLayout = layout.node(link.sourceNodeId);
+        const GeoNodeLayout* targetLayout = layout.node(link.targetNodeId);
+        if (sourceLayout == nullptr || targetLayout == nullptr || sourceLayout->hiddenByCluster || targetLayout->hiddenByCluster) {
+            continue;
+        }
+        const NodePressure* sourcePressure = simulation.pressureAnalysis().pressureForNode(link.sourceNodeId);
+        const NodePressure* targetPressure = simulation.pressureAnalysis().pressureForNode(link.targetNodeId);
+        const double pathPressure = std::max(sourcePressure != nullptr ? sourcePressure->instability : 0.0, targetPressure != nullptr ? targetPressure->instability : 0.0);
+        const bool outgoing = link.sourceNodeId == selectedNodeId;
+        const Color color = pathPressure > 0.55
+            ? Color{245, 184, 76, 225}
+            : (outgoing ? Color{89, 196, 255, 190} : Color{151, 111, 255, 175});
+        drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, 5.0f + static_cast<float>(pathPressure) * 3.0f, color);
     }
 }
 

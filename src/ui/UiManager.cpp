@@ -33,8 +33,10 @@ void UiManager::updateActionObservations(const Simulation& simulation)
         const auto& before = entry.beforeMetrics;
         const auto& after = simulation.metrics();
         if (entry.actionName.find("Scale") != std::string::npos) {
-            if (after.apiQueueDepth < before.apiQueueDepth) {
-                entry.message = "API queue dropped after scaling.";
+            if (after.apiQueueDepth < before.apiQueueDepth && after.databaseQueueDepth > before.databaseQueueDepth) {
+                entry.message = "Queue pressure improved locally, while persistence pressure increased downstream.";
+            } else if (after.apiQueueDepth < before.apiQueueDepth) {
+                entry.message = "Queue pressure improved locally after scaling.";
             } else if (simulation.pressure().dominantPressure == PressureCategory::PersistencePressure || after.databaseQueueDepth >= before.databaseQueueDepth) {
                 entry.message = "Scaling API had limited effect. Persistence pressure remains dominant.";
             }
@@ -46,7 +48,7 @@ void UiManager::updateActionObservations(const Simulation& simulation)
             }
         } else if (entry.actionName.find("Retries") != std::string::npos) {
             if (after.retryRatePerSecond < before.retryRatePerSecond) {
-                entry.message = "Retry traffic decreased after policy change.";
+                entry.message = "Retry amplification decreased; validate whether visible failures changed.";
             } else if (simulation.pressure().dominantPressure == PressureCategory::RetryPressure) {
                 entry.message = "Retry amplification remains visible near the overloaded service path.";
             }

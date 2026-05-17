@@ -137,6 +137,22 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         drawTextClipped(hint, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
+    for (const auto& pattern : simulation.pressure().suspiciousPatterns) {
+        if (row >= 3) {
+            break;
+        }
+        IconRegistry::instance().drawIcon("alert.warning", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {151, 111, 255, 255});
+        drawTextClipped(pattern, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
+        ++row;
+    }
+    for (const auto& explanation : simulation.pressure().explanations) {
+        if (row >= 3) {
+            break;
+        }
+        IconRegistry::instance().drawIcon("alert.ok", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {89, 196, 255, 255});
+        drawTextClipped(explanation, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
+        ++row;
+    }
     if (row == 0) {
         IconRegistry::instance().drawIcon("alert.ok", {x + 14.0f, y + 42.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
         drawTextClipped("No active incidents", {x + 38.0f, y + 40.0f, width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});

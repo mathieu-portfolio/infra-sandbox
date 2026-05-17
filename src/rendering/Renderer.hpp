@@ -18,6 +18,7 @@ public:
 
 private:
     void drawLinks(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
+    void drawDependencyHighlights(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
     void drawNodes(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
     void drawRequests(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
     void drawQueueBars(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);

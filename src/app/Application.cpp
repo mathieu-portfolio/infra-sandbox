@@ -20,7 +20,7 @@ Application::Application()
       simulation_(scenarioManager_.definition()),
       renderer_(scenarioManager_.definition())
 {
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_FULLSCREEN_MODE);
     InitWindow(kWindowWidth, kWindowHeight, "Infra Sandbox");
     SetTargetFPS(120);
     for (const auto& error : content::ContentRegistry::instance().loadErrors()) {
@@ -62,6 +62,7 @@ void Application::handleInput()
 {
     applyPendingScenarioSelection();
     applySandboxRequests();
+    applyUiRequests();
 
     const auto events = inputManager_.poll();
     const auto simulationResult = simulationController_.handleActions(events, simulation_, paused_);
@@ -84,6 +85,7 @@ void Application::handleInput()
 
     applyPendingScenarioSelection();
     applySandboxRequests();
+    applyUiRequests();
 }
 
 void Application::resetScenario()
@@ -169,5 +171,14 @@ void Application::applySandboxRequests()
         simulation_ = Simulation(scenarioManager_.definition());
         fixedStepAccumulator_ = 0.0;
         state.sandboxRegenerateRequested = false;
+    }
+}
+
+void Application::applyUiRequests()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (state.fullscreenToggleRequested) {
+        ToggleFullscreen();
+        state.fullscreenToggleRequested = false;
     }
 }
