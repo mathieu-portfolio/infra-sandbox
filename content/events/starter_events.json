@@ -1,0 +1,102 @@
+[
+  {
+    "id": "traffic_spike_26",
+    "display_name": "Traffic spike",
+    "description": "A short-lived traffic surge increases request pressure.",
+    "category": "traffic",
+    "trigger": {"type": "time", "time_seconds": 26.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
+    "duration_seconds": 18.0,
+    "tags": ["traffic"]
+  },
+  {
+    "id": "traffic_spike_40",
+    "display_name": "Traffic spike",
+    "description": "A short-lived traffic surge increases request pressure.",
+    "category": "traffic",
+    "trigger": {"type": "time", "time_seconds": 40.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
+    "duration_seconds": 18.0,
+    "tags": ["traffic"]
+  },
+  {
+    "id": "traffic_spike_64",
+    "display_name": "Traffic spike",
+    "description": "A short-lived traffic surge increases request pressure.",
+    "category": "traffic",
+    "trigger": {"type": "time", "time_seconds": 64.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
+    "duration_seconds": 18.0,
+    "tags": ["traffic"]
+  },
+  {
+    "id": "viral_growth_76",
+    "display_name": "Viral growth",
+    "description": "Demand increases and remains elevated for a while.",
+    "category": "demand",
+    "trigger": {"type": "time", "time_seconds": 76.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.45},
+    "duration_seconds": 42.0,
+    "tags": ["traffic"]
+  },
+  {
+    "id": "database_slowdown",
+    "display_name": "Database slowdown",
+    "description": "Storage latency reduces database effective capacity.",
+    "category": "infrastructure",
+    "trigger": {"type": "metric_threshold", "metric": "database_queue", "threshold": 5.0, "delay_seconds": 3.0},
+    "effect": {"type": "degrade_node_capacity", "database_capacity_multiplier": 0.62},
+    "duration_seconds": 28.0,
+    "tags": ["database"]
+  },
+  {
+    "id": "retry_storm",
+    "display_name": "Retry storm",
+    "description": "Timeouts cause retries to amplify load after a delay.",
+    "category": "reliability",
+    "trigger": {"type": "metric_threshold", "metric": "retry_rate", "threshold": 0.5, "delay_seconds": 2.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.18, "retry_delay_multiplier": 0.75},
+    "duration_seconds": 22.0,
+    "tags": ["reliability"]
+  },
+  {
+    "id": "cache_warmup",
+    "display_name": "Cache warmup",
+    "description": "Cache effectiveness becomes visible after repeated reads.",
+    "category": "recovery",
+    "trigger": {"type": "metric_threshold", "metric": "cache_hit_rate", "threshold": 0.35},
+    "effect": {"type": "emit_feedback", "database_capacity_multiplier": 1.08},
+    "duration_seconds": 24.0,
+    "tags": ["cache"]
+  },
+  {
+    "id": "partial_recovery_106",
+    "display_name": "Partial recovery",
+    "description": "Pressure eases temporarily as systems recover.",
+    "category": "recovery",
+    "trigger": {"type": "time", "time_seconds": 106.0},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
+    "duration_seconds": 20.0,
+    "tags": ["recovery"]
+  },
+  {
+    "id": "partial_recovery_116",
+    "display_name": "Partial recovery",
+    "description": "Pressure eases temporarily as systems recover.",
+    "category": "recovery",
+    "trigger": {"type": "time", "time_seconds": 116.0},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
+    "duration_seconds": 20.0,
+    "tags": ["recovery"]
+  },
+  {
+    "id": "partial_recovery_120",
+    "display_name": "Partial recovery",
+    "description": "Pressure eases temporarily as systems recover.",
+    "category": "recovery",
+    "trigger": {"type": "time", "time_seconds": 120.0},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
+    "duration_seconds": 20.0,
+    "tags": ["recovery"]
+  }
+]

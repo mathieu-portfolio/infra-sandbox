@@ -68,6 +68,9 @@ struct EventEffect {
 };
 
 struct EventDefinition {
+    std::string id;
+    std::string displayName;
+    std::vector<std::string> tags;
     std::string name;
     std::string description;
     EventCategory category = EventCategory::TrafficEvent;

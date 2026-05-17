@@ -28,6 +28,8 @@ if(INFRA_BUILD_APP AND NOT raylib_FOUND AND INFRA_FETCH_RAYLIB)
 endif()
 
 add_library(infra_simulation
+    src/content/Json.cpp
+    src/content/ContentRegistry.cpp
     src/simulation/InfrastructureGraph.cpp
     src/simulation/Geography.cpp
     src/simulation/Link.cpp
@@ -48,6 +50,7 @@ add_library(infra_simulation
 )
 
 target_include_directories(infra_simulation PUBLIC src)
+target_compile_definitions(infra_simulation PUBLIC INFRA_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content")
 
 if(INFRA_BUILD_APP)
     add_executable(infra_sandbox

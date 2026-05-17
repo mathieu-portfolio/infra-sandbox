@@ -1,5 +1,7 @@
 #include "app/Application.hpp"
 
+#include "content/ContentRegistry.hpp"
+
 #include "raylib.h"
 
 #include <cstddef>
@@ -20,6 +22,9 @@ Application::Application()
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE);
     InitWindow(kWindowWidth, kWindowHeight, "Infra Sandbox");
     SetTargetFPS(120);
+    for (const auto& error : content::ContentRegistry::instance().loadErrors()) {
+        TraceLog(LOG_WARNING, "Content: %s", error.c_str());
+    }
 }
 
 Application::~Application()

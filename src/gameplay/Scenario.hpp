@@ -45,6 +45,10 @@ enum class ScenarioRunState {
 };
 
 struct ProgressionTierDefinition {
+    std::string id;
+    std::string displayName;
+    std::string description;
+    std::vector<std::string> tags;
     ProgressionTier tier = ProgressionTier::Foundations;
     std::string name;
     std::vector<std::string> visibleMetrics;
@@ -54,6 +58,7 @@ struct ProgressionTierDefinition {
 };
 
 struct NodeScenario {
+    std::string id;
     std::string name;
     NodeType type = NodeType::ApiService;
     Vec2 position{};
@@ -94,6 +99,9 @@ struct BurstScenario {
 };
 
 struct ScenarioModifierDefinition {
+    std::string id;
+    std::string displayName;
+    std::vector<std::string> tags;
     ScenarioModifierType type = ScenarioModifierType::MobileRefreshWave;
     std::string name;
     std::string description;
@@ -122,6 +130,10 @@ enum class TrafficProfileType {
 };
 
 struct TrafficProfile {
+    std::string id;
+    std::string displayName;
+    std::string description;
+    std::vector<std::string> tags;
     std::string name = "Constant";
     TrafficProfileType type = TrafficProfileType::Constant;
     double baseMultiplier = 1.0;
@@ -137,6 +149,10 @@ enum class ScenarioObjectiveType {
 };
 
 struct ScenarioObjective {
+    std::string id;
+    std::string displayName;
+    std::string description;
+    std::vector<std::string> tags;
     ScenarioObjectiveType type = ScenarioObjectiveType::SurviveDuration;
     std::string summary;
     double threshold = 0.0;
@@ -161,10 +177,14 @@ struct LinkScenario {
 };
 
 struct ScenarioDefinition {
+    std::string id;
+    std::string displayName;
+    std::vector<std::string> tags;
     std::string name;
     std::string description;
     ScenarioArchetype archetype = ScenarioArchetype::LocalStartup;
     ProgressionTier minimumTier = ProgressionTier::Foundations;
+    std::string topologyTemplateId;
     std::vector<EducationalFocus> educationalFocus;
     std::string initialTopologyTemplate = "default-regional-api";
     std::vector<PressureCategory> guaranteedPressures;

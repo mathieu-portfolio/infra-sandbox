@@ -117,14 +117,20 @@ TEST(TopologyMutationTests, QueuePlacementIsRegionConstrained)
 TEST(ScenarioRegistryTests, ProvidesInitialScenarioSet)
 {
     const auto scenarios = ScenarioRegistry::createAll();
-    ASSERT_EQ(scenarios.size(), 3U);
-    EXPECT_EQ(scenarios[0].name, "Single Service Overload");
-    EXPECT_EQ(scenarios[1].name, "Database Bottleneck");
-    EXPECT_EQ(scenarios[2].name, "Burst Traffic");
-    EXPECT_EQ(scenarios[0].archetype, ScenarioArchetype::LocalStartup);
-    EXPECT_EQ(scenarios[1].minimumTier, ProgressionTier::StateAndCache);
-    EXPECT_FALSE(scenarios[0].phases.empty());
-    EXPECT_FALSE(scenarios[0].allowedMechanics.empty());
+    ASSERT_GE(scenarios.size(), 5U);
+    const auto local = std::find_if(scenarios.begin(), scenarios.end(), [](const ScenarioDefinition& scenario) { return scenario.id == "local_startup"; });
+    const auto database = std::find_if(scenarios.begin(), scenarios.end(), [](const ScenarioDefinition& scenario) { return scenario.id == "database_bottleneck"; });
+    const auto burst = std::find_if(scenarios.begin(), scenarios.end(), [](const ScenarioDefinition& scenario) { return scenario.id == "burst_traffic"; });
+    ASSERT_NE(local, scenarios.end());
+    ASSERT_NE(database, scenarios.end());
+    ASSERT_NE(burst, scenarios.end());
+    EXPECT_EQ(local->name, "Single Service Overload");
+    EXPECT_EQ(database->name, "Database Bottleneck");
+    EXPECT_EQ(burst->name, "Burst Traffic");
+    EXPECT_EQ(local->archetype, ScenarioArchetype::LocalStartup);
+    EXPECT_EQ(database->minimumTier, ProgressionTier::StateAndCache);
+    EXPECT_FALSE(local->phases.empty());
+    EXPECT_FALSE(local->allowedMechanics.empty());
 }
 
 TEST(ScenarioRunTests, SeparatesStaticDefinitionFromSeededRun)

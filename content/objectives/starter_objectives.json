@@ -1,0 +1,83 @@
+[
+  {
+    "id": "keep_service_120s",
+    "display_name": "Keep service operating",
+    "description": "Primary duration objective for local startup pressure.",
+    "type": "survive_duration",
+    "summary": "Keep the service operating for 120s.",
+    "duration_seconds": 120.0,
+    "tags": ["primary"]
+  },
+  {
+    "id": "stabilize_api_queue",
+    "display_name": "Stabilize API queue",
+    "description": "Side objective for queue recovery.",
+    "type": "stabilize_metric",
+    "summary": "Reduce API queue pressure after overload appears.",
+    "threshold": 8.0,
+    "tags": ["side", "queues"]
+  },
+  {
+    "id": "latency_under_6s",
+    "display_name": "Latency limit",
+    "description": "Failure condition for unstable latency.",
+    "type": "metric_threshold",
+    "summary": "Latency above 6s indicates instability.",
+    "threshold": 6.0,
+    "tags": ["failure", "latency"]
+  },
+  {
+    "id": "manage_db_120s",
+    "display_name": "Manage DB pressure",
+    "description": "Primary database bottleneck objective.",
+    "type": "survive_duration",
+    "summary": "Manage DB pressure for 120s.",
+    "duration_seconds": 120.0,
+    "tags": ["primary", "database"]
+  },
+  {
+    "id": "timeout_under_3s",
+    "display_name": "Timeout rate limit",
+    "description": "Failure condition for database overload.",
+    "type": "max_error_rate",
+    "summary": "Timeout rate above 3/s is unstable.",
+    "threshold": 3.0,
+    "tags": ["failure"]
+  },
+  {
+    "id": "absorb_bursts_120s",
+    "display_name": "Absorb burst traffic",
+    "description": "Primary burst traffic objective.",
+    "type": "survive_duration",
+    "summary": "Absorb burst traffic for 120s.",
+    "duration_seconds": 120.0,
+    "tags": ["primary", "traffic"]
+  },
+  {
+    "id": "timeout_under_4s",
+    "display_name": "Retry storm limit",
+    "description": "Failure condition for burst and retry pressure.",
+    "type": "max_error_rate",
+    "summary": "Retry storms above 4 timeouts/s are unstable.",
+    "threshold": 4.0,
+    "tags": ["failure", "reliability"]
+  },
+  {
+    "id": "first_request_60s",
+    "display_name": "Serve first requests",
+    "description": "Introductory objective.",
+    "type": "survive_duration",
+    "summary": "Keep a small service healthy for 60s.",
+    "duration_seconds": 60.0,
+    "tags": ["primary", "intro"]
+  },
+  {
+    "id": "transatlantic_latency",
+    "display_name": "Control p95 latency",
+    "description": "Geographic latency objective.",
+    "type": "metric_threshold",
+    "summary": "Keep p95 latency below 300ms while traffic crosses regions.",
+    "threshold": 0.3,
+    "tags": ["primary", "geography", "latency"]
+  }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "id": "first_request",
+    "display_name": "First Request",
+    "description": "A small service handles initial traffic while the player learns the controls.",
+    "tags": ["starter", "intro"],
+    "archetype": "first_request",
+    "minimum_tier": "foundations",
+    "topology_template": "demo_regional_api",
+    "traffic_profile": "constant",
+    "educational_focus": ["queues", "latency"],
+    "guaranteed_pressures": ["traffic", "queue"],
+    "allowed_interventions": ["scale_up", "throttle_traffic"],
+    "recommended_interventions": ["scale_up"],
+    "objectives": ["first_request_60s"],
+    "failure_conditions": ["latency_under_6s"],
+    "node_overrides": [
+      {"id": "eu_api", "processing_capacity_per_second": 7.0},
+      {"id": "eu_database", "processing_capacity_per_second": 5.0}
+    ],
+    "request_types": {"lightweight_share": 0.9, "database_heavy_cacheable_share": 0.5},
+    "phases": [
+      {"id": "baseline", "display_name": "Baseline", "event_message": "Initial request flow is stable.", "start_time_seconds": 0.0, "duration_seconds": 60.0, "traffic_multiplier": 0.55}
+    ]
+  },
+  {
+    "id": "local_startup",
+    "display_name": "Single Service Overload",
+    "description": "Traffic gradually outgrows API processing capacity.",
+    "tags": ["starter", "compute"],
+    "archetype": "local_startup",
+    "minimum_tier": "local_scale",
+    "topology_template": "demo_regional_api",
+    "traffic_profile": "gradual_growth",
+    "educational_focus": ["scaling", "queues", "latency"],
+    "guaranteed_pressures": ["traffic", "queue", "compute"],
+    "allowed_interventions": ["scale_up", "throttle_traffic"],
+    "recommended_interventions": ["scale_up"],
+    "objectives": ["keep_service_120s", "stabilize_api_queue"],
+    "failure_conditions": ["latency_under_6s"],
+    "events": ["traffic_spike_40", "viral_growth_76", "partial_recovery_116"],
+    "modifiers": ["mobile_refresh_wave", "regional_traffic_spike"],
+    "node_overrides": [{"id": "eu_api", "processing_capacity_per_second": 5.0}],
+    "request_types": {"lightweight_share": 0.82, "database_heavy_cacheable_share": 0.7},
+    "cache": {"enabled": false, "max_entries": 8, "ttl_seconds": 12.0},
+    "retries": {"enabled": true, "max_retries": 1, "retry_delay_seconds": 0.85},
+    "request_timeout_seconds": 5.5,
+    "phases": [
+      {"id": "warmup", "display_name": "Stable warm-up", "event_message": "Demand is within API capacity.", "start_time_seconds": 0.0, "duration_seconds": 25.0, "traffic_multiplier": 0.75},
+      {"id": "overload", "display_name": "Demand exceeds API", "event_message": "Traffic now exceeds single-service throughput.", "start_time_seconds": 25.0, "duration_seconds": 45.0, "traffic_multiplier": 1.35},
+      {"id": "sustained", "display_name": "Sustained pressure", "event_message": "Stabilize queues while demand remains high.", "start_time_seconds": 70.0, "duration_seconds": 90.0, "traffic_multiplier": 1.55}
+    ]
+  },
+  {
+    "id": "database_bottleneck",
+    "display_name": "Database Bottleneck",
+    "description": "API scaling cannot remove downstream database pressure.",
+    "tags": ["starter", "database"],
+    "archetype": "database_bottleneck",
+    "minimum_tier": "state_and_cache",
+    "topology_template": "demo_regional_api",
+    "traffic_profile": "read_pressure_growth",
+    "educational_focus": ["persistence", "caching", "reliability"],
+    "guaranteed_pressures": ["persistence", "queue", "latency"],
+    "allowed_interventions": ["scale_up", "enable_cache", "clear_cache", "add_cache", "add_read_replica", "toggle_retries", "throttle_traffic"],
+    "recommended_interventions": ["enable_cache", "clear_cache"],
+    "objectives": ["manage_db_120s"],
+    "failure_conditions": ["timeout_under_3s"],
+    "events": ["database_slowdown", "retry_storm", "cache_warmup", "partial_recovery_120"],
+    "modifiers": ["read_heavy_behavior", "slow_database_window", "aggressive_retries"],
+    "node_overrides": [
+      {"id": "eu_api", "processing_capacity_per_second": 10.0},
+      {"id": "eu_database", "processing_capacity_per_second": 2.4}
+    ],
+    "request_types": {"lightweight_share": 0.28, "database_heavy_cacheable_share": 0.8},
+    "cache": {"enabled": false, "max_entries": 10, "ttl_seconds": 12.0},
+    "phases": [
+      {"id": "healthy_reads", "display_name": "Healthy reads", "event_message": "Database work is present but manageable.", "start_time_seconds": 0.0, "duration_seconds": 25.0, "traffic_multiplier": 0.8},
+      {"id": "db_queue", "display_name": "DB queue forms", "event_message": "Downstream persistence becomes the constraint.", "start_time_seconds": 25.0, "duration_seconds": 55.0, "traffic_multiplier": 1.25},
+      {"id": "cache_opportunity", "display_name": "Cache opportunity", "event_message": "Repeated reads can be absorbed by cache.", "start_time_seconds": 80.0, "duration_seconds": 90.0, "traffic_multiplier": 1.35}
+    ]
+  },
+  {
+    "id": "burst_traffic",
+    "display_name": "Burst Traffic",
+    "description": "Short traffic spikes expose queues, timeouts, and retry amplification.",
+    "tags": ["starter", "reliability"],
+    "archetype": "burst_traffic",
+    "minimum_tier": "failure_feedback",
+    "topology_template": "demo_regional_api",
+    "traffic_profile": "bursty",
+    "educational_focus": ["queues", "reliability", "latency"],
+    "guaranteed_pressures": ["traffic", "queue", "retry"],
+    "allowed_interventions": ["scale_up", "add_queue", "toggle_retries", "throttle_traffic"],
+    "recommended_interventions": ["toggle_retries", "throttle_traffic"],
+    "objectives": ["absorb_bursts_120s"],
+    "failure_conditions": ["timeout_under_4s"],
+    "events": ["traffic_spike_26", "retry_storm", "traffic_spike_64", "partial_recovery_106"],
+    "modifiers": ["mobile_refresh_wave", "regional_traffic_spike", "aggressive_retries"],
+    "node_overrides": [{"id": "eu_api", "processing_capacity_per_second": 6.0}],
+    "request_types": {"lightweight_share": 0.7, "database_heavy_cacheable_share": 0.7},
+    "bursts": {"enabled": true, "multiplier": 2.4, "period_seconds": 16.0, "duration_seconds": 4.0},
+    "phases": [
+      {"id": "baseline", "display_name": "Baseline", "event_message": "Traffic is calm between waves.", "start_time_seconds": 0.0, "duration_seconds": 20.0, "traffic_multiplier": 0.85},
+      {"id": "burst_waves", "display_name": "Burst waves", "event_message": "Periodic spikes stress queues and retries.", "start_time_seconds": 20.0, "duration_seconds": 70.0, "traffic_multiplier": 1.0, "burst_override": {"enabled": true, "multiplier": 2.6, "period_seconds": 14.0, "duration_seconds": 4.0}},
+      {"id": "recovery", "display_name": "Recovery window", "event_message": "Watch whether queues drain after each wave.", "start_time_seconds": 90.0, "duration_seconds": 60.0, "traffic_multiplier": 1.1, "burst_override": {"enabled": true, "multiplier": 2.0, "period_seconds": 18.0, "duration_seconds": 3.0}}
+    ]
+  },
+  {
+    "id": "transatlantic_latency",
+    "display_name": "Transatlantic Read Platform",
+    "description": "Regional traffic crosses the Atlantic and exposes cache placement tradeoffs.",
+    "tags": ["starter", "geography"],
+    "archetype": "transatlantic_latency",
+    "minimum_tier": "geographic_scale",
+    "topology_template": "demo_regional_api",
+    "traffic_profile": "regional_growth",
+    "educational_focus": ["geography", "latency", "caching"],
+    "guaranteed_pressures": ["traffic", "latency", "persistence"],
+    "allowed_interventions": ["scale_up", "enable_cache", "add_regional_cache", "add_cache", "throttle_traffic"],
+    "recommended_interventions": ["add_regional_cache", "enable_cache"],
+    "objectives": ["transatlantic_latency"],
+    "failure_conditions": ["latency_under_6s"],
+    "events": ["traffic_spike_40", "cache_warmup", "partial_recovery_116"],
+    "modifiers": ["regional_traffic_spike", "mobile_refresh_wave"],
+    "node_overrides": [
+      {"id": "na_users", "request_rate_per_second": 5.0},
+      {"id": "eu_api", "processing_capacity_per_second": 7.0},
+      {"id": "eu_database", "processing_capacity_per_second": 4.0}
+    ],
+    "request_types": {"lightweight_share": 0.55, "database_heavy_cacheable_share": 0.75},
+    "phases": [
+      {"id": "regional_start", "display_name": "Regional start", "event_message": "North America reads from the EU platform.", "start_time_seconds": 0.0, "duration_seconds": 35.0, "traffic_multiplier": 0.85},
+      {"id": "cross_region_pressure", "display_name": "Cross-region pressure", "event_message": "Distance and repeated reads dominate latency.", "start_time_seconds": 35.0, "duration_seconds": 65.0, "traffic_multiplier": 1.2},
+      {"id": "stabilize_reads", "display_name": "Stabilize reads", "event_message": "Use cache placement to reduce transatlantic work.", "start_time_seconds": 100.0, "duration_seconds": 70.0, "traffic_multiplier": 1.25}
+    ]
+  }
+]

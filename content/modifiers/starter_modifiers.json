@@ -1,0 +1,42 @@
+[
+  {
+    "id": "mobile_refresh_wave",
+    "display_name": "Mobile refresh wave",
+    "description": "A mild burst of client refreshes shifts timing without changing the lesson.",
+    "selection_weight": 0.35,
+    "burst_override": {"enabled": true, "multiplier": 1.45, "period_seconds": 22.0, "duration_seconds": 3.0},
+    "tags": ["traffic"]
+  },
+  {
+    "id": "read_heavy_behavior",
+    "display_name": "Read-heavy behavior",
+    "description": "Repeated read patterns make cache effects easier to observe.",
+    "selection_weight": 0.45,
+    "database_heavy_share": 0.72,
+    "tags": ["database", "cache"]
+  },
+  {
+    "id": "aggressive_retries",
+    "display_name": "Aggressive retries",
+    "description": "Retry timing varies the feedback pressure.",
+    "selection_weight": 0.3,
+    "events": ["retry_storm"],
+    "tags": ["reliability"]
+  },
+  {
+    "id": "regional_traffic_spike",
+    "display_name": "Regional traffic spike",
+    "description": "A traffic event varies the pressure cadence.",
+    "selection_weight": 0.4,
+    "events": ["traffic_spike_40"],
+    "tags": ["traffic", "geography"]
+  },
+  {
+    "id": "slow_database_window",
+    "display_name": "Slow database window",
+    "description": "A temporary storage slowdown varies persistence pressure.",
+    "selection_weight": 0.35,
+    "events": ["database_slowdown"],
+    "tags": ["database"]
+  }
+]

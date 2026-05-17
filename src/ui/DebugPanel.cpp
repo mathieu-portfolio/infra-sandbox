@@ -1,5 +1,7 @@
 #include "ui/DebugPanel.hpp"
 
+#include "content/ContentRegistry.hpp"
+
 #include "raylib.h"
 
 #include <cstdio>
@@ -17,7 +19,7 @@ void DebugPanel::draw(const UiContext& context, const Simulation& simulation) co
     const int panelWidth = 300;
     const int x = context.screenWidth - panelWidth - 12;
     const int y = 12;
-    DrawRectangleRounded({static_cast<float>(x), static_cast<float>(y), static_cast<float>(panelWidth), 238.0f}, 0.04f, 8, {22, 27, 34, 235});
+    DrawRectangleRounded({static_cast<float>(x), static_cast<float>(y), static_cast<float>(panelWidth), 292.0f}, 0.04f, 8, {22, 27, 34, 235});
 
     char buffer[128];
     const auto& metrics = simulation.metrics();
@@ -62,5 +64,17 @@ void DebugPanel::draw(const UiContext& context, const Simulation& simulation) co
         }
         DrawText(hint.c_str(), x + 10, hintY + hintCount * 20, 14, {245, 184, 76, 255});
         ++hintCount;
+    }
+
+    const auto& registry = content::ContentRegistry::instance();
+    const int contentY = y + 238;
+    DrawText(registry.loadedFromContent() ? "Content: JSON loaded" : "Content: fallback active", x + 10, contentY, 14, registry.loadedFromContent() ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+    int errorRow = 0;
+    for (const auto& error : registry.loadErrors()) {
+        if (errorRow >= 2) {
+            break;
+        }
+        DrawText(error.c_str(), x + 10, contentY + 20 + errorRow * 16, 12, {235, 86, 100, 255});
+        ++errorRow;
     }
 }

@@ -1,8 +1,7 @@
 #include "ui/ActionPanelModel.hpp"
 
+#include "content/ContentRegistry.hpp"
 #include "ui/UiLayout.hpp"
-
-#include <array>
 
 namespace {
 std::string selectedTarget(const Simulation& simulation, const UiState& state)
@@ -13,38 +12,38 @@ std::string selectedTarget(const Simulation& simulation, const UiState& state)
     return "Global";
 }
 
-ActionCard mechanicCard(const Simulation& simulation, const UiState& state, MechanicType mechanic, std::string name, std::string description, std::string helps, std::string tradeOff)
+ActionCard mechanicCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const bool allowed = simulation.isMechanicAllowed(mechanic);
+    const bool allowed = simulation.isMechanicAllowed(definition.mechanic);
     return {
         .kind = ActionCardKind::Mechanic,
-        .mechanic = mechanic,
-        .name = std::move(name),
-        .description = std::move(description),
+        .mechanic = definition.mechanic,
+        .name = definition.displayName,
+        .description = definition.description,
         .target = selectedTarget(simulation, state),
-        .helps = std::move(helps),
-        .tradeOff = std::move(tradeOff),
+        .helps = definition.expectedBenefits,
+        .tradeOff = definition.tradeoffs,
         .unavailableReason = allowed ? "" : "Locked by scenario progression.",
         .available = allowed,
-        .requiresConfirmation = false,
+        .requiresConfirmation = definition.requiresConfirmation,
     };
 }
 
-ActionCard topologyCard(const Simulation& simulation, const UiState& state, TopologyMutationType mutation, MechanicType mechanic, std::string name, std::string description, std::string helps, std::string tradeOff)
+ActionCard topologyCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const bool allowed = simulation.isMechanicAllowed(mechanic);
+    const bool allowed = simulation.isMechanicAllowed(definition.mechanic);
     return {
         .kind = ActionCardKind::TopologyMutation,
-        .mechanic = mechanic,
-        .mutation = mutation,
-        .name = std::move(name),
-        .description = std::move(description),
+        .mechanic = definition.mechanic,
+        .mutation = definition.mutation,
+        .name = definition.displayName,
+        .description = definition.description,
         .target = selectedTarget(simulation, state),
-        .helps = std::move(helps),
-        .tradeOff = std::move(tradeOff),
+        .helps = definition.expectedBenefits,
+        .tradeOff = definition.tradeoffs,
         .unavailableReason = allowed ? "" : "Locked by scenario progression.",
         .available = allowed,
-        .requiresConfirmation = true,
+        .requiresConfirmation = definition.requiresConfirmation,
     };
 }
 }
@@ -77,13 +76,13 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
             .available = true,
         });
     } else {
-        cards.push_back(mechanicCard(simulation, state, MechanicType::ScaleUp, "Scale Up", "Increase API service capacity.", "Processing capacity, API queue pressure", "May not help downstream DB bottlenecks."));
-        cards.push_back(topologyCard(simulation, state, TopologyMutationType::AddCache, MechanicType::AddCache, "Add Cache", "Insert cache on a constrained data path.", "Repeated reads, DB pressure, latency", "Adds state and invalidation complexity."));
-        cards.push_back(topologyCard(simulation, state, TopologyMutationType::AddReadReplica, MechanicType::AddReadReplica, "Add Replica", "Add read capacity near a chosen region.", "Read throughput, persistence pressure", "Replication lag and operational complexity."));
-        cards.push_back(topologyCard(simulation, state, TopologyMutationType::AddQueue, MechanicType::AddQueue, "Add Queue", "Insert buffering between API and database.", "Burst absorption, retry amplification", "Adds delay and async complexity."));
-        cards.push_back(topologyCard(simulation, state, TopologyMutationType::AddRegionalCache, MechanicType::AddRegionalCache, "Regional Cache", "Deploy cache capacity near regional demand.", "Traffic localization, inter-region latency", "More distributed state."));
-        cards.push_back(mechanicCard(simulation, state, MechanicType::ToggleRetries, "Toggle Retries", "Enable or disable request retries.", "Retry amplification control", "May increase visible errors when disabled."));
-        cards.push_back(mechanicCard(simulation, state, MechanicType::ClearCache, "Clear Cache", "Evict current cache contents.", "Tests cache dependency and recovery", "Temporarily increases DB pressure."));
+        for (const auto& definition : content::ContentRegistry::instance().interventions()) {
+            if (definition.kind == content::InterventionKind::TopologyMutation) {
+                cards.push_back(topologyCard(simulation, state, definition));
+            } else {
+                cards.push_back(mechanicCard(simulation, state, definition));
+            }
+        }
     }
 
     const Rectangle panel = panelBounds(screenWidth, screenHeight);

@@ -1,0 +1,56 @@
+{
+  "id": "demo_regional_api",
+  "display_name": "Regional API with EU persistence",
+  "description": "Starter topology with two client regions, an API service, cache, and database.",
+  "tags": ["starter", "regional"],
+  "regions": ["NorthAmerica", "Europe"],
+  "nodes": [
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {"latitude": 37.77, "longitude": -122.42, "region": "NorthAmerica"},
+      "network_identity": {"hostname": "clients.na.infrastructure.local", "ip_address": "10.10.0.10", "endpoint": "https://clients.na.example.net"},
+      "request_rate_per_second": 4.0
+    },
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {"latitude": 52.52, "longitude": 13.40, "region": "Europe"},
+      "network_identity": {"hostname": "clients.eu.infrastructure.local", "ip_address": "10.20.0.10", "endpoint": "https://clients.eu.example.net"},
+      "request_rate_per_second": 3.0
+    },
+    {
+      "id": "na_cache",
+      "display_name": "NA cache",
+      "type": "cache",
+      "geo": {"latitude": 39.10, "longitude": -94.58, "region": "NorthAmerica"},
+      "network_identity": {"hostname": "cache.na-edge.infrastructure.local", "ip_address": "10.10.1.20", "endpoint": "https://cache.na-edge.example.net"}
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {"latitude": 50.11, "longitude": 8.68, "region": "Europe"},
+      "network_identity": {"hostname": "api.eu-west.infrastructure.local", "ip_address": "10.20.0.20", "endpoint": "https://api.eu-west.example.net"},
+      "processing_capacity_per_second": 7.0,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {"latitude": 50.12, "longitude": 8.67, "region": "Europe"},
+      "network_identity": {"hostname": "db.eu-west.infrastructure.local", "ip_address": "10.20.1.30", "endpoint": "https://db.eu-west.example.net"},
+      "processing_capacity_per_second": 4.0,
+      "timeout_seconds": 5.5
+    }
+  ],
+  "links": [
+    {"source": "na_users", "target": "eu_api", "base_latency_seconds": 0.85, "bandwidth_per_second": 40.0},
+    {"source": "eu_users", "target": "eu_api", "base_latency_seconds": 0.95, "bandwidth_per_second": 40.0},
+    {"source": "eu_api", "target": "eu_database", "base_latency_seconds": 0.35, "bandwidth_per_second": 80.0},
+    {"source": "eu_database", "target": "eu_api", "base_latency_seconds": 0.35, "bandwidth_per_second": 80.0}
+  ]
+}
