@@ -13,7 +13,9 @@
 #include <array>
 #include <deque>
 #include <optional>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 class Simulation {
 public:
@@ -22,6 +24,7 @@ public:
     void update(double dt);
     void adjustClientRequestRates(double deltaPerSecond);
     void scaleApiCapacity(double multiplier);
+    bool scaleApiCapacity(int targetId, double multiplier, int maxScaleLevel, double diminishingReturn, double complexityCost);
     void toggleCache();
     void clearCache();
     void toggleBurstMode();
@@ -39,6 +42,14 @@ public:
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);
     bool applyTopologyMutation(const struct TopologyMutation& mutation);
+    void addComplexity(double amount);
+    bool canScaleNode(int nodeId, int maxScaleLevel) const;
+    int scaleLevelForNode(int nodeId) const;
+    int maxScaleLevelForNode(int nodeId, int contentMaxScaleLevel) const;
+    bool canUseRegionSlots(const std::string& region, int slots) const;
+    bool hasAnyRegionCapacity(int slots) const;
+    int regionSlotsUsed(const std::string& region) const;
+    int regionSlotLimit(const std::string& region) const;
 
     [[nodiscard]] const InfrastructureGraph& graph() const;
     [[nodiscard]] const std::unordered_map<std::uint64_t, Request>& requests() const;
@@ -54,6 +65,8 @@ public:
     [[nodiscard]] const TimeState& timeState() const;
     [[nodiscard]] const RuntimeSystems& runtimeSystems() const;
     [[nodiscard]] const SimulationConfig& config() const;
+    [[nodiscard]] double complexityScore() const;
+    [[nodiscard]] double recommendedComplexityThreshold() const;
 
 private:
     struct CacheEntry {
@@ -86,6 +99,7 @@ private:
     void updateNodeHealth();
     void updateMetricsNodeStates();
     void refreshEffectiveCapacities();
+    void refreshRegionSlots();
     void pruneOldRequests();
 
     InfrastructureGraph graph_;
@@ -104,9 +118,13 @@ private:
     double scenarioDatabaseCapacityMultiplier_ = 1.0;
     double scenarioRetryDelayMultiplier_ = 1.0;
     double scenarioLatencyMultiplier_ = 1.0;
+    double complexityScore_ = 0.0;
+    double recommendedComplexityThreshold_ = 10.0;
     bool cacheEnabled_ = false;
     bool burstModeEnabled_ = false;
     std::optional<BurstScenario> scenarioBurstOverride_;
     std::optional<double> scenarioDatabaseHeavyShareOverride_;
     std::array<bool, static_cast<std::size_t>(MechanicType::Count)> allowedMechanics_{};
+    std::unordered_map<std::string, int> regionSlotsUsed_;
+    std::unordered_map<std::string, int> regionSlotLimits_;
 };

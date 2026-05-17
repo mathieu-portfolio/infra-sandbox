@@ -14,7 +14,28 @@ std::string selectedTarget(const Simulation& simulation, const UiState& state)
 
 ActionCard mechanicCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const bool allowed = simulation.isMechanicAllowed(definition.mechanic);
+    bool available = simulation.isMechanicAllowed(definition.mechanic);
+    std::string unavailableReason = available ? "" : "Locked by scenario progression.";
+    std::string stateLabel = available ? "Available" : "Locked";
+    int currentScaleLevel = 0;
+    int maxScaleLevel = 0;
+    if (definition.mechanic == MechanicType::ScaleUp) {
+        maxScaleLevel = simulation.maxScaleLevelForNode(state.selection.nodeId, definition.maxScaleLevel);
+        currentScaleLevel = simulation.scaleLevelForNode(state.selection.nodeId);
+        if (state.selection.nodeId >= 0) {
+            const Node* node = simulation.graph().node(state.selection.nodeId);
+            if (node == nullptr || node->type != NodeType::ApiService) {
+                available = false;
+                unavailableReason = "Invalid target: select an API service.";
+                stateLabel = "Invalid target";
+            }
+        }
+        if (available && !simulation.canScaleNode(state.selection.nodeId, definition.maxScaleLevel)) {
+            available = false;
+            unavailableReason = "Max scale level reached.";
+            stateLabel = "Maxed";
+        }
+    }
     return {
         .kind = ActionCardKind::Mechanic,
         .mechanic = definition.mechanic,
@@ -23,15 +44,29 @@ ActionCard mechanicCard(const Simulation& simulation, const UiState& state, cons
         .target = selectedTarget(simulation, state),
         .helps = definition.expectedBenefits,
         .tradeOff = definition.tradeoffs,
-        .unavailableReason = allowed ? "" : "Locked by scenario progression.",
-        .available = allowed,
+        .positiveEffects = definition.positiveEffects,
+        .negativeEffects = definition.negativeEffects,
+        .pressureShifts = definition.pressureShifts,
+        .unavailableReason = unavailableReason,
+        .stateLabel = stateLabel,
+        .complexityCost = definition.complexityCost,
+        .currentScaleLevel = currentScaleLevel,
+        .maxScaleLevel = maxScaleLevel,
+        .available = available,
         .requiresConfirmation = definition.requiresConfirmation,
     };
 }
 
 ActionCard topologyCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const bool allowed = simulation.isMechanicAllowed(definition.mechanic);
+    bool available = simulation.isMechanicAllowed(definition.mechanic);
+    std::string unavailableReason = available ? "" : "Locked by scenario progression.";
+    std::string stateLabel = available ? "Available" : "Locked";
+    if (available && !simulation.hasAnyRegionCapacity(definition.regionSlotUsage)) {
+        available = false;
+        unavailableReason = "Insufficient regional deployment capacity.";
+        stateLabel = "No capacity";
+    }
     return {
         .kind = ActionCardKind::TopologyMutation,
         .mechanic = definition.mechanic,
@@ -41,8 +76,14 @@ ActionCard topologyCard(const Simulation& simulation, const UiState& state, cons
         .target = selectedTarget(simulation, state),
         .helps = definition.expectedBenefits,
         .tradeOff = definition.tradeoffs,
-        .unavailableReason = allowed ? "" : "Locked by scenario progression.",
-        .available = allowed,
+        .positiveEffects = definition.positiveEffects,
+        .negativeEffects = definition.negativeEffects,
+        .pressureShifts = definition.pressureShifts,
+        .unavailableReason = unavailableReason,
+        .stateLabel = stateLabel,
+        .complexityCost = definition.complexityCost,
+        .regionSlotUsage = definition.regionSlotUsage,
+        .available = available,
         .requiresConfirmation = definition.requiresConfirmation,
     };
 }
@@ -77,9 +118,6 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
         });
     } else {
         for (const auto& definition : content::ContentRegistry::instance().interventions()) {
-            if (!simulation.isMechanicAllowed(definition.mechanic)) {
-                continue;
-            }
             if (definition.kind == content::InterventionKind::TopologyMutation) {
                 cards.push_back(topologyCard(simulation, state, definition));
             } else {

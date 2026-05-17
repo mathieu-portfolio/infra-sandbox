@@ -1,10 +1,23 @@
 #include "control/InterventionController.hpp"
 
+#include "content/ContentRegistry.hpp"
 #include "ui/ActionPanelModel.hpp"
 #include "ui/UiLayout.hpp"
 
 #include <algorithm>
 #include <string>
+
+namespace {
+const content::InterventionDefinition* interventionFor(MechanicType mechanic)
+{
+    for (const auto& definition : content::ContentRegistry::instance().interventions()) {
+        if (definition.mechanic == mechanic) {
+            return &definition;
+        }
+    }
+    return nullptr;
+}
+}
 
 void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState)
 {
@@ -88,6 +101,10 @@ void InterventionController::startPlacement(const Simulation& simulation, UiStat
     if (!simulation.isMechanicAllowed(mechanic)) {
         return;
     }
+    if (const auto* intervention = interventionFor(mechanic); intervention != nullptr && !simulation.hasAnyRegionCapacity(intervention->regionSlotUsage)) {
+        uiState.latestFeedback = "No regional deployment slots are available for this action.";
+        return;
+    }
     uiState.placementActive = true;
     uiState.activeMutation = type;
     uiState.placementCandidateIndex = 0;
@@ -118,14 +135,31 @@ void InterventionController::confirmPlacement(Simulation& simulation, ScenarioMa
         return;
     }
     const int index = std::clamp(uiState.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
-    const MutationPreview preview = mutationValidator_.preview(simulation, uiState.activeMutation, candidates[static_cast<std::size_t>(index)]);
+    MutationPreview preview = mutationValidator_.preview(simulation, uiState.activeMutation, candidates[static_cast<std::size_t>(index)]);
+    const MechanicType mechanic = uiState.activeMutation == TopologyMutationType::AddCache ? MechanicType::AddCache
+        : uiState.activeMutation == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
+        : uiState.activeMutation == TopologyMutationType::AddQueue ? MechanicType::AddQueue
+        : MechanicType::AddRegionalCache;
+    if (const auto* intervention = interventionFor(mechanic)) {
+        preview.mutation.complexityCost = intervention->complexityCost;
+        preview.mutation.regionSlotUsage = intervention->regionSlotUsage;
+        if (!simulation.canUseRegionSlots(preview.mutation.placement.location.regionName, intervention->regionSlotUsage)) {
+            uiState.latestFeedback = preview.mutation.placement.displayName + " has no free deployment slots for this action.";
+            return;
+        }
+    }
     if (preview.valid && topologyBuilder_.apply(simulation, preview.mutation)) {
         const std::string target = candidates[static_cast<std::size_t>(index)].displayName;
-        recordFeedback(uiState, simulation, topologyMutationName(uiState.activeMutation), target, std::string(topologyMutationName(uiState.activeMutation)) + " applied in " + target + ". Watch latency, queue depth, and utilization.");
-        const MechanicType mechanic = uiState.activeMutation == TopologyMutationType::AddCache ? MechanicType::AddCache
-            : uiState.activeMutation == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
-            : uiState.activeMutation == TopologyMutationType::AddQueue ? MechanicType::AddQueue
-            : MechanicType::AddRegionalCache;
+        std::string feedback = std::string(topologyMutationName(uiState.activeMutation)) + " applied in " + target + ". Watch latency, queue depth, and utilization.";
+        if (const auto* intervention = interventionFor(mechanic); intervention != nullptr) {
+            if (!intervention->positiveEffects.empty()) {
+                feedback = intervention->positiveEffects.front() + ".";
+            }
+            if (!intervention->pressureShifts.empty()) {
+                feedback += " " + intervention->pressureShifts.front() + ".";
+            }
+        }
+        recordFeedback(uiState, simulation, topologyMutationName(uiState.activeMutation), target, feedback);
         scenarioManager.notifyActionTriggered(mechanic);
         uiState.pendingVisualFeedbackEvents.push_back({
             .kind = VisualFeedbackKind::TopologyMutation,
@@ -220,7 +254,12 @@ void InterventionController::executeMechanic(Simulation& simulation, ScenarioMan
     });
 
     std::string message = actionName + " applied.";
-    if (command.type == MechanicType::ScaleUp) {
+    if (const auto* intervention = interventionFor(command.type); intervention != nullptr && !intervention->positiveEffects.empty()) {
+        message = intervention->positiveEffects.front() + ".";
+        if (!intervention->pressureShifts.empty()) {
+            message += " " + intervention->pressureShifts.front() + ".";
+        }
+    } else if (command.type == MechanicType::ScaleUp) {
         message = "API capacity increased. Watch queue depth and utilization.";
     } else if (command.type == MechanicType::ToggleRetries) {
         message = "Retry policy changed. Watch timeout rate and retry amplification.";

@@ -19,7 +19,8 @@ struct ReliabilityMetrics {
 };
 
 struct ComplexityMetrics {
-    double placeholderScore = 0.0;
+    double current = 0.0;
+    double recommendedThreshold = 10.0;
 };
 
 struct ObservabilityMetrics {
@@ -63,6 +64,7 @@ public:
     void setNodeStates(int apiQueueDepth, double apiUtilization, int databaseQueueDepth, double databaseUtilization);
     void setSimulationSpeed(double speed);
     void setRuntimeSystemCounts(int enabledSystemCount, int initializedSystemCount);
+    void setComplexity(double current, double recommendedThreshold);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;

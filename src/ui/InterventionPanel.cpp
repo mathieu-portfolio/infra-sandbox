@@ -86,6 +86,15 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 118.0f), 14, {230, 237, 243, 255});
         std::snprintf(buffer, sizeof(buffer), "Wait %.2fs", selected->averageQueueWaitSeconds);
         DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 140.0f), 14, {230, 237, 243, 255});
+        if (selected->type == NodeType::ApiService) {
+            std::snprintf(buffer, sizeof(buffer), "Scale Level %d/%d", selected->scaleLevel, selected->maxScaleLevel);
+            DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 162.0f), 14, {89, 196, 255, 255});
+        } else if (selected->hasGeoLocation) {
+            const int used = simulation.regionSlotsUsed(selected->geoLocation.regionName);
+            const int limit = simulation.regionSlotLimit(selected->geoLocation.regionName);
+            std::snprintf(buffer, sizeof(buffer), "%s Slots %d/%d", selected->geoLocation.regionName.c_str(), used, limit);
+            DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 162.0f), 14, {89, 196, 255, 255});
+        }
     } else {
         drawTextClipped("Click a node or choose a global action.", {target.x + 14.0f, target.y + 48.0f, target.width - 28.0f, 20.0f}, 14, {139, 148, 158, 255});
     }
@@ -106,6 +115,9 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         DrawRectangleRoundedLines(card.bounds, 0.06f, 6, border);
         IconRegistry::instance().drawIcon(iconForAction(card), {card.bounds.x + 10.0f, card.bounds.y + 10.0f, 24.0f, 24.0f}, card.available ? Color{89, 196, 255, 255} : Color{139, 148, 158, 160});
         drawTextClipped(card.name, {card.bounds.x + 42.0f, card.bounds.y + 8.0f, card.bounds.width - 52.0f, 18.0f}, 15, availableText(card.available));
+        if (!card.stateLabel.empty()) {
+            drawTextClipped(card.stateLabel, {card.bounds.x + card.bounds.width - 88.0f, card.bounds.y + 8.0f, 78.0f, 15.0f}, 11, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
+        }
         drawTextClipped(card.description, {card.bounds.x + 42.0f, card.bounds.y + 28.0f, card.bounds.width - 52.0f, 15.0f}, 12, {139, 148, 158, 255});
         drawTextClipped(card.available ? card.helps : card.unavailableReason, {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 15.0f}, 12, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
     }
@@ -116,8 +128,21 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
     if (selectedIndex >= 0 && selectedIndex < static_cast<int>(cards.size())) {
         const auto& card = cards[static_cast<std::size_t>(selectedIndex)];
         drawTextClipped(card.name, {preview.x + 14.0f, preview.y + 42.0f, preview.width - 28.0f, 20.0f}, 16, {230, 237, 243, 255});
-        drawTextClipped("Helps: " + card.helps, {preview.x + 14.0f, preview.y + 70.0f, preview.width - 28.0f, 18.0f}, 14, {86, 210, 151, 255});
-        drawTextClipped("Trade-off: " + card.tradeOff, {preview.x + 14.0f, preview.y + 94.0f, preview.width - 28.0f, 18.0f}, 14, {245, 184, 76, 255});
+        const std::string helps = !card.positiveEffects.empty() ? card.positiveEffects.front() : card.helps;
+        const std::string downside = !card.negativeEffects.empty() ? card.negativeEffects.front() : card.tradeOff;
+        const std::string shift = !card.pressureShifts.empty() ? card.pressureShifts.front() : "Watch pressure after applying.";
+        drawTextClipped("+ " + helps, {preview.x + 14.0f, preview.y + 68.0f, preview.width - 28.0f, 17.0f}, 13, {86, 210, 151, 255});
+        drawTextClipped("- " + downside, {preview.x + 14.0f, preview.y + 88.0f, preview.width - 28.0f, 17.0f}, 13, {245, 184, 76, 255});
+        drawTextClipped("Shift: " + shift, {preview.x + 14.0f, preview.y + 108.0f, preview.width - 28.0f, 17.0f}, 13, {89, 196, 255, 255});
+        char impact[120];
+        if (card.maxScaleLevel > 0) {
+            std::snprintf(impact, sizeof(impact), "Scale %d/%d  Complexity +%.1f", card.currentScaleLevel, card.maxScaleLevel, card.complexityCost);
+        } else if (card.regionSlotUsage > 0) {
+            std::snprintf(impact, sizeof(impact), "Uses %d regional slot  Complexity +%.1f", card.regionSlotUsage, card.complexityCost);
+        } else {
+            std::snprintf(impact, sizeof(impact), "Complexity +%.1f", card.complexityCost);
+        }
+        drawTextClipped(impact, {preview.x + 14.0f, preview.y + 128.0f, preview.width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
     } else {
         drawTextClipped("Hover or select an action to inspect effects.", {preview.x + 14.0f, preview.y + 46.0f, preview.width - 28.0f, 18.0f}, 14, {139, 148, 158, 255});
     }

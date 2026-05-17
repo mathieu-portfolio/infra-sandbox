@@ -34,6 +34,8 @@ struct Node {
     double baseProcessingCapacityPerSecond = 0.0;
     double mechanicCapacityMultiplier = 1.0;
     double eventCapacityMultiplier = 1.0;
+    int scaleLevel = 0;
+    int maxScaleLevel = 3;
     double timeoutSeconds = 6.0;
     double generationAccumulator = 0.0;
     double processingAccumulator = 0.0;

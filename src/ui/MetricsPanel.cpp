@@ -108,7 +108,7 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     const float width = layout.leftSidebar.width;
     const auto& metrics = simulation.metrics();
 
-    Rectangle overview{x, y, width, 196.0f};
+    Rectangle overview{x, y, width, 226.0f};
     drawPanelFrame(overview, "System Overview");
     char buffer[80];
     std::snprintf(buffer, sizeof(buffer), "%.1f req/s", metrics.inputRatePerSecond);
@@ -121,6 +121,8 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     metricRow("metric.queue", "API / DB Queue", buffer, x + 14.0f, y + 132.0f, {245, 184, 76, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f%%", metrics.cacheHitRate * 100.0);
     metricRow("node.cache", "Cache Hit Rate", buffer, x + 14.0f, y + 162.0f, {151, 111, 255, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.1f / %.0f", metrics.complexity.current, metrics.complexity.recommendedThreshold);
+    metricRow("layer.complexity", "Complexity", buffer, x + 14.0f, y + 192.0f, metrics.complexity.current > metrics.complexity.recommendedThreshold ? Color{245, 184, 76, 255} : Color{210, 168, 255, 255});
 
     y += overview.height + UiTheme::gap;
     Rectangle alerts{x, y, width, 166.0f};

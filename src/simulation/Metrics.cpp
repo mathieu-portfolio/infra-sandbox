@@ -73,6 +73,12 @@ void Metrics::setRuntimeSystemCounts(int enabledSystemCount, int initializedSyst
     snapshot_.observability.initializedSystemCount = initializedSystemCount;
 }
 
+void Metrics::setComplexity(double current, double recommendedThreshold)
+{
+    snapshot_.complexity.current = current;
+    snapshot_.complexity.recommendedThreshold = recommendedThreshold;
+}
+
 void Metrics::update(double dt)
 {
     windowElapsed_ += dt;

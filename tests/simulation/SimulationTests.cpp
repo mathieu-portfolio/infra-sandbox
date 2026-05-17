@@ -74,6 +74,34 @@ TEST(MechanicExecutorTests, AppliesCurrentlyImplementedMechanics)
     EXPECT_GT(simulation.metrics().totalGenerated, 0U);
 }
 
+TEST(InterventionConstraintTests, ScaleUpTracksLevelsAndStopsAtCap)
+{
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
+
+    ASSERT_TRUE(simulation.canScaleNode(-1, 2));
+    EXPECT_TRUE(simulation.scaleApiCapacity(-1, 1.5, 2, 0.7, 1.0));
+    EXPECT_TRUE(simulation.scaleApiCapacity(-1, 1.5, 2, 0.7, 1.0));
+    EXPECT_FALSE(simulation.canScaleNode(-1, 2));
+    EXPECT_FALSE(simulation.scaleApiCapacity(-1, 1.5, 2, 0.7, 1.0));
+    EXPECT_DOUBLE_EQ(simulation.complexityScore(), 2.0);
+}
+
+TEST(InterventionConstraintTests, RegionSlotsRejectSaturatedTopologyExpansion)
+{
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
+    PlacementCandidateGenerator generator;
+    MutationValidator validator;
+    TopologyBuilder builder;
+
+    const auto candidates = generator.generate(simulation, TopologyMutationType::AddReadReplica);
+    ASSERT_FALSE(candidates.empty());
+    MutationPreview preview = validator.preview(simulation, TopologyMutationType::AddReadReplica, candidates.front());
+    ASSERT_TRUE(preview.valid);
+    preview.mutation.regionSlotUsage = 5;
+
+    EXPECT_FALSE(builder.apply(simulation, preview.mutation));
+}
+
 TEST(TopologyMutationTests, GeneratesAndAppliesConstrainedCachePlacement)
 {
     Simulation simulation(ScenarioRegistry::databaseBottleneck());

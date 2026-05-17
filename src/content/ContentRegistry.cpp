@@ -568,11 +568,18 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.description = stringAt(object, "description");
     intervention.expectedBenefits = stringAt(object, "expected_benefits");
     intervention.tradeoffs = stringAt(object, "tradeoffs");
+    intervention.positiveEffects = stringsAt(object, "positive_effects");
+    intervention.negativeEffects = stringsAt(object, "negative_effects");
+    intervention.pressureShifts = stringsAt(object, "pressure_shifts");
     intervention.tags = stringsAt(object, "tags");
     intervention.kind = stringAt(object, "kind") == "topology_mutation" ? InterventionKind::TopologyMutation : InterventionKind::Mechanic;
     intervention.mechanic = mechanicFromId(stringAt(object, "mechanic"));
     intervention.mutation = mutationFromId(stringAt(object, "mutation"));
     intervention.requiresConfirmation = boolAt(object, "requires_confirmation", intervention.kind == InterventionKind::TopologyMutation);
+    intervention.complexityCost = numberAt(object, "complexity_cost");
+    intervention.maxScaleLevel = static_cast<int>(numberAt(object, "max_scale_level", intervention.maxScaleLevel));
+    intervention.diminishingReturn = numberAt(object, "diminishing_return", intervention.diminishingReturn);
+    intervention.regionSlotUsage = static_cast<int>(numberAt(object, "region_slot_usage", intervention.kind == InterventionKind::TopologyMutation ? 1.0 : 0.0));
     return intervention;
 }
 
@@ -726,6 +733,15 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         if (!mutation.empty() && !knownMutationId(mutation)) {
             result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid mutation id: " + mutation);
         }
+        if (numberAt(object, "complexity_cost") < 0.0) {
+            result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid complexity cost.");
+        }
+        if (numberAt(object, "max_scale_level", 1.0) < 1.0) {
+            result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid max scale level.");
+        }
+        if (numberAt(object, "region_slot_usage", 0.0) < 0.0) {
+            result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid region slot usage.");
+        }
         interventions_.push_back(parseIntervention(object));
     }
 
@@ -869,7 +885,20 @@ void ContentRegistry::loadFallbackContent()
     scenario.objectives = {{.id = "fallback_survive", .displayName = "Survive", .type = ScenarioObjectiveType::SurviveDuration, .summary = "Keep fallback service running for 60s.", .durationSeconds = 60.0}};
     scenarios_ = {std::move(scenario)};
     interventions_ = {
-        {.id = "scale_up", .displayName = "Scale Up", .description = "Increase API service capacity.", .expectedBenefits = "Processing capacity, queue pressure", .tradeoffs = "May not solve downstream bottlenecks.", .mechanic = MechanicType::ScaleUp},
+        {
+            .id = "scale_up",
+            .displayName = "Scale Up",
+            .description = "Increase API service capacity.",
+            .expectedBenefits = "Processing capacity, queue pressure",
+            .tradeoffs = "May not solve downstream bottlenecks.",
+            .positiveEffects = {"API queue pressure decreases", "Compute headroom increases"},
+            .negativeEffects = {"Downstream persistence pressure can become dominant", "Operational complexity increases"},
+            .pressureShifts = {"Queue pressure can shift toward persistence"},
+            .mechanic = MechanicType::ScaleUp,
+            .complexityCost = 1.0,
+            .maxScaleLevel = 3,
+            .diminishingReturn = 0.72,
+        },
     };
 }
 

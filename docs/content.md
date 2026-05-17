@@ -100,6 +100,7 @@ The loader reports:
 - unresolved scenario references
 - scenarios without topology, links, or objectives
 - invalid negative node or traffic numeric ranges
+- invalid intervention numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
 
 Load errors are emitted through raylib logs and displayed in the debug UI. If content loading fails, the registry installs a tiny fallback scenario so the app remains usable.
 
@@ -121,6 +122,12 @@ Add an entry in `content/interventions/` with:
 - `mutation`: required for topology mutations
 - `expected_benefits`
 - `tradeoffs`
+- `positive_effects`
+- `negative_effects`
+- `pressure_shifts`
+- `complexity_cost`
+- `max_scale_level` and `diminishing_return` for scale interventions
+- `region_slot_usage` for topology-expanding interventions
 - simple `availability` metadata
 
-The JSON controls action-card metadata. The actual mechanic or topology mutation still executes in C++.
+The JSON controls action-card metadata, preview wording, complexity impact, scale caps, and regional slot usage. The actual mechanic or topology mutation still executes in C++.

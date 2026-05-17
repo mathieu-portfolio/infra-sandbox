@@ -32,6 +32,8 @@ struct TopologyMutation {
     std::vector<Link> linksToCreate;
     std::vector<int> linksToDisable;
     std::string description;
+    double complexityCost = 0.0;
+    int regionSlotUsage = 0;
 };
 
 struct MutationPreview {

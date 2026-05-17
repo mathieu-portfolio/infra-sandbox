@@ -28,6 +28,7 @@ void Simulation::update(double dt)
 
     metrics_.setSimulationSpeed(simulationSpeed_);
     metrics_.setRuntimeSystemCounts(runtimeSystems_.enabledCount(), static_cast<int>(runtimeSystems_.states().size()));
+    metrics_.setComplexity(complexityScore_, recommendedComplexityThreshold_);
     metrics_.update(dt);
     pressureAnalysis_.update(timeSeconds_, dt, graph_, metrics_.snapshot());
     pruneOldRequests();
@@ -45,12 +46,34 @@ void Simulation::adjustClientRequestRates(double deltaPerSecond)
 
 void Simulation::scaleApiCapacity(double multiplier)
 {
+    (void)scaleApiCapacity(-1, multiplier, 3, 0.72, 1.0);
+}
+
+bool Simulation::scaleApiCapacity(int targetId, double multiplier, int maxScaleLevel, double diminishingReturn, double complexityCost)
+{
+    bool applied = false;
     for (auto& node : graph_.nodes()) {
-        if (node.type == NodeType::ApiService) {
-            node.mechanicCapacityMultiplier = std::max(0.1, node.mechanicCapacityMultiplier * multiplier);
+        if (node.type != NodeType::ApiService) {
+            continue;
         }
+        if (targetId >= 0 && node.id != targetId) {
+            continue;
+        }
+        node.maxScaleLevel = std::max(1, maxScaleLevel);
+        if (node.scaleLevel >= node.maxScaleLevel) {
+            continue;
+        }
+        const double levelEfficiency = std::pow(std::clamp(diminishingReturn, 0.1, 1.0), static_cast<double>(node.scaleLevel));
+        const double effectiveMultiplier = 1.0 + (std::max(1.0, multiplier) - 1.0) * levelEfficiency;
+        node.mechanicCapacityMultiplier = std::max(0.1, node.mechanicCapacityMultiplier * effectiveMultiplier);
+        ++node.scaleLevel;
+        applied = true;
     }
-    refreshEffectiveCapacities();
+    if (applied) {
+        addComplexity(complexityCost);
+        refreshEffectiveCapacities();
+    }
+    return applied;
 }
 
 void Simulation::toggleCache()
@@ -82,8 +105,11 @@ void Simulation::resetProcessingCapacity()
         if (node.isProcessor()) {
             node.mechanicCapacityMultiplier = 1.0;
             node.eventCapacityMultiplier = 1.0;
+            node.scaleLevel = 0;
         }
     }
+    complexityScore_ = 0.0;
+    refreshRegionSlots();
     refreshEffectiveCapacities();
 }
 
@@ -169,11 +195,20 @@ void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
 
 bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
 {
+    if (mutation.regionSlotUsage > 0) {
+        for (const auto& node : mutation.nodesToCreate) {
+            if (node.hasGeoLocation && !canUseRegionSlots(node.geoLocation.regionName, mutation.regionSlotUsage)) {
+                return false;
+            }
+        }
+    }
+
     std::vector<int> createdNodeIds;
     createdNodeIds.reserve(mutation.nodesToCreate.size());
     for (auto node : mutation.nodesToCreate) {
         createdNodeIds.push_back(graph_.addNode(std::move(node)));
     }
+    refreshRegionSlots();
 
     for (const int linkId : mutation.linksToDisable) {
         if (Link* link = graph_.link(linkId)) {
@@ -203,7 +238,79 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
         graph_.addLink(std::move(link));
     }
 
-    return !createdNodeIds.empty() || !mutation.linksToDisable.empty() || !mutation.linksToCreate.empty();
+    const bool applied = !createdNodeIds.empty() || !mutation.linksToDisable.empty() || !mutation.linksToCreate.empty();
+    if (applied) {
+        addComplexity(mutation.complexityCost);
+    }
+    return applied;
+}
+
+void Simulation::addComplexity(double amount)
+{
+    complexityScore_ = std::max(0.0, complexityScore_ + amount);
+    metrics_.setComplexity(complexityScore_, recommendedComplexityThreshold_);
+}
+
+bool Simulation::canScaleNode(int nodeId, int maxScaleLevel) const
+{
+    if (nodeId >= 0) {
+        const Node* node = graph_.node(nodeId);
+        return node != nullptr && node->type == NodeType::ApiService && node->scaleLevel < maxScaleLevelForNode(nodeId, maxScaleLevel);
+    }
+    for (const auto& node : graph_.nodes()) {
+        if (node.type == NodeType::ApiService && node.scaleLevel < std::max(1, maxScaleLevel)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int Simulation::scaleLevelForNode(int nodeId) const
+{
+    const Node* node = graph_.node(nodeId);
+    return node != nullptr ? node->scaleLevel : 0;
+}
+
+int Simulation::maxScaleLevelForNode(int nodeId, int contentMaxScaleLevel) const
+{
+    const Node* node = graph_.node(nodeId);
+    if (node == nullptr) {
+        return std::max(1, contentMaxScaleLevel);
+    }
+    return std::max(1, contentMaxScaleLevel > 0 ? contentMaxScaleLevel : node->maxScaleLevel);
+}
+
+bool Simulation::canUseRegionSlots(const std::string& region, int slots) const
+{
+    if (slots <= 0 || region.empty()) {
+        return true;
+    }
+    return regionSlotsUsed(region) + slots <= regionSlotLimit(region);
+}
+
+bool Simulation::hasAnyRegionCapacity(int slots) const
+{
+    if (slots <= 0 || regionSlotLimits_.empty()) {
+        return true;
+    }
+    for (const auto& [region, limit] : regionSlotLimits_) {
+        if (regionSlotsUsed(region) + slots <= limit) {
+            return true;
+        }
+    }
+    return false;
+}
+
+int Simulation::regionSlotsUsed(const std::string& region) const
+{
+    const auto it = regionSlotsUsed_.find(region);
+    return it != regionSlotsUsed_.end() ? it->second : 0;
+}
+
+int Simulation::regionSlotLimit(const std::string& region) const
+{
+    const auto it = regionSlotLimits_.find(region);
+    return it != regionSlotLimits_.end() ? it->second : 5;
 }
 
 const InfrastructureGraph& Simulation::graph() const
@@ -280,6 +387,16 @@ const SimulationConfig& Simulation::config() const
     return config_;
 }
 
+double Simulation::complexityScore() const
+{
+    return complexityScore_;
+}
+
+double Simulation::recommendedComplexityThreshold() const
+{
+    return recommendedComplexityThreshold_;
+}
+
 void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
 {
     scenario_ = scenario;
@@ -296,6 +413,8 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     scenarioTrafficMultiplier_ = 1.0;
     scenarioDatabaseCapacityMultiplier_ = 1.0;
     scenarioRetryDelayMultiplier_ = 1.0;
+    scenarioLatencyMultiplier_ = 1.0;
+    complexityScore_ = 0.0;
     cacheEnabled_ = scenario.cache.enabled;
     burstModeEnabled_ = scenario.bursts.enabled;
     scenarioBurstOverride_.reset();
@@ -326,6 +445,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         node.timeoutSeconds = nodeScenario.timeoutSeconds;
         graph_.addNode(std::move(node));
     }
+    refreshRegionSlots();
 
     for (const auto& linkScenario : scenario.links) {
         Link link;
@@ -838,6 +958,21 @@ void Simulation::refreshEffectiveCapacities()
         node.processingCapacityPerSecond = std::max(
             0.1,
             node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier);
+    }
+}
+
+void Simulation::refreshRegionSlots()
+{
+    regionSlotsUsed_.clear();
+    regionSlotLimits_.clear();
+    for (const auto& node : graph_.nodes()) {
+        if (!node.hasGeoLocation || node.geoLocation.regionName.empty()) {
+            continue;
+        }
+        regionSlotLimits_.try_emplace(node.geoLocation.regionName, 5);
+        if (node.type != NodeType::ClientCluster) {
+            ++regionSlotsUsed_[node.geoLocation.regionName];
+        }
     }
 }
 

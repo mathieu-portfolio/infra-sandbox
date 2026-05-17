@@ -26,7 +26,17 @@ struct ActionCard {
     std::string target;
     std::string helps;
     std::string tradeOff;
+    std::vector<std::string> positiveEffects;
+    std::vector<std::string> negativeEffects;
+    std::vector<std::string> pressureShifts;
     std::string unavailableReason;
+    std::string stateLabel;
+    double complexityCost = 0.0;
+    int currentScaleLevel = 0;
+    int maxScaleLevel = 0;
+    int regionSlotsUsed = 0;
+    int regionSlotLimit = 0;
+    int regionSlotUsage = 0;
     bool available = true;
     bool requiresConfirmation = false;
     Rectangle bounds{};

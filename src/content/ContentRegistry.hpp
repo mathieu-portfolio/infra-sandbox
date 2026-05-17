@@ -21,11 +21,18 @@ struct InterventionDefinition {
     std::string description;
     std::string expectedBenefits;
     std::string tradeoffs;
+    std::vector<std::string> positiveEffects;
+    std::vector<std::string> negativeEffects;
+    std::vector<std::string> pressureShifts;
     std::vector<std::string> tags;
     InterventionKind kind = InterventionKind::Mechanic;
     MechanicType mechanic = MechanicType::ScaleUp;
     TopologyMutationType mutation = TopologyMutationType::AddCache;
     bool requiresConfirmation = false;
+    double complexityCost = 0.0;
+    int maxScaleLevel = 3;
+    double diminishingReturn = 0.72;
+    int regionSlotUsage = 0;
 };
 
 struct ContentLoadResult {

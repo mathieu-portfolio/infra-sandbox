@@ -1,5 +1,6 @@
 #include "simulation/Mechanics.hpp"
 
+#include "content/ContentRegistry.hpp"
 #include "simulation/Simulation.hpp"
 
 #include <array>
@@ -57,6 +58,16 @@ const MechanicDefinition& fallbackDefinition()
     };
     return fallback;
 }
+
+const content::InterventionDefinition* interventionFor(MechanicType mechanic)
+{
+    for (const auto& definition : content::ContentRegistry::instance().interventions()) {
+        if (definition.mechanic == mechanic) {
+            return &definition;
+        }
+    }
+    return nullptr;
+}
 }
 
 const MechanicDefinition& MechanicRegistry::definition(MechanicType type)
@@ -84,19 +95,32 @@ void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& co
 
     switch (command.type) {
     case MechanicType::ScaleUp:
-        simulation.scaleApiCapacity(command.amount > 0.0 ? command.amount : 1.5);
+        if (const auto* intervention = interventionFor(command.type)) {
+            (void)simulation.scaleApiCapacity(command.targetId, command.amount > 0.0 ? command.amount : 1.5, intervention->maxScaleLevel, intervention->diminishingReturn, intervention->complexityCost);
+        } else {
+            simulation.scaleApiCapacity(command.amount > 0.0 ? command.amount : 1.5);
+        }
         break;
     case MechanicType::EnableCache:
         simulation.toggleCache();
+        if (const auto* intervention = interventionFor(command.type)) {
+            simulation.addComplexity(intervention->complexityCost);
+        }
         break;
     case MechanicType::ClearCache:
         simulation.clearCache();
         break;
     case MechanicType::ToggleRetries:
         simulation.toggleRetries();
+        if (const auto* intervention = interventionFor(command.type)) {
+            simulation.addComplexity(intervention->complexityCost);
+        }
         break;
     case MechanicType::ThrottleTraffic:
         simulation.adjustClientRequestRates(command.amount);
+        if (const auto* intervention = interventionFor(command.type)) {
+            simulation.addComplexity(intervention->complexityCost);
+        }
         break;
     case MechanicType::ScaleOut:
     case MechanicType::AdjustRetryPolicy:
