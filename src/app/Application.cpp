@@ -2,6 +2,9 @@
 
 #include "raylib.h"
 
+#include <cstddef>
+#include <vector>
+
 namespace {
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
@@ -51,6 +54,8 @@ void Application::run()
 
 void Application::handleInput()
 {
+    applyPendingScenarioSelection();
+
     const auto events = inputManager_.poll();
     const auto simulationResult = simulationController_.handleActions(events, simulation_, paused_);
     if (simulationResult.resetRequested) {
@@ -69,6 +74,8 @@ void Application::handleInput()
             fixedStepAccumulator_ = 0.0;
         }
     }
+
+    applyPendingScenarioSelection();
 }
 
 void Application::resetScenario()
@@ -76,4 +83,36 @@ void Application::resetScenario()
     scenarioManager_.reset();
     simulation_ = Simulation(scenarioManager_.definition());
     fixedStepAccumulator_ = 0.0;
+}
+
+void Application::loadScenario(std::size_t scenarioIndex)
+{
+    const std::vector<ScenarioDefinition> scenarios = ScenarioRegistry::createAll();
+    if (scenarioIndex >= scenarios.size()) {
+        return;
+    }
+
+    scenarioDefinition_ = scenarios[scenarioIndex];
+    scenarioManager_.load(scenarioDefinition_);
+    simulation_ = Simulation(scenarioManager_.definition());
+
+    UiState& state = renderer_.uiManager().state();
+    state.selection = {};
+    state.latestFeedback.clear();
+    state.actionHistory.clear();
+    state.scenarioDroplistOpen = false;
+    state.objectivesDroplistOpen = false;
+    fixedStepAccumulator_ = 0.0;
+}
+
+void Application::applyPendingScenarioSelection()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (state.requestedScenarioIndex < 0) {
+        return;
+    }
+
+    const int scenarioIndex = state.requestedScenarioIndex;
+    state.requestedScenarioIndex = -1;
+    loadScenario(static_cast<std::size_t>(scenarioIndex));
 }

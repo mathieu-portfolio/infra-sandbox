@@ -40,6 +40,22 @@ enum class OverlayMode {
     RetryAmplification
 };
 
+enum class TimelineCategory {
+    All,
+    Traffic,
+    Change,
+    Database,
+    System,
+    Objectives,
+    Reliability
+};
+
+enum class TimelineFilter {
+    RecentFirst,
+    OldestFirst,
+    ActiveOnly
+};
+
 struct UiSelection {
     int nodeId = -1;
     int requestId = -1;
@@ -65,6 +81,13 @@ struct UiState {
     bool showMetrics = true;
     bool showHud = true;
     bool showGeoGrid = true;
+    bool scenarioDroplistOpen = false;
+    bool objectivesDroplistOpen = false;
+    int requestedScenarioIndex = -1;
+    bool timelineCategoryDroplistOpen = false;
+    bool timelineFilterDroplistOpen = false;
+    TimelineCategory timelineCategory = TimelineCategory::All;
+    TimelineFilter timelineFilter = TimelineFilter::RecentFirst;
     bool placementActive = false;
     TopologyMutationType activeMutation = TopologyMutationType::AddCache;
     int placementCandidateIndex = 0;
@@ -89,3 +112,5 @@ struct UiContext {
 };
 
 const char* overlayModeName(OverlayMode mode);
+const char* timelineCategoryName(TimelineCategory category);
+const char* timelineFilterName(TimelineFilter filter);

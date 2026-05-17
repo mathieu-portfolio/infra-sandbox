@@ -12,6 +12,8 @@
 #include "rendering/Renderer.hpp"
 #include "simulation/Simulation.hpp"
 
+#include <cstddef>
+
 class Application {
 public:
     Application();
@@ -22,6 +24,8 @@ public:
 private:
     void handleInput();
     void resetScenario();
+    void loadScenario(std::size_t scenarioIndex);
+    void applyPendingScenarioSelection();
 
     InputManager inputManager_;
     ScenarioDefinition scenarioDefinition_;

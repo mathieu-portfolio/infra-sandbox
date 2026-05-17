@@ -4,16 +4,16 @@
 
 #include "raylib.h"
 
-void UiManager::update(const Simulation& simulation, const ScenarioManager&, bool paused)
+void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
-    hudPanel_.update(context, simulation);
+    hudPanel_.update(context, simulation, scenarioManager);
     metricsPanel_.update(context, simulation);
     selectionPanel_.update(context, simulation);
     interventionPanel_.update(context, simulation);
-    timelinePanel_.update(context, simulation);
+    timelinePanel_.update(context, simulation, scenarioManager);
     debugPanel_.update(context, simulation);
 }
 

@@ -26,3 +26,37 @@ const char* overlayModeName(OverlayMode mode)
     }
     return "Unknown";
 }
+
+const char* timelineCategoryName(TimelineCategory category)
+{
+    switch (category) {
+    case TimelineCategory::All:
+        return "All Events";
+    case TimelineCategory::Traffic:
+        return "Traffic";
+    case TimelineCategory::Change:
+        return "Change";
+    case TimelineCategory::Database:
+        return "Database";
+    case TimelineCategory::System:
+        return "System";
+    case TimelineCategory::Objectives:
+        return "Objectives";
+    case TimelineCategory::Reliability:
+        return "Reliability";
+    }
+    return "Unknown";
+}
+
+const char* timelineFilterName(TimelineFilter filter)
+{
+    switch (filter) {
+    case TimelineFilter::RecentFirst:
+        return "Recent First";
+    case TimelineFilter::OldestFirst:
+        return "Oldest First";
+    case TimelineFilter::ActiveOnly:
+        return "Active Only";
+    }
+    return "Unknown";
+}
