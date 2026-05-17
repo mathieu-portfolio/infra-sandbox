@@ -169,9 +169,11 @@ void GeoLayoutSystem::resolveNodeSpacing(GeoLayoutFrame& frame, const CameraCont
         });
     }
 
-    constexpr float minDistance = 82.0f;
-    constexpr float maxAnchorOffset = 118.0f;
-    constexpr int iterations = 14;
+    const float zoomExpansion = std::clamp((camera.zoom() - 1.0f) / 4.0f, 0.0f, 1.0f);
+    const float minDistance = 82.0f + 54.0f * zoomExpansion;
+    const float maxAnchorOffset = 118.0f + 96.0f * zoomExpansion;
+    const float anchorSpring = 0.18f - 0.07f * zoomExpansion;
+    constexpr int iterations = 18;
     for (int iteration = 0; iteration < iterations; ++iteration) {
         for (std::size_t i = 0; i < working.size(); ++i) {
             for (std::size_t j = i + 1; j < working.size(); ++j) {
@@ -194,7 +196,7 @@ void GeoLayoutSystem::resolveNodeSpacing(GeoLayoutFrame& frame, const CameraCont
 
         for (auto& node : working) {
             const Vector2 toAnchor = subtract(node.anchor, node.display);
-            node.display = add(node.display, multiply(toAnchor, 0.18f));
+            node.display = add(node.display, multiply(toAnchor, anchorSpring));
             const Vector2 offset = subtract(node.display, node.anchor);
             const float offsetLength = length(offset);
             if (offsetLength > maxAnchorOffset) {
