@@ -26,6 +26,7 @@ private:
     void resetScenario();
     void loadScenario(std::size_t scenarioIndex);
     void applyPendingScenarioSelection();
+    void applySandboxRequests();
 
     InputManager inputManager_;
     ScenarioDefinition scenarioDefinition_;

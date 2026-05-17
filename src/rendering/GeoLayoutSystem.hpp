@@ -44,5 +44,6 @@ public:
 private:
     [[nodiscard]] bool shouldCluster(const CameraController& camera) const;
     [[nodiscard]] bool shouldConsiderLabel(const Node& node, const UiState& state, const CameraController& camera) const;
+    void resolveNodeSpacing(GeoLayoutFrame& frame, const CameraController& camera, int screenWidth, int screenHeight) const;
     [[nodiscard]] GeoLabelLayout placeLabel(const Node& node, Vec2 displayPosition, const UiState& state, const CameraController& camera, int screenWidth, int screenHeight, std::vector<Rectangle>& occupiedLabels) const;
 };

@@ -67,6 +67,7 @@ if(INFRA_BUILD_APP)
         src/rendering/MapRenderer.cpp
         src/rendering/Renderer.cpp
         src/rendering/RenderPrimitives.cpp
+        src/rendering/VisualFeedbackSystem.cpp
         src/ui/ActionPanelModel.cpp
         src/ui/DebugPanel.cpp
         src/ui/HudPanel.cpp

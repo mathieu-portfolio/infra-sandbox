@@ -8,13 +8,6 @@
 #include <unordered_map>
 
 namespace {
-float distanceSquared(Vector2 a, Vector2 b)
-{
-    const float dx = a.x - b.x;
-    const float dy = a.y - b.y;
-    return dx * dx + dy * dy;
-}
-
 bool overlapsAny(Rectangle candidate, const std::vector<Rectangle>& occupied)
 {
     return std::any_of(occupied.begin(), occupied.end(), [candidate](Rectangle rect) {
@@ -39,6 +32,26 @@ Vec2 screenToWorld(Vector2 screen, const CameraController& camera, int screenWid
         (screen.x - static_cast<float>(screenWidth) * 0.5f) / camera.zoom() - offset.x,
         (screen.y - static_cast<float>(screenHeight) * 0.5f) / camera.zoom() - offset.y,
     };
+}
+
+Vector2 add(Vector2 a, Vector2 b)
+{
+    return {a.x + b.x, a.y + b.y};
+}
+
+Vector2 subtract(Vector2 a, Vector2 b)
+{
+    return {a.x - b.x, a.y - b.y};
+}
+
+Vector2 multiply(Vector2 value, float scalar)
+{
+    return {value.x * scalar, value.y * scalar};
+}
+
+float length(Vector2 value)
+{
+    return std::sqrt(value.x * value.x + value.y * value.y);
 }
 }
 
@@ -98,63 +111,7 @@ GeoLayoutFrame GeoLayoutSystem::compute(const Simulation& simulation, const Came
         }
     }
 
-    const std::array<Vector2, 8> offsets{{
-        {62.0f, 0.0f},
-        {-62.0f, 0.0f},
-        {0.0f, -62.0f},
-        {0.0f, 62.0f},
-        {50.0f, -50.0f},
-        {-50.0f, -50.0f},
-        {50.0f, 50.0f},
-        {-50.0f, 50.0f},
-    }};
-
-    for (std::size_t i = 0; i < frame.nodes.size(); ++i) {
-        auto& current = frame.nodes[i];
-        if (current.hiddenByCluster) {
-            continue;
-        }
-
-        bool needsOffset = false;
-        const Vector2 currentScreen = worldToScreen(current.displayPosition, screenWidth, screenHeight, camera);
-        for (std::size_t j = 0; j < i; ++j) {
-            const auto& previous = frame.nodes[j];
-            if (previous.hiddenByCluster) {
-                continue;
-            }
-            const Vector2 previousScreen = worldToScreen(previous.displayPosition, screenWidth, screenHeight, camera);
-            if (distanceSquared(currentScreen, previousScreen) < 82.0f * 82.0f) {
-                needsOffset = true;
-                break;
-            }
-        }
-
-        if (!needsOffset) {
-            continue;
-        }
-
-        float bestScore = -1.0f;
-        Vec2 bestPosition = current.displayPosition;
-        for (const Vector2 offset : offsets) {
-            const Vec2 worldOffset = screenDeltaToWorld(offset, camera);
-            const Vec2 candidate{current.anchorPosition.x + worldOffset.x, current.anchorPosition.y + worldOffset.y};
-            const Vector2 candidateScreen = worldToScreen(candidate, screenWidth, screenHeight, camera);
-            float nearest = 1000000.0f;
-            for (std::size_t j = 0; j < i; ++j) {
-                const auto& previous = frame.nodes[j];
-                if (previous.hiddenByCluster) {
-                    continue;
-                }
-                nearest = std::min(nearest, distanceSquared(candidateScreen, worldToScreen(previous.displayPosition, screenWidth, screenHeight, camera)));
-            }
-            if (nearest > bestScore) {
-                bestScore = nearest;
-                bestPosition = candidate;
-            }
-        }
-        current.displayPosition = bestPosition;
-        current.hasOffset = true;
-    }
+    resolveNodeSpacing(frame, camera, screenWidth, screenHeight);
 
     std::vector<Rectangle> occupiedLabels;
     for (auto& layout : frame.nodes) {
@@ -188,6 +145,74 @@ bool GeoLayoutSystem::shouldConsiderLabel(const Node& node, const UiState& state
         return node.isProcessor() || node.type == NodeType::Cache;
     }
     return true;
+}
+
+void GeoLayoutSystem::resolveNodeSpacing(GeoLayoutFrame& frame, const CameraController& camera, int screenWidth, int screenHeight) const
+{
+    struct WorkingNode {
+        std::size_t layoutIndex = 0;
+        Vector2 anchor{};
+        Vector2 display{};
+    };
+
+    std::vector<WorkingNode> working;
+    working.reserve(frame.nodes.size());
+    for (std::size_t i = 0; i < frame.nodes.size(); ++i) {
+        if (frame.nodes[i].hiddenByCluster) {
+            continue;
+        }
+        const Vector2 anchor = worldToScreen(frame.nodes[i].anchorPosition, screenWidth, screenHeight, camera);
+        working.push_back({
+            .layoutIndex = i,
+            .anchor = anchor,
+            .display = anchor,
+        });
+    }
+
+    constexpr float minDistance = 82.0f;
+    constexpr float maxAnchorOffset = 118.0f;
+    constexpr int iterations = 14;
+    for (int iteration = 0; iteration < iterations; ++iteration) {
+        for (std::size_t i = 0; i < working.size(); ++i) {
+            for (std::size_t j = i + 1; j < working.size(); ++j) {
+                Vector2 delta = subtract(working[j].display, working[i].display);
+                float dist = std::max(0.001f, length(delta));
+                if (dist >= minDistance) {
+                    continue;
+                }
+                if (dist < 1.0f) {
+                    const float angle = static_cast<float>((i * 37 + j * 53) % 360) * 0.017453292f;
+                    delta = {std::cos(angle), std::sin(angle)};
+                    dist = 1.0f;
+                }
+                const Vector2 normal = multiply(delta, 1.0f / dist);
+                const float push = (minDistance - dist) * 0.5f;
+                working[i].display = subtract(working[i].display, multiply(normal, push));
+                working[j].display = add(working[j].display, multiply(normal, push));
+            }
+        }
+
+        for (auto& node : working) {
+            const Vector2 toAnchor = subtract(node.anchor, node.display);
+            node.display = add(node.display, multiply(toAnchor, 0.18f));
+            const Vector2 offset = subtract(node.display, node.anchor);
+            const float offsetLength = length(offset);
+            if (offsetLength > maxAnchorOffset) {
+                node.display = add(node.anchor, multiply(offset, maxAnchorOffset / offsetLength));
+            }
+        }
+    }
+
+    for (const auto& node : working) {
+        auto& layout = frame.nodes[node.layoutIndex];
+        const Vector2 offset = subtract(node.display, node.anchor);
+        if (length(offset) <= 6.0f) {
+            continue;
+        }
+        const Vec2 worldOffset = screenDeltaToWorld(offset, camera);
+        layout.displayPosition = {layout.anchorPosition.x + worldOffset.x, layout.anchorPosition.y + worldOffset.y};
+        layout.hasOffset = true;
+    }
 }
 
 GeoLabelLayout GeoLayoutSystem::placeLabel(const Node& node, Vec2 displayPosition, const UiState& state, const CameraController& camera, int screenWidth, int screenHeight, std::vector<Rectangle>& occupiedLabels) const

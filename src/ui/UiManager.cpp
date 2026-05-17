@@ -4,9 +4,12 @@
 
 #include "raylib.h"
 
+#include <string>
+
 void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
+    state_.sandboxMode = scenarioManager.definition().sandboxLab;
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager);
@@ -32,17 +35,27 @@ void UiManager::updateActionObservations(const Simulation& simulation)
         if (entry.actionName.find("Scale") != std::string::npos) {
             if (after.apiQueueDepth < before.apiQueueDepth) {
                 entry.message = "API queue dropped after scaling.";
-            } else if (after.databaseQueueDepth >= before.databaseQueueDepth) {
-                entry.message = "Scaling API had limited effect. DB queue remains high.";
+            } else if (simulation.pressure().dominantPressure == PressureCategory::PersistencePressure || after.databaseQueueDepth >= before.databaseQueueDepth) {
+                entry.message = "Scaling API had limited effect. Persistence pressure remains dominant.";
             }
         } else if (entry.actionName.find("Cache") != std::string::npos) {
             if (after.cacheHitRate > before.cacheHitRate || after.databaseQueueDepth < before.databaseQueueDepth) {
-                entry.message = "Cache behavior improved repeated reads or DB pressure.";
+                entry.message = simulation.pressure().dominantPressure == PressureCategory::PersistencePressure
+                    ? "Cache improved repeated reads, but persistence pressure still needs monitoring."
+                    : "Cache reduced downstream persistence pressure.";
             }
         } else if (entry.actionName.find("Retries") != std::string::npos) {
             if (after.retryRatePerSecond < before.retryRatePerSecond) {
                 entry.message = "Retry traffic decreased after policy change.";
+            } else if (simulation.pressure().dominantPressure == PressureCategory::RetryPressure) {
+                entry.message = "Retry amplification remains visible near the overloaded service path.";
             }
+        } else if (entry.actionName.find("Regional") != std::string::npos) {
+            entry.message = "Traffic should localize near the deployed regional path if demand can use it.";
+        } else if (entry.actionName.find("Replica") != std::string::npos) {
+            entry.message = simulation.pressure().dominantPressure == PressureCategory::PersistencePressure
+                ? "Replica deployed. Persistence pressure is still moving through the data tier."
+                : "Read pressure is spreading across the persistence tier.";
         }
         state_.latestFeedback = entry.message;
         entry.observationRecorded = true;

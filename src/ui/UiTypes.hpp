@@ -1,12 +1,14 @@
 #pragma once
 
 #include "simulation/Metrics.hpp"
+#include "simulation/Mechanics.hpp"
 #include "simulation/TopologyMutation.hpp"
 
 #include <array>
 #include <cstddef>
 #include <deque>
 #include <string>
+#include <vector>
 
 enum class UiLayer {
     WorldView,
@@ -62,6 +64,23 @@ struct UiSelection {
     int linkId = -1;
 };
 
+enum class VisualFeedbackKind {
+    ActionAcknowledged,
+    TopologyMutation,
+    TrafficShift,
+    PressureInjected,
+    Stabilization
+};
+
+struct VisualFeedbackEvent {
+    VisualFeedbackKind kind = VisualFeedbackKind::ActionAcknowledged;
+    int targetNodeId = -1;
+    int targetLinkId = -1;
+    MechanicType mechanic = MechanicType::ScaleUp;
+    TopologyMutationType mutation = TopologyMutationType::AddCache;
+    std::string label;
+};
+
 struct ActionFeedback {
     double timeSeconds = 0.0;
     std::string actionName;
@@ -88,12 +107,25 @@ struct UiState {
     bool timelineFilterDroplistOpen = false;
     TimelineCategory timelineCategory = TimelineCategory::All;
     TimelineFilter timelineFilter = TimelineFilter::RecentFirst;
+    bool sandboxMode = false;
+    double sandboxTrafficMultiplier = 1.0;
+    double sandboxLatencyMultiplier = 1.0;
+    bool sandboxQueueBuildup = false;
+    int sandboxSeed = 1;
+    std::string sandboxEventRequest;
+    bool sandboxResetSimulationRequested = false;
+    bool sandboxRestoreTopologyRequested = false;
+    bool sandboxClearTimelineRequested = false;
+    bool sandboxRegenerateRequested = false;
+    bool sandboxSlowMotionRequested = false;
+    bool sandboxStepRequested = false;
     bool placementActive = false;
     TopologyMutationType activeMutation = TopologyMutationType::AddCache;
     int placementCandidateIndex = 0;
     int hoveredActionIndex = -1;
     int selectedActionIndex = -1;
     std::string latestFeedback;
+    std::vector<VisualFeedbackEvent> pendingVisualFeedbackEvents;
     std::deque<ActionFeedback> actionHistory;
     std::deque<MetricsSnapshot> metricsHistory;
     double lastMetricSampleTime = -1.0;

@@ -32,6 +32,7 @@ public:
     void setScenarioBurst(const BurstScenario& burst);
     void clearScenarioBurstOverride();
     void setScenarioDatabaseCapacityMultiplier(double multiplier);
+    void setScenarioLatencyMultiplier(double multiplier);
     void setScenarioDatabaseHeavyShareOverride(std::optional<double> share);
     void setScenarioRetryDelayMultiplier(double multiplier);
     void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds);
@@ -102,6 +103,7 @@ private:
     double scenarioTrafficMultiplier_ = 1.0;
     double scenarioDatabaseCapacityMultiplier_ = 1.0;
     double scenarioRetryDelayMultiplier_ = 1.0;
+    double scenarioLatencyMultiplier_ = 1.0;
     bool cacheEnabled_ = false;
     bool burstModeEnabled_ = false;
     std::optional<BurstScenario> scenarioBurstOverride_;

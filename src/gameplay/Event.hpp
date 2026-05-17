@@ -105,6 +105,8 @@ class EventManager {
 public:
     void reset(std::vector<EventDefinition> definitions);
     void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
+    void inject(EventDefinition definition, double scenarioTimeSeconds);
+    void clear();
 
     [[nodiscard]] const std::vector<ActiveEvent>& activeEvents() const;
     [[nodiscard]] const std::deque<EventLogEntry>& recentEvents() const;

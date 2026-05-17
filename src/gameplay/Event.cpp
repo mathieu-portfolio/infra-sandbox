@@ -49,6 +49,20 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
     }
 }
 
+void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds)
+{
+    definitions_.push_back(std::move(definition));
+    fired_.push_back(true);
+    activate(definitions_.size() - 1, scenarioTimeSeconds);
+}
+
+void EventManager::clear()
+{
+    activeEvents_.clear();
+    pendingEvents_.clear();
+    recentEvents_.clear();
+}
+
 const std::vector<ActiveEvent>& EventManager::activeEvents() const
 {
     return activeEvents_;

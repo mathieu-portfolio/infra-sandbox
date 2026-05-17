@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -42,6 +43,30 @@ enum class ScenarioRunState {
     Running,
     Succeeded,
     RecoverableFailure
+};
+
+enum class ObjectiveConditionType {
+    SurviveDuration,
+    PressureDetected,
+    PressureBelow,
+    MetricBelow,
+    ActionUsed
+};
+
+enum class ObjectiveRewardType {
+    UnlockIntervention,
+    UnlockMetric,
+    UnlockOverlay,
+    UnlockScenarioPhase,
+    UnlockScenario,
+    EmitFeedback,
+    CompleteScenario
+};
+
+struct ObjectiveReward {
+    ObjectiveRewardType type = ObjectiveRewardType::EmitFeedback;
+    std::string id;
+    std::string message;
 };
 
 struct ProgressionTierDefinition {
@@ -154,9 +179,16 @@ struct ScenarioObjective {
     std::string description;
     std::vector<std::string> tags;
     ScenarioObjectiveType type = ScenarioObjectiveType::SurviveDuration;
+    ObjectiveConditionType conditionType = ObjectiveConditionType::SurviveDuration;
+    std::string conditionMetric;
+    PressureCategory pressure = PressureCategory::None;
+    std::string targetNodeId;
     std::string summary;
     double threshold = 0.0;
     double durationSeconds = 0.0;
+    bool startsActive = false;
+    std::vector<ObjectiveReward> rewards;
+    std::vector<std::string> nextObjectives;
 };
 
 struct ScenarioPhase {
@@ -190,7 +222,14 @@ struct ScenarioDefinition {
     std::vector<PressureCategory> guaranteedPressures;
     std::vector<ScenarioModifierDefinition> optionalModifiers;
     std::vector<MechanicType> allowedMechanics;
+    std::vector<MechanicType> startingInterventions;
+    std::vector<MechanicType> unlockableInterventions;
+    std::vector<MechanicType> disabledInterventions;
     std::vector<MechanicType> recommendedMechanics;
+    std::vector<std::string> unlocksScenarios;
+    std::vector<std::string> requiredCompletedScenarios;
+    std::vector<std::string> requiredConceptTags;
+    bool sandboxLab = false;
     std::vector<NodeScenario> nodes;
     std::vector<LinkScenario> links;
     TrafficProfile trafficProfile;
@@ -213,6 +252,29 @@ struct ScenarioRun {
     double objectiveProgress = 0.0;
     int currentPhaseIndex = -1;
     ScenarioDefinition activeDefinition;
+    std::vector<std::string> activeObjectiveIds;
+    std::vector<std::string> completedObjectiveIds;
+    std::vector<MechanicType> unlockedInterventions;
+    std::vector<std::string> unlockedScenarioIds;
+    std::vector<std::string> unlockedMetrics;
+    std::vector<std::string> unlockedOverlays;
+    std::vector<std::string> feedbackMessages;
+};
+
+struct ProgressionState {
+    std::set<std::string> completedScenarios;
+    std::set<std::string> unlockedScenarios;
+    std::set<std::string> unlockedConcepts;
+    std::set<std::string> unlockedMetrics;
+    std::set<std::string> unlockedOverlays;
+};
+
+struct SandboxControls {
+    double trafficMultiplier = 1.0;
+    double latencyMultiplier = 1.0;
+    double databaseCapacityMultiplier = 1.0;
+    bool queueBuildup = false;
+    std::uint32_t seed = 1;
 };
 
 class ProgressionRegistry {

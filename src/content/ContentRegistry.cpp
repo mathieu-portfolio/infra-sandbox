@@ -205,6 +205,26 @@ ScenarioObjectiveType objectiveTypeFromId(const std::string& id)
     return ScenarioObjectiveType::SurviveDuration;
 }
 
+ObjectiveConditionType objectiveConditionFromId(const std::string& id)
+{
+    if (id == "pressure_detected") return ObjectiveConditionType::PressureDetected;
+    if (id == "pressure_below") return ObjectiveConditionType::PressureBelow;
+    if (id == "metric_below") return ObjectiveConditionType::MetricBelow;
+    if (id == "action_used") return ObjectiveConditionType::ActionUsed;
+    return ObjectiveConditionType::SurviveDuration;
+}
+
+ObjectiveRewardType objectiveRewardFromId(const std::string& id)
+{
+    if (id == "unlock_intervention") return ObjectiveRewardType::UnlockIntervention;
+    if (id == "unlock_metric") return ObjectiveRewardType::UnlockMetric;
+    if (id == "unlock_overlay") return ObjectiveRewardType::UnlockOverlay;
+    if (id == "unlock_scenario_phase") return ObjectiveRewardType::UnlockScenarioPhase;
+    if (id == "unlock_scenario") return ObjectiveRewardType::UnlockScenario;
+    if (id == "complete_scenario") return ObjectiveRewardType::CompleteScenario;
+    return ObjectiveRewardType::EmitFeedback;
+}
+
 EventCategory eventCategoryFromId(const std::string& id)
 {
     if (id == "traffic") return EventCategory::TrafficEvent;
@@ -344,9 +364,56 @@ ScenarioObjective parseObjective(const Json& object)
     objective.description = stringAt(object, "description");
     objective.tags = stringsAt(object, "tags");
     objective.type = objectiveTypeFromId(stringAt(object, "type"));
+    objective.conditionType = objectiveConditionFromId(stringAt(object, "condition", stringAt(object, "type")));
+    objective.conditionMetric = stringAt(object, "metric");
+    objective.pressure = pressureFromId(stringAt(object, "pressure"));
+    objective.targetNodeId = stringAt(object, "target_node");
     objective.summary = stringAt(object, "summary", objective.displayName);
     objective.threshold = numberAt(object, "threshold");
     objective.durationSeconds = numberAt(object, "duration_seconds");
+    objective.startsActive = boolAt(object, "starts_active");
+    if (const Json* rewards = object.find("rewards"); rewards != nullptr && rewards->isArray()) {
+        for (const auto& rewardJson : rewards->asArray()) {
+            ObjectiveReward reward;
+            reward.type = objectiveRewardFromId(stringAt(rewardJson, "type"));
+            reward.id = stringAt(rewardJson, "id");
+            reward.message = stringAt(rewardJson, "message");
+            objective.rewards.push_back(std::move(reward));
+        }
+    }
+    objective.nextObjectives = stringsAt(object, "next_objectives");
+    return objective;
+}
+
+ScenarioObjective objectiveFromScenarioEntry(const Json& entry, const std::unordered_map<std::string, ScenarioObjective>& objectives, ContentLoadResult& result, const std::string& scenarioId)
+{
+    if (entry.isString()) {
+        if (const auto it = objectives.find(entry.asString()); it != objectives.end()) {
+            return it->second;
+        }
+        result.errors.push_back("Scenario " + scenarioId + " references missing objective: " + entry.asString());
+        return {};
+    }
+    const std::string id = stringAt(entry, "objective_id", stringAt(entry, "id"));
+    ScenarioObjective objective;
+    if (const auto it = objectives.find(id); it != objectives.end()) {
+        objective = it->second;
+    } else {
+        result.errors.push_back("Scenario " + scenarioId + " references missing objective: " + id);
+        objective.id = id;
+    }
+    if (entry.find("starts_active") != nullptr) objective.startsActive = boolAt(entry, "starts_active");
+    if (entry.find("next_objectives") != nullptr) objective.nextObjectives = stringsAt(entry, "next_objectives");
+    if (const Json* rewards = entry.find("rewards"); rewards != nullptr && rewards->isArray()) {
+        objective.rewards.clear();
+        for (const auto& rewardJson : rewards->asArray()) {
+            ObjectiveReward reward;
+            reward.type = objectiveRewardFromId(stringAt(rewardJson, "type"));
+            reward.id = stringAt(rewardJson, "id");
+            reward.message = stringAt(rewardJson, "message");
+            objective.rewards.push_back(std::move(reward));
+        }
+    }
     return objective;
 }
 
@@ -679,13 +746,35 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
                 result.errors.push_back("Scenario " + scenario.id + " has invalid allowed intervention id: " + mechanic);
             }
         }
+        for (const auto& mechanic : stringsAt(object, "starting_interventions")) {
+            if (!knownMechanicId(mechanic)) {
+                result.errors.push_back("Scenario " + scenario.id + " has invalid starting intervention id: " + mechanic);
+            }
+        }
+        for (const auto& mechanic : stringsAt(object, "unlockable_interventions")) {
+            if (!knownMechanicId(mechanic)) {
+                result.errors.push_back("Scenario " + scenario.id + " has invalid unlockable intervention id: " + mechanic);
+            }
+        }
+        for (const auto& mechanic : stringsAt(object, "disabled_interventions")) {
+            if (!knownMechanicId(mechanic)) {
+                result.errors.push_back("Scenario " + scenario.id + " has invalid disabled intervention id: " + mechanic);
+            }
+        }
         for (const auto& mechanic : stringsAt(object, "recommended_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid recommended intervention id: " + mechanic);
             }
         }
         scenario.allowedMechanics = mappedStrings<MechanicType>(object, "allowed_interventions", mechanicFromId);
+        scenario.startingInterventions = mappedStrings<MechanicType>(object, "starting_interventions", mechanicFromId);
+        scenario.unlockableInterventions = mappedStrings<MechanicType>(object, "unlockable_interventions", mechanicFromId);
+        scenario.disabledInterventions = mappedStrings<MechanicType>(object, "disabled_interventions", mechanicFromId);
         scenario.recommendedMechanics = mappedStrings<MechanicType>(object, "recommended_interventions", mechanicFromId);
+        scenario.unlocksScenarios = stringsAt(object, "unlocks_scenarios");
+        scenario.requiredCompletedScenarios = stringsAt(object, "required_completed_scenarios");
+        scenario.requiredConceptTags = stringsAt(object, "required_concept_tags");
+        scenario.sandboxLab = boolAt(object, "sandbox_lab");
 
         if (const auto topology = topologies.find(scenario.topologyTemplateId); topology != topologies.end()) {
             scenario.nodes = parseNodes(topology->second);
@@ -699,9 +788,10 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         } else {
             result.errors.push_back("Scenario " + scenario.id + " references missing traffic profile: " + trafficId);
         }
-        for (const auto& id : stringsAt(object, "objectives")) {
-            if (const auto it = objectives.find(id); it != objectives.end()) scenario.objectives.push_back(it->second);
-            else result.errors.push_back("Scenario " + scenario.id + " references missing objective: " + id);
+        if (const Json* scenarioObjectives = object.find("objectives"); scenarioObjectives != nullptr && scenarioObjectives->isArray()) {
+            for (const auto& entry : scenarioObjectives->asArray()) {
+                scenario.objectives.push_back(objectiveFromScenarioEntry(entry, objectives, result, scenario.id));
+            }
         }
         for (const auto& id : stringsAt(object, "failure_conditions")) {
             if (const auto it = objectives.find(id); it != objectives.end()) scenario.failureConditions.push_back(it->second);
@@ -794,7 +884,13 @@ const ProgressionTierDefinition& ContentRegistry::progressionTier(ProgressionTie
 }
 
 const std::vector<ScenarioDefinition>& ContentRegistry::scenarios() const { return scenarios_; }
-const ScenarioDefinition& ContentRegistry::defaultScenario() const { return scenarios_.front(); }
+const ScenarioDefinition& ContentRegistry::defaultScenario() const
+{
+    const auto it = std::find_if(scenarios_.begin(), scenarios_.end(), [](const ScenarioDefinition& scenario) {
+        return !scenario.sandboxLab;
+    });
+    return it != scenarios_.end() ? *it : scenarios_.front();
+}
 const std::vector<InterventionDefinition>& ContentRegistry::interventions() const { return interventions_; }
 const std::vector<std::string>& ContentRegistry::loadErrors() const { return loadErrors_; }
 bool ContentRegistry::loadedFromContent() const { return loadedFromContent_; }

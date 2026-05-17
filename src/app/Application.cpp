@@ -5,6 +5,7 @@
 #include "raylib.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace {
@@ -60,6 +61,7 @@ void Application::run()
 void Application::handleInput()
 {
     applyPendingScenarioSelection();
+    applySandboxRequests();
 
     const auto events = inputManager_.poll();
     const auto simulationResult = simulationController_.handleActions(events, simulation_, paused_);
@@ -68,7 +70,7 @@ void Application::handleInput()
     }
     stepRequested_ = simulationResult.stepRequested;
 
-    interventionController_.handleActions(events, simulation_, renderer_.uiManager().state());
+    interventionController_.handleActions(events, simulation_, scenarioManager_, renderer_.uiManager().state());
     cameraController_.handleActions(events, GetFrameTime());
     overlayController_.handleActions(events, renderer_.uiManager().state());
     selectionController_.handleActions(events, simulation_, cameraController_, renderer_.uiManager().state());
@@ -81,6 +83,7 @@ void Application::handleInput()
     }
 
     applyPendingScenarioSelection();
+    applySandboxRequests();
 }
 
 void Application::resetScenario()
@@ -120,4 +123,51 @@ void Application::applyPendingScenarioSelection()
     const int scenarioIndex = state.requestedScenarioIndex;
     state.requestedScenarioIndex = -1;
     loadScenario(static_cast<std::size_t>(scenarioIndex));
+}
+
+void Application::applySandboxRequests()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (!scenarioManager_.definition().sandboxLab) {
+        return;
+    }
+    scenarioManager_.setSandboxTrafficMultiplier(state.sandboxTrafficMultiplier);
+    scenarioManager_.setSandboxLatencyMultiplier(state.sandboxLatencyMultiplier);
+    scenarioManager_.setSandboxQueueBuildup(state.sandboxQueueBuildup);
+    if (!state.sandboxEventRequest.empty()) {
+        scenarioManager_.injectSandboxEvent(state.sandboxEventRequest);
+        state.latestFeedback = "Injected lab event: " + state.sandboxEventRequest;
+        state.pendingVisualFeedbackEvents.push_back({
+            .kind = state.sandboxEventRequest == "recovery" ? VisualFeedbackKind::Stabilization : VisualFeedbackKind::PressureInjected,
+            .label = state.sandboxEventRequest,
+        });
+        state.sandboxEventRequest.clear();
+    }
+    if (state.sandboxClearTimelineRequested) {
+        state.actionHistory.clear();
+        state.latestFeedback.clear();
+        scenarioManager_.clearSandboxEvents();
+        state.sandboxClearTimelineRequested = false;
+    }
+    if (state.sandboxSlowMotionRequested) {
+        simulation_.setSimulationSpeed(0.25);
+        paused_ = false;
+        state.sandboxSlowMotionRequested = false;
+    }
+    if (state.sandboxStepRequested) {
+        paused_ = true;
+        stepRequested_ = true;
+        state.sandboxStepRequested = false;
+    }
+    if (state.sandboxResetSimulationRequested || state.sandboxRestoreTopologyRequested) {
+        resetScenario();
+        state.sandboxResetSimulationRequested = false;
+        state.sandboxRestoreTopologyRequested = false;
+    }
+    if (state.sandboxRegenerateRequested) {
+        scenarioManager_.setSandboxSeed(static_cast<std::uint32_t>(state.sandboxSeed));
+        simulation_ = Simulation(scenarioManager_.definition());
+        fixedStepAccumulator_ = 0.0;
+        state.sandboxRegenerateRequested = false;
+    }
 }

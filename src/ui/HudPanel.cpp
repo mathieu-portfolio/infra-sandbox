@@ -99,9 +99,9 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     const Rectangle objectiveField = objectivesDroplistBounds(context.screenWidth);
     const auto scenarios = ScenarioRegistry::createAll();
     const Rectangle scenarioMenu{scenarioField.x, scenarioField.y + scenarioField.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
-    const auto objectiveRows = scenarioManager.definition().objectives.size() + scenarioManager.definition().failureConditions.size();
-    const bool hasSideObjectives = scenarioManager.definition().objectives.size() > 1;
-    const Rectangle objectiveMenu{objectiveField.x, objectiveField.y + objectiveField.height + 8.0f, std::min(500.0f, objectiveField.width), 96.0f + static_cast<float>(objectiveRows) * 24.0f + (hasSideObjectives ? 18.0f : 0.0f)};
+    const auto& run = scenarioManager.run();
+    const auto objectiveRows = run.activeObjectiveIds.size() + run.completedObjectiveIds.size() + scenarioManager.definition().failureConditions.size() + run.unlockedInterventions.size() + run.unlockedScenarioIds.size();
+    const Rectangle objectiveMenu{objectiveField.x, objectiveField.y + objectiveField.height + 8.0f, std::min(540.0f, objectiveField.width), 126.0f + static_cast<float>(objectiveRows) * 21.0f};
 
     if (CheckCollisionPointRec(mouse, scenarioField)) {
         context.state->scenarioDroplistOpen = !context.state->scenarioDroplistOpen;
@@ -119,7 +119,7 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
             if (!CheckCollisionPointRec(mouse, scenarioRowBounds(scenarioMenu, i))) {
                 continue;
             }
-            if (i != currentIndex) {
+            if (i != currentIndex && scenarioManager.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)])) {
                 context.state->requestedScenarioIndex = i;
             }
             context.state->scenarioDroplistOpen = false;
@@ -185,17 +185,18 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
         for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
             const Rectangle row = scenarioRowBounds(menu, i);
             const bool current = i == currentIndex;
+            const bool unlocked = scenarioManager.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)]);
             DrawRectangleRounded(row, 0.12f, 6, current ? Color{37, 120, 255, 170} : Color{22, 27, 34, 150});
             DrawRectangleRoundedLines(row, 0.12f, 6, current ? Color{89, 196, 255, 190} : Color{70, 86, 104, 95});
-            drawTextClipped(scenarios[static_cast<std::size_t>(i)].name, {row.x + 10.0f, row.y + 7.0f, row.width - 126.0f, 16.0f}, 13, {230, 237, 243, 255});
-            drawTextClipped(progressionTierName(scenarios[static_cast<std::size_t>(i)].minimumTier), {row.x + row.width - 108.0f, row.y + 7.0f, 98.0f, 16.0f}, 12, current ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
+            drawTextClipped(scenarios[static_cast<std::size_t>(i)].name, {row.x + 10.0f, row.y + 7.0f, row.width - 126.0f, 16.0f}, 13, unlocked ? Color{230, 237, 243, 255} : Color{90, 107, 126, 255});
+            drawTextClipped(unlocked ? progressionTierName(scenarios[static_cast<std::size_t>(i)].minimumTier) : "Locked", {row.x + row.width - 108.0f, row.y + 7.0f, 98.0f, 16.0f}, 12, current ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
         }
     }
 
     if (context.state->objectivesDroplistOpen) {
-        const auto objectiveRows = scenarioManager.definition().objectives.size() + scenarioManager.definition().failureConditions.size();
-        const bool hasSideObjectives = scenarioManager.definition().objectives.size() > 1;
-        const Rectangle menu{objectiveBox.x, objectiveBox.y + objectiveBox.height + 8.0f, std::min(500.0f, objectiveBox.width), 96.0f + static_cast<float>(objectiveRows) * 24.0f + (hasSideObjectives ? 18.0f : 0.0f)};
+        const auto& run = scenarioManager.run();
+        const auto objectiveRows = run.activeObjectiveIds.size() + run.completedObjectiveIds.size() + scenarioManager.definition().failureConditions.size() + run.unlockedInterventions.size() + run.unlockedScenarioIds.size();
+        const Rectangle menu{objectiveBox.x, objectiveBox.y + objectiveBox.height + 8.0f, std::min(540.0f, objectiveBox.width), 126.0f + static_cast<float>(objectiveRows) * 21.0f};
         drawMenuShell(menu);
         const float progress = static_cast<float>(std::clamp(scenarioManager.run().objectiveProgress, 0.0, 1.0));
         DrawText("Progress", static_cast<int>(menu.x + 14.0f), static_cast<int>(menu.y + 12.0f), 12, {139, 148, 158, 255});
@@ -203,32 +204,54 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
         DrawRectangleRounded({menu.x + 84.0f, menu.y + 14.0f, (menu.width - 104.0f) * progress, 8.0f}, 0.5f, 8, {86, 210, 151, 235});
 
         float rowY = menu.y + 36.0f;
-        if (!scenarioManager.definition().objectives.empty()) {
-            drawDetailRow("Primary", scenarioManager.definition().objectives.front().summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 24.0f;
-        }
-
-        if (hasSideObjectives) {
-            DrawText("Side objectives", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {89, 196, 255, 255});
-            rowY += 20.0f;
-            for (std::size_t i = 1; i < scenarioManager.definition().objectives.size(); ++i) {
-                drawDetailRow("Optional", scenarioManager.definition().objectives[i].summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-                rowY += 24.0f;
+        DrawText("Active objectives", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {89, 196, 255, 255});
+        rowY += 20.0f;
+        for (const auto& id : run.activeObjectiveIds) {
+            const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+            if (it != scenarioManager.definition().objectives.end()) {
+                drawDetailRow("Active", it->summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
+                rowY += 21.0f;
             }
-        } else {
-            drawDetailRow("Optional", "No side objectives in this scenario.", menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 24.0f;
+        }
+        if (!run.completedObjectiveIds.empty()) {
+            DrawText("Completed", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
+            rowY += 20.0f;
+            for (const auto& id : run.completedObjectiveIds) {
+                const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+                if (it != scenarioManager.definition().objectives.end()) {
+                    drawDetailRow("Done", it->summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
+                    rowY += 21.0f;
+                }
+            }
         }
 
         DrawText("Failure limits", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {245, 184, 76, 255});
         rowY += 20.0f;
         for (const auto& failure : scenarioManager.definition().failureConditions) {
             drawDetailRow("Limit", failure.summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 24.0f;
+            rowY += 21.0f;
         }
         if (scenarioManager.definition().failureConditions.empty()) {
             drawDetailRow("Limit", "No failure limits configured.", menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 24.0f;
+            rowY += 21.0f;
+        }
+        DrawText("Unlocked interventions", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
+        rowY += 20.0f;
+        if (run.unlockedInterventions.empty()) {
+            drawDetailRow("Action", "None yet.", menu.x + 14.0f, rowY, menu.width - 28.0f);
+            rowY += 21.0f;
+        }
+        for (const auto mechanic : run.unlockedInterventions) {
+            drawDetailRow("Action", std::string(MechanicRegistry::definition(mechanic).displayName), menu.x + 14.0f, rowY, menu.width - 28.0f);
+            rowY += 21.0f;
+        }
+        if (!run.unlockedScenarioIds.empty()) {
+            DrawText("Unlocked scenarios", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {151, 111, 255, 255});
+            rowY += 20.0f;
+            for (const auto& id : run.unlockedScenarioIds) {
+                drawDetailRow("Scenario", id, menu.x + 14.0f, rowY, menu.width - 28.0f);
+                rowY += 21.0f;
+            }
         }
         if (const ScenarioPhase* phase = scenarioManager.currentPhase()) {
             drawDetailRow("Phase", phase->name, menu.x + 14.0f, rowY, menu.width - 28.0f);

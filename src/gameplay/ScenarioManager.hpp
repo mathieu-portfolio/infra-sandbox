@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 class ScenarioManager {
 public:
@@ -29,6 +30,16 @@ public:
     [[nodiscard]] std::string archetypeSummary() const;
     [[nodiscard]] std::string progressionTierSummary() const;
     [[nodiscard]] std::string activeModifiersSummary() const;
+    [[nodiscard]] const ProgressionState& progressionState() const;
+    [[nodiscard]] bool isScenarioUnlocked(const ScenarioDefinition& scenario) const;
+    void notifyActionTriggered(MechanicType mechanic);
+    [[nodiscard]] const SandboxControls& sandboxControls() const;
+    void setSandboxTrafficMultiplier(double multiplier);
+    void setSandboxLatencyMultiplier(double multiplier);
+    void setSandboxQueueBuildup(bool enabled);
+    void setSandboxSeed(std::uint32_t seed);
+    void injectSandboxEvent(const std::string& id);
+    void clearSandboxEvents();
 
 private:
     [[nodiscard]] ScenarioDefinition createActiveDefinition(std::uint32_t seed) const;
@@ -37,9 +48,20 @@ private:
     void applyModifier(ScenarioDefinition& definition, const ScenarioModifierDefinition& modifier) const;
     void applyPhaseToSimulation(Simulation& simulation) const;
     void updateState(const Simulation& simulation);
+    void initializeScenarioRunState();
+    [[nodiscard]] bool isObjectiveActive(const ScenarioObjective& objective) const;
+    [[nodiscard]] bool isObjectiveCompleted(const ScenarioObjective& objective) const;
+    [[nodiscard]] bool objectiveSatisfied(const ScenarioObjective& objective, const Simulation& simulation) const;
+    void completeObjective(const ScenarioObjective& objective);
+    void applyReward(const ObjectiveReward& reward);
+    void unlockIntervention(MechanicType mechanic);
+    void completeScenario();
 
     ScenarioDefinition scenario_;
     ScenarioRun run_;
+    ProgressionState progressionState_;
+    SandboxControls sandboxControls_{};
+    std::vector<MechanicType> actionsTriggered_;
     EventManager eventManager_;
     std::uint32_t nextSeed_ = 1;
 };

@@ -209,8 +209,17 @@ std::vector<ActivityRow> buildActivityRows(const UiState& state, const ScenarioM
     rows.push_back({0.0, TimelineCategory::System, "Scenario started", scenarioManager.staticDefinition().name, true});
 
     const auto& run = scenarioManager.run();
-    for (const auto& objective : scenarioManager.definition().objectives) {
-        rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Objective active", objective.summary, true});
+    for (const auto& id : run.activeObjectiveIds) {
+        const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+        if (it != scenarioManager.definition().objectives.end()) {
+            rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Objective active", it->summary, true});
+        }
+    }
+    for (const auto& id : run.completedObjectiveIds) {
+        const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+        if (it != scenarioManager.definition().objectives.end()) {
+            rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Objective completed", it->summary, false});
+        }
     }
     for (const auto& failure : scenarioManager.definition().failureConditions) {
         rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Failure limit monitored", failure.summary, true});

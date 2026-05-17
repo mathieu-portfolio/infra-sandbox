@@ -5,6 +5,7 @@
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
+#include "rendering/VisualFeedbackSystem.hpp"
 #include "simulation/Simulation.hpp"
 #include "ui/UiManager.hpp"
 
@@ -33,4 +34,5 @@ private:
     MapRenderer mapRenderer_;
     GeoLayoutSystem geoLayoutSystem_;
     UiManager uiManager_;
+    VisualFeedbackSystem visualFeedback_;
 };

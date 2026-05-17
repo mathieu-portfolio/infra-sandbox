@@ -115,6 +115,11 @@ void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
     refreshEffectiveCapacities();
 }
 
+void Simulation::setScenarioLatencyMultiplier(double multiplier)
+{
+    scenarioLatencyMultiplier_ = std::max(0.1, multiplier);
+}
+
 void Simulation::setScenarioDatabaseHeavyShareOverride(std::optional<double> share)
 {
     scenarioDatabaseHeavyShareOverride_ = share;
@@ -173,6 +178,7 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
     for (const int linkId : mutation.linksToDisable) {
         if (Link* link = graph_.link(linkId)) {
             link->enabled = false;
+            graph_.markTopologyChanged();
         }
     }
 
@@ -450,7 +456,7 @@ void Simulation::updateLinks(double dt)
                 continue;
             }
 
-            const double latency = std::max(0.01, link.baseLatencySeconds);
+            const double latency = std::max(0.01, link.baseLatencySeconds * scenarioLatencyMultiplier_);
             request.transitProgress += dt / latency;
 
             if (request.transitProgress >= 1.0) {

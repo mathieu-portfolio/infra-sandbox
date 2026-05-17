@@ -32,6 +32,63 @@ Scenarios reference reusable definitions by ID:
 - `modifiers`
 - `allowed_interventions`
 - `recommended_interventions`
+- `starting_interventions`
+- `unlockable_interventions`
+- `disabled_interventions`
+- `unlocks_scenarios`
+- `required_completed_scenarios`
+
+Scenario intervention fields are the source of truth for action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
+
+## Objective Chains And Rewards
+
+Scenario `objectives` may be string IDs or chain entries:
+
+```json
+{
+  "objective_id": "detect_persistence_pressure",
+  "starts_active": true,
+  "next_objectives": ["observe_scale_limited"],
+  "rewards": [
+    {"type": "unlock_intervention", "id": "scale_up"},
+    {"type": "emit_feedback", "message": "Scaling is available. Test the bottleneck."}
+  ]
+}
+```
+
+Supported reward types:
+
+- `unlock_intervention`
+- `unlock_metric`
+- `unlock_overlay`
+- `unlock_scenario_phase`
+- `unlock_scenario`
+- `emit_feedback`
+- `complete_scenario`
+
+Objective definitions may use pressure-aware conditions:
+
+- `survive_duration`
+- `pressure_detected`
+- `pressure_below`
+- `metric_below`
+- `action_used`
+
+Pressure-aware fields include `pressure`, `metric`, `threshold`, and optional `target_node`. Pressure analysis remains diagnostic: objectives query interpreted pressure state, but pressure analysis does not own progression.
+
+## Scenario Roadmap
+
+Scenario completion updates runtime `ProgressionState`:
+
+- `completed_scenarios`
+- `unlocked_scenarios`
+- `unlocked_concepts`
+- `unlocked_metrics`
+- `unlocked_overlays`
+
+The starter roadmap is data-driven:
+
+`first_request -> local_startup -> database_bottleneck -> burst_traffic -> transatlantic_latency`
 
 ## Validation
 

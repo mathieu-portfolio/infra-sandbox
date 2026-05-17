@@ -1,5 +1,20 @@
 [
   {
+    "id": "observe_traffic_latency",
+    "display_name": "Observe traffic and latency",
+    "description": "Notice rising load before acting.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Observe traffic and latency for 10s.",
+    "duration_seconds": 10.0,
+    "starts_active": true,
+    "rewards": [
+      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Use it when API queue pressure becomes dominant."}
+    ],
+    "next_objectives": ["stabilize_api_queue"],
+    "tags": ["diagnosis", "traffic"]
+  },
+  {
     "id": "keep_service_120s",
     "display_name": "Keep service operating",
     "description": "Primary duration objective for local startup pressure.",
@@ -13,8 +28,13 @@
     "display_name": "Stabilize API queue",
     "description": "Side objective for queue recovery.",
     "type": "stabilize_metric",
+    "condition": "pressure_below",
     "summary": "Reduce API queue pressure after overload appears.",
+    "pressure": "queue",
     "threshold": 8.0,
+    "rewards": [
+      {"type": "complete_scenario", "message": "Local startup stabilized. Database bottleneck scenario unlocked."}
+    ],
     "tags": ["side", "queues"]
   },
   {
@@ -25,6 +45,47 @@
     "summary": "Latency above 6s indicates instability.",
     "threshold": 6.0,
     "tags": ["failure", "latency"]
+  },
+  {
+    "id": "detect_persistence_pressure",
+    "display_name": "Detect persistence pressure",
+    "description": "Use pressure analysis to identify the database as the bottleneck.",
+    "type": "metric_threshold",
+    "condition": "pressure_detected",
+    "summary": "Detect PersistencePressure on the database path.",
+    "pressure": "persistence",
+    "starts_active": true,
+    "rewards": [
+      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Test whether API capacity fixes the bottleneck."}
+    ],
+    "next_objectives": ["observe_scale_limited"]
+  },
+  {
+    "id": "observe_scale_limited",
+    "display_name": "Observe limited scaling effect",
+    "description": "Try API scaling and observe whether persistence pressure remains dominant.",
+    "type": "metric_threshold",
+    "condition": "action_used",
+    "metric": "scale_up",
+    "summary": "Use Scale Up and observe whether persistence pressure remains.",
+    "rewards": [
+      {"type": "unlock_intervention", "id": "add_cache", "message": "Add Cache unlocked. Cache can reduce downstream persistence pressure."}
+    ],
+    "next_objectives": ["reduce_db_pressure"]
+  },
+  {
+    "id": "reduce_db_pressure",
+    "display_name": "Reduce DB pressure",
+    "description": "Stabilize persistence pressure after applying an architecture change.",
+    "type": "stabilize_metric",
+    "condition": "pressure_below",
+    "summary": "Reduce PersistencePressure below the unstable range.",
+    "pressure": "persistence",
+    "threshold": 0.45,
+    "rewards": [
+      {"type": "complete_scenario", "message": "Persistence pressure stabilized. Burst Traffic unlocked."}
+    ],
+    "tags": ["database", "stabilization"]
   },
   {
     "id": "manage_db_120s",

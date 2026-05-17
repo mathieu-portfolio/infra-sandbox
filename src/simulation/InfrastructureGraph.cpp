@@ -4,6 +4,7 @@ int InfrastructureGraph::addNode(Node node)
 {
     node.id = static_cast<int>(nodes_.size());
     nodes_.push_back(std::move(node));
+    markTopologyChanged();
     return nodes_.back().id;
 }
 
@@ -11,6 +12,7 @@ int InfrastructureGraph::addLink(Link link)
 {
     link.id = static_cast<int>(links_.size());
     links_.push_back(std::move(link));
+    markTopologyChanged();
     return links_.back().id;
 }
 
@@ -94,4 +96,14 @@ std::vector<Link>& InfrastructureGraph::links()
 const std::vector<Link>& InfrastructureGraph::links() const
 {
     return links_;
+}
+
+std::uint64_t InfrastructureGraph::topologyRevision() const
+{
+    return topologyRevision_;
+}
+
+void InfrastructureGraph::markTopologyChanged()
+{
+    ++topologyRevision_;
 }

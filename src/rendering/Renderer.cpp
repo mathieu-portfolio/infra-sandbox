@@ -99,6 +99,11 @@ Renderer::Renderer(const ScenarioDefinition& scenario)
 void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera)
 {
     uiManager_.update(simulation, scenarioManager, paused);
+    for (const auto& event : uiManager_.state().pendingVisualFeedbackEvents) {
+        visualFeedback_.submit(event);
+    }
+    uiManager_.state().pendingVisualFeedbackEvents.clear();
+    visualFeedback_.update(GetFrameTime() * simulation.simulationSpeed(), simulation);
 
     BeginDrawing();
     ClearBackground(kBackground);
@@ -153,8 +158,16 @@ void Renderer::drawLinks(const Simulation& simulation, const CameraController& c
         if (sourceLayout == nullptr || targetLayout == nullptr || sourceLayout->hiddenByCluster || targetLayout->hiddenByCluster) {
             continue;
         }
-        const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f);
-        drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, kLink);
+        const float feedback = visualFeedback_.linkThroughputBoost(link.id);
+        const float activation = visualFeedback_.linkActivation(link.id);
+        const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f) + feedback * 2.0f + activation * 2.5f;
+        const Color color{
+            static_cast<unsigned char>(std::min(140, 75 + static_cast<int>(feedback * 70.0f + activation * 60.0f))),
+            static_cast<unsigned char>(std::min(196, 94 + static_cast<int>(feedback * 90.0f + activation * 70.0f))),
+            static_cast<unsigned char>(std::min(255, 115 + static_cast<int>(feedback * 90.0f + activation * 80.0f))),
+            static_cast<unsigned char>(std::min(235, 170 + static_cast<int>(feedback * 55.0f + activation * 65.0f))),
+        };
+        drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, color);
     }
 }
 
@@ -175,6 +188,20 @@ void Renderer::drawNodes(const Simulation& simulation, const CameraController& c
         const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
         const std::string iconId = iconIdForNode(node.type);
         const bool hasIcon = IconRegistry::instance().hasIcon(iconId);
+        const float actionPulse = visualFeedback_.nodeActionPulse(node.id);
+        const float pressureGlow = visualFeedback_.nodePressureGlow(node.id);
+        const float instability = visualFeedback_.nodeInstability(node.id);
+        if (pressureGlow > 0.02f) {
+            const float radius = definition.defaultVisualSize * (0.72f + pressureGlow * 0.55f);
+            DrawCircleV(center, radius, {245, 184, 76, static_cast<unsigned char>(std::min(95, static_cast<int>(pressureGlow * 95.0f)))});
+        }
+        if (instability > 0.12f) {
+            const float flicker = 0.55f + 0.45f * pulse(simulation.timeSeconds(), 18.0, node.id);
+            DrawCircleV(center, definition.defaultVisualSize * (0.62f + instability * 0.4f), {235, 86, 100, static_cast<unsigned char>(std::min(80, static_cast<int>(instability * flicker * 80.0f)))});
+        }
+        if (actionPulse > 0.02f) {
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), definition.defaultVisualSize * (0.58f + (1.0f - actionPulse) * 0.45f), {89, 196, 255, static_cast<unsigned char>(actionPulse * 210.0f)});
+        }
 
         if (hasIcon) {
             const float radius = definition.defaultVisualSize * 0.5f;
@@ -266,9 +293,12 @@ void Renderer::drawRequests(const Simulation& simulation, const CameraController
 
             const Vec2 world = arcPoint(sourceLayout->displayPosition, targetLayout->displayPosition, static_cast<float>(request.transitProgress));
             const Vector2 position = worldToScreen(world, width, height, camera);
-            const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
-            const Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);
-            const float radius = databaseHeavy ? 5.5f : 4.0f;
+        const bool databaseHeavy = request.type == RequestType::DatabaseHeavy;
+            Color color = request.servedFromCache ? kCacheParticle : (databaseHeavy ? kDbParticle : kParticle);
+            if (visualFeedback_.routeShift() > 0.05f && request.servedFromCache) {
+                color.a = static_cast<unsigned char>(std::min(255, 190 + static_cast<int>(visualFeedback_.routeShift() * 65.0f)));
+            }
+            const float radius = (databaseHeavy ? 5.5f : 4.0f) + (request.servedFromCache ? visualFeedback_.routeShift() * 1.8f : 0.0f);
             DrawCircleV(position, radius, color);
             DrawCircleV(position, radius + 4.0f, {color.r, color.g, color.b, 45});
         } else if (request.state == RequestState::RetryWaiting) {
@@ -317,9 +347,11 @@ void Renderer::drawQueueBars(const Simulation& simulation, const CameraControlle
         const float x = center.x + 70.0f;
         const float bottom = center.y + 48.0f;
 
-        DrawRectangleRounded({x - 8.0f, bottom - 122.0f, 16.0f, 128.0f}, 0.35f, 8, {18, 22, 28, 220});
+        const float pressureGlow = visualFeedback_.nodePressureGlow(node.id);
+        DrawRectangleRounded({x - 8.0f, bottom - 122.0f, 16.0f, 128.0f}, 0.35f, 8, {18, 22, 28, static_cast<unsigned char>(220 + std::min(30, static_cast<int>(pressureGlow * 30.0f)))});
         for (int i = 0; i < visibleDots; ++i) {
-            const float y = bottom - static_cast<float>(i) * 6.0f;
+            const float queueWave = pressureGlow > 0.15f ? std::sin(static_cast<float>(simulation.timeSeconds() * 8.0 + i)) * pressureGlow * 1.6f : 0.0f;
+            const float y = bottom - static_cast<float>(i) * 6.0f + queueWave;
             const Color color = i > 12 ? Color{235, 86, 100, 255} : Color{245, 184, 76, 255};
             DrawCircleV({x, y}, 3.0f, color);
         }

@@ -6,7 +6,7 @@
 #include <algorithm>
 #include <string>
 
-void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, UiState& uiState)
+void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState)
 {
     for (const auto& event : events) {
         if (event.phase != InputPhase::Pressed) {
@@ -14,13 +14,13 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
         }
 
         if (event.action == InputAction::Select) {
-            handleActionPanelClick(event, simulation, uiState);
+            handleActionPanelClick(event, simulation, scenarioManager, uiState);
             continue;
         }
 
         switch (event.action) {
         case InputAction::ScaleUp:
-            executeMechanic(simulation, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
             break;
         case InputAction::ScaleOut:
             mechanicExecutor_.execute(simulation, {MechanicType::ScaleOut});
@@ -44,19 +44,19 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             moveCandidate(simulation, uiState, -1);
             break;
         case InputAction::ConfirmPlacement:
-            confirmPlacement(simulation, uiState);
+            confirmPlacement(simulation, scenarioManager, uiState);
             break;
         case InputAction::CancelPlacement:
             uiState.placementActive = false;
             break;
         case InputAction::ToggleCache:
-            executeMechanic(simulation, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
             break;
         case InputAction::ClearCache:
-            executeMechanic(simulation, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
             break;
         case InputAction::ToggleRetries:
-            executeMechanic(simulation, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
             break;
         case InputAction::ToggleTrafficBurst:
             simulation.toggleBurstMode();
@@ -65,13 +65,13 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             simulation.resetProcessingCapacity();
             break;
         case InputAction::EnableTracing:
-            executeMechanic(simulation, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
             break;
         case InputAction::ThrottleTrafficUp:
-            executeMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
             break;
         case InputAction::ThrottleTrafficDown:
-            executeMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
+            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
             break;
         default:
             break;
@@ -108,7 +108,7 @@ void InterventionController::moveCandidate(const Simulation& simulation, UiState
     uiState.placementCandidateIndex = (uiState.placementCandidateIndex + delta + count) % count;
 }
 
-void InterventionController::confirmPlacement(Simulation& simulation, UiState& uiState) const
+void InterventionController::confirmPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
 {
     if (!uiState.placementActive) {
         return;
@@ -122,11 +122,24 @@ void InterventionController::confirmPlacement(Simulation& simulation, UiState& u
     if (preview.valid && topologyBuilder_.apply(simulation, preview.mutation)) {
         const std::string target = candidates[static_cast<std::size_t>(index)].displayName;
         recordFeedback(uiState, simulation, topologyMutationName(uiState.activeMutation), target, std::string(topologyMutationName(uiState.activeMutation)) + " applied in " + target + ". Watch latency, queue depth, and utilization.");
+        const MechanicType mechanic = uiState.activeMutation == TopologyMutationType::AddCache ? MechanicType::AddCache
+            : uiState.activeMutation == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
+            : uiState.activeMutation == TopologyMutationType::AddQueue ? MechanicType::AddQueue
+            : MechanicType::AddRegionalCache;
+        scenarioManager.notifyActionTriggered(mechanic);
+        uiState.pendingVisualFeedbackEvents.push_back({
+            .kind = VisualFeedbackKind::TopologyMutation,
+            .targetNodeId = -1,
+            .targetLinkId = -1,
+            .mechanic = mechanic,
+            .mutation = uiState.activeMutation,
+            .label = topologyMutationName(uiState.activeMutation),
+        });
         uiState.placementActive = false;
     }
 }
 
-void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, UiState& uiState) const
+void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
 {
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, uiState, GetScreenWidth(), GetScreenHeight());
@@ -136,13 +149,14 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     const Rectangle actionButton{sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f};
     if (CheckCollisionPointRec(event.mousePosition, actionButton)) {
         if (uiState.placementActive) {
-            confirmPlacement(simulation, uiState);
+            confirmPlacement(simulation, scenarioManager, uiState);
             return;
         }
         if (uiState.selectedActionIndex >= 0 && uiState.selectedActionIndex < static_cast<int>(cards.size())) {
             const auto& card = cards[static_cast<std::size_t>(uiState.selectedActionIndex)];
             if (card.available && card.kind == ActionCardKind::Mechanic) {
-                executeMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, 1.5}, card.name, card.target);
+                const double amount = card.mechanic == MechanicType::ThrottleTraffic ? -1.0 : 1.5;
+                executeMechanic(simulation, scenarioManager, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
             } else if (card.available && card.kind == ActionCardKind::TopologyMutation) {
                 startPlacement(simulation, uiState, card.mutation);
             }
@@ -182,7 +196,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             startPlacement(simulation, uiState, card.mutation);
             break;
         case ActionCardKind::ConfirmPreview:
-            confirmPlacement(simulation, uiState);
+            confirmPlacement(simulation, scenarioManager, uiState);
             break;
         case ActionCardKind::CancelPreview:
             uiState.placementActive = false;
@@ -193,10 +207,17 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     }
 }
 
-void InterventionController::executeMechanic(Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
+void InterventionController::executeMechanic(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
 {
     const auto before = simulation.metrics();
     mechanicExecutor_.execute(simulation, command);
+    scenarioManager.notifyActionTriggered(command.type);
+    uiState.pendingVisualFeedbackEvents.push_back({
+        .kind = command.type == MechanicType::ThrottleTraffic ? VisualFeedbackKind::TrafficShift : VisualFeedbackKind::ActionAcknowledged,
+        .targetNodeId = command.targetId,
+        .mechanic = command.type,
+        .label = actionName,
+    });
 
     std::string message = actionName + " applied.";
     if (command.type == MechanicType::ScaleUp) {

@@ -1,5 +1,31 @@
 [
   {
+    "id": "enable_cache",
+    "display_name": "Toggle Cache",
+    "description": "Enable or disable cache behavior.",
+    "kind": "mechanic",
+    "mechanic": "enable_cache",
+    "target_types": ["global"],
+    "affected_layers": ["flow", "persistence"],
+    "expected_benefits": "Repeated reads, database pressure",
+    "tradeoffs": "Cache behavior can hide fresh database pressure.",
+    "availability": {"requires_mechanic": "enable_cache"},
+    "tags": ["cache"]
+  },
+  {
+    "id": "throttle_traffic",
+    "display_name": "Throttle Traffic",
+    "description": "Limit incoming traffic to prevent overload.",
+    "kind": "mechanic",
+    "mechanic": "throttle_traffic",
+    "target_types": ["global"],
+    "affected_layers": ["flow", "reliability"],
+    "expected_benefits": "Queue pressure, timeout control",
+    "tradeoffs": "Slower responses and reduced throughput.",
+    "availability": {"requires_mechanic": "throttle_traffic"},
+    "tags": ["traffic"]
+  },
+  {
     "id": "scale_up",
     "display_name": "Scale Up",
     "description": "Increase API service capacity.",

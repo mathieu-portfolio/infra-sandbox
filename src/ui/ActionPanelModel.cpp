@@ -77,6 +77,9 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
         });
     } else {
         for (const auto& definition : content::ContentRegistry::instance().interventions()) {
+            if (!simulation.isMechanicAllowed(definition.mechanic)) {
+                continue;
+            }
             if (definition.kind == content::InterventionKind::TopologyMutation) {
                 cards.push_back(topologyCard(simulation, state, definition));
             } else {
