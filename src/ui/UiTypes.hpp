@@ -3,6 +3,7 @@
 #include "simulation/Metrics.hpp"
 #include "simulation/Mechanics.hpp"
 #include "simulation/TopologyMutation.hpp"
+#include "gameplay/Scenario.hpp"
 
 #include <array>
 #include <cstddef>
@@ -58,6 +59,13 @@ enum class TimelineFilter {
     ActiveOnly
 };
 
+enum class GameplayPhase {
+    Observation,
+    Planning,
+    Transition,
+    Resolution
+};
+
 struct UiSelection {
     int nodeId = -1;
     int requestId = -1;
@@ -92,7 +100,34 @@ struct ActionFeedback {
     double observeAfterSeconds = 4.0;
 };
 
+enum class PlannedInterventionKind {
+    Mechanic,
+    TopologyMutation
+};
+
+struct PlannedIntervention {
+    PlannedInterventionKind kind = PlannedInterventionKind::Mechanic;
+    MechanicCommand command{};
+    TopologyMutation mutation{};
+    TopologyMutationType mutationType = TopologyMutationType::AddCache;
+    std::string actionName;
+    std::string target;
+    std::string preview;
+    std::vector<EngineeringCost> engineeringCosts;
+};
+
 struct UiState {
+    GameplayPhase gameplayPhase = GameplayPhase::Observation;
+    bool phaseAdvanceRequested = false;
+    bool transitionActionsApplied = false;
+    double transitionVisualElapsedSeconds = 0.0;
+    double transitionSimulatedSeconds = 0.0;
+    double transitionTargetSimulatedSeconds = 90.0;
+    double transitionPlaybackScale = 24.0;
+    std::deque<PlannedIntervention> plannedInterventions;
+    std::deque<std::string> resolutionSummaries;
+    EngineeringCapacity engineeringCapacity;
+    std::string lastCapacityUsageSummary;
     OverlayMode activeOverlay = OverlayMode::None;
     UiSelection selection{};
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};

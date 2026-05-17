@@ -230,6 +230,12 @@ std::vector<ActivityRow> buildActivityRows(const UiState& state, const Simulatio
     for (const auto& entry : state.actionHistory) {
         rows.push_back({entry.timeSeconds, TimelineCategory::Change, entry.actionName, entry.message.empty() ? entry.target : entry.message, entry.observationPending});
     }
+    for (const auto& planned : state.plannedInterventions) {
+        rows.push_back({simulation.timeSeconds(), TimelineCategory::Change, "Planned intervention", planned.actionName + " -> " + planned.target, true});
+    }
+    for (const auto& summary : state.resolutionSummaries) {
+        rows.push_back({simulation.timeSeconds(), TimelineCategory::System, "Resolution", summary, true});
+    }
 
     for (const auto& pressureEvent : simulation.pressure().recentEvents) {
         rows.push_back({pressureEvent.timeSeconds, TimelineCategory::System, "Pressure observed", pressureEvent.summary, true});

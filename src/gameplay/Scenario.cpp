@@ -102,3 +102,22 @@ const char* scenarioArchetypeName(ScenarioArchetype archetype)
     }
     return "Unknown";
 }
+
+const char* engineeringDomainName(EngineeringDomain domain)
+{
+    switch (domain) {
+    case EngineeringDomain::Frontend:
+        return "Frontend";
+    case EngineeringDomain::Backend:
+        return "Backend";
+    case EngineeringDomain::Infrastructure:
+        return "Infrastructure";
+    case EngineeringDomain::Data:
+        return "Data";
+    case EngineeringDomain::Operations:
+        return "Operations";
+    case EngineeringDomain::Count:
+        break;
+    }
+    return "Unknown";
+}

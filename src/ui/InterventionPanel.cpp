@@ -8,6 +8,7 @@
 #include "raylib.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <string>
 
@@ -64,6 +65,108 @@ std::string pressureList(const ActionCard& card)
         label += pressureCategoryName(pressure);
     }
     return label.empty() ? "Contextual" : label;
+}
+
+int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
+{
+    switch (domain) {
+    case EngineeringDomain::Frontend:
+        return capacity.frontend;
+    case EngineeringDomain::Backend:
+        return capacity.backend;
+    case EngineeringDomain::Infrastructure:
+        return capacity.infrastructure;
+    case EngineeringDomain::Data:
+        return capacity.data;
+    case EngineeringDomain::Operations:
+        return capacity.operations;
+    case EngineeringDomain::Count:
+        break;
+    }
+    return 0;
+}
+
+std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> domainUsage(const UiState& state)
+{
+    std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> usage{};
+    for (const auto& planned : state.plannedInterventions) {
+        for (const auto& cost : planned.engineeringCosts) {
+            usage[static_cast<std::size_t>(cost.domain)] += cost.amount;
+        }
+    }
+    return usage;
+}
+
+int totalUsage(const UiState& state)
+{
+    int total = 0;
+    for (const auto& planned : state.plannedInterventions) {
+        for (const auto& cost : planned.engineeringCosts) {
+            total += cost.amount;
+        }
+    }
+    return total;
+}
+
+std::string engineeringCostLabel(const std::vector<EngineeringCost>& costs)
+{
+    if (costs.empty()) {
+        return "Engineering: none";
+    }
+    std::string label = "Engineering: ";
+    for (std::size_t i = 0; i < costs.size(); ++i) {
+        if (i > 0) {
+            label += ", ";
+        }
+        label += engineeringDomainName(costs[i].domain);
+        label += " ";
+        label += std::to_string(costs[i].amount);
+    }
+    return label;
+}
+
+std::string capacityLabel(const UiState& state)
+{
+    const auto usage = domainUsage(state);
+    std::string label = "Capacity ";
+    label += std::to_string(totalUsage(state));
+    label += "/";
+    label += std::to_string(state.engineeringCapacity.total);
+    label += " total";
+    for (std::size_t index = 0; index < usage.size(); ++index) {
+        const auto domain = static_cast<EngineeringDomain>(index);
+        const int cap = capacityForDomain(state.engineeringCapacity, domain);
+        if (cap <= 0 && usage[index] <= 0) {
+            continue;
+        }
+        label += "  ";
+        label += engineeringDomainName(domain);
+        label += " ";
+        label += std::to_string(usage[index]);
+        label += "/";
+        label += std::to_string(cap);
+    }
+    return label;
+}
+
+std::string plannedLabel(const UiState& state)
+{
+    std::string label;
+    int shown = 0;
+    for (const auto& planned : state.plannedInterventions) {
+        if (shown >= 2) {
+            break;
+        }
+        if (!label.empty()) {
+            label += ", ";
+        }
+        label += planned.actionName;
+        ++shown;
+    }
+    if (state.plannedInterventions.size() > static_cast<std::size_t>(shown)) {
+        label += ", +" + std::to_string(state.plannedInterventions.size() - static_cast<std::size_t>(shown));
+    }
+    return label;
 }
 }
 
@@ -129,7 +232,8 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
     section(actions, "LOCAL INTERVENTIONS", 2);
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const int maxCards = std::min(static_cast<int>(cards.size()), std::max(0, static_cast<int>((actions.height - 44.0f) / 76.0f)));
+    drawTextClipped(capacityLabel(*context.state), {actions.x + 14.0f, actions.y + 31.0f, actions.width - 28.0f, 15.0f}, 11, {139, 148, 158, 255});
+    const int maxCards = std::min(static_cast<int>(cards.size()), std::max(0, static_cast<int>((actions.height - 60.0f) / 76.0f)));
     BeginScissorMode(static_cast<int>(actions.x), static_cast<int>(actions.y), static_cast<int>(actions.width), static_cast<int>(actions.height));
     if (cards.empty()) {
         drawTextClipped("Select an API, database, cache, or queue node to see contextual actions.", {actions.x + 14.0f, actions.y + 44.0f, actions.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
@@ -146,7 +250,7 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
             drawTextClipped(card.stateLabel, {card.bounds.x + card.bounds.width - 88.0f, card.bounds.y + 8.0f, 78.0f, 15.0f}, 11, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
         }
         drawTextClipped(card.description, {card.bounds.x + 42.0f, card.bounds.y + 28.0f, card.bounds.width - 52.0f, 15.0f}, 12, {139, 148, 158, 255});
-        drawTextClipped(categoryLabel(card) + " / " + pressureList(card), {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 14.0f}, 11, {89, 196, 255, 210});
+        drawTextClipped(categoryLabel(card) + " / " + pressureList(card) + " / " + engineeringCostLabel(card.engineeringCosts), {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 14.0f}, 11, {89, 196, 255, 210});
         drawTextClipped(card.available ? card.helps : card.unavailableReason, {card.bounds.x + 42.0f, card.bounds.y + 58.0f, card.bounds.width - 52.0f, 13.0f}, 11, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
     }
     EndScissorMode();
@@ -170,7 +274,7 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         } else {
             std::snprintf(impact, sizeof(impact), "Complexity +%.1f", card.complexityCost);
         }
-        drawTextClipped(impact, {preview.x + 14.0f, preview.y + 128.0f, preview.width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
+        drawTextClipped(std::string(impact) + "  " + engineeringCostLabel(card.engineeringCosts), {preview.x + 14.0f, preview.y + 128.0f, preview.width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
         const std::string useful = !card.usefulWhen.empty() ? card.usefulWhen.front() : "Inspect local pressure before applying.";
         drawTextClipped("Useful when: " + useful, {preview.x + 14.0f, preview.y + 146.0f, preview.width - 28.0f, 15.0f}, 11, {230, 237, 243, 220});
         if (!card.architecturalPattern.empty()) {
@@ -196,9 +300,17 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
 
     DrawRectangleRounded({sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f}, 0.08f, 8, {37, 120, 255, static_cast<unsigned char>(context.state->placementActive ? 255 : 120)});
     const bool hasSelectedAction = context.state->selectedActionIndex >= 0;
-    DrawText(context.state->placementActive ? "Apply Action" : (hasSelectedAction ? "Apply Selected Action" : "Select an Action"), static_cast<int>(sidebar.x + sidebar.width * 0.5f - 76.0f), static_cast<int>(buttonY + 12.0f), 15, {230, 237, 243, 255});
+    DrawText(context.state->placementActive ? "Queue Placement" : (hasSelectedAction ? "Queue Intervention" : "Select an Action"), static_cast<int>(sidebar.x + sidebar.width * 0.5f - 76.0f), static_cast<int>(buttonY + 12.0f), 15, {230, 237, 243, 255});
 
     if (!context.state->latestFeedback.empty()) {
         drawTextClipped(context.state->latestFeedback, {sidebar.x + 12.0f, buttonY - 24.0f, sidebar.width - 24.0f, 18.0f}, 13, {245, 184, 76, 255});
+    }
+    if (!context.state->plannedInterventions.empty()) {
+        char planned[96];
+        std::snprintf(planned, sizeof(planned), "%zu planned intervention(s). Validate plan from the top bar.", context.state->plannedInterventions.size());
+        drawTextClipped(planned, {sidebar.x + 12.0f, buttonY - 44.0f, sidebar.width - 24.0f, 18.0f}, 12, {86, 210, 151, 255});
+        drawTextClipped("Planned: " + plannedLabel(*context.state), {sidebar.x + 12.0f, buttonY - 64.0f, sidebar.width - 24.0f, 18.0f}, 12, {139, 148, 158, 255});
+    } else if (!context.state->resolutionSummaries.empty()) {
+        drawTextClipped(context.state->resolutionSummaries.front(), {sidebar.x + 12.0f, buttonY - 44.0f, sidebar.width - 24.0f, 18.0f}, 12, {86, 210, 151, 255});
     }
 }

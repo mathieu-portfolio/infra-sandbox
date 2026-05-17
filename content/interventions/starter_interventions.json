@@ -19,6 +19,7 @@
     "negative_effects": ["Freshness and invalidation complexity increase"],
     "pressure_shifts": ["Persistence pressure can shift into cache memory pressure"],
     "complexity_cost": 0.5,
+    "engineering_costs": {"backend": 1, "data": 1},
     "availability": {"requires_mechanic": "enable_cache"},
     "tags": ["cache"]
   },
@@ -42,6 +43,7 @@
     "negative_effects": ["Throughput is intentionally reduced"],
     "pressure_shifts": ["Traffic pressure shifts toward user-facing latency"],
     "complexity_cost": 0.25,
+    "engineering_costs": {"operations": 1},
     "availability": {"requires_mechanic": "throttle_traffic"},
     "tags": ["traffic"]
   },
@@ -65,6 +67,7 @@
     "negative_effects": ["Downstream database pressure can become more visible", "Operational complexity increases"],
     "pressure_shifts": ["Compute relief can shift bottlenecks toward persistence"],
     "complexity_cost": 1.0,
+    "engineering_costs": {"infrastructure": 1},
     "max_scale_level": 3,
     "diminishing_return": 0.72,
     "availability": {"requires_mechanic": "scale_up"},
@@ -92,6 +95,7 @@
     "negative_effects": ["Memory usage and invalidation complexity increase"],
     "pressure_shifts": ["Persistence pressure can shift into cache state management"],
     "complexity_cost": 1.5,
+    "engineering_costs": {"backend": 1, "data": 1},
     "region_slot_usage": 1,
     "availability": {"requires_mechanic": "add_cache"},
     "tags": ["cache", "topology"]
@@ -118,6 +122,7 @@
     "negative_effects": ["Replication overhead and stale-read risk increase"],
     "pressure_shifts": ["Write/replication pressure can become the next bottleneck"],
     "complexity_cost": 2.0,
+    "engineering_costs": {"infrastructure": 1, "data": 1},
     "region_slot_usage": 1,
     "availability": {"requires_mechanic": "add_read_replica"},
     "tags": ["database", "topology"]
@@ -144,6 +149,7 @@
     "negative_effects": ["End-to-end latency and consistency complexity increase"],
     "pressure_shifts": ["Queue pressure moves from database saturation into buffering"],
     "complexity_cost": 1.25,
+    "engineering_costs": {"backend": 1, "operations": 1},
     "region_slot_usage": 1,
     "availability": {"requires_mechanic": "add_queue"},
     "tags": ["queue", "topology"]
@@ -170,6 +176,7 @@
     "negative_effects": ["Distributed state and cache coordination increase"],
     "pressure_shifts": ["Central persistence pressure shifts toward regional cache operations"],
     "complexity_cost": 1.75,
+    "engineering_costs": {"infrastructure": 1, "backend": 1},
     "region_slot_usage": 1,
     "availability": {"requires_mechanic": "add_regional_cache"},
     "tags": ["cache", "geography", "topology"]
@@ -194,6 +201,7 @@
     "negative_effects": ["Disabling retries can expose more user-visible failures"],
     "pressure_shifts": ["Reliability pressure shifts between retries and visible errors"],
     "complexity_cost": 0.25,
+    "engineering_costs": {"operations": 1},
     "availability": {"requires_mechanic": "toggle_retries"},
     "tags": ["reliability"]
   },
@@ -217,6 +225,7 @@
     "negative_effects": ["Database pressure and latency may spike while cache warms"],
     "pressure_shifts": ["Read pressure shifts from cache back to persistence"],
     "complexity_cost": 0.0,
+    "engineering_costs": {"operations": 1},
     "availability": {"requires_mechanic": "clear_cache"},
     "tags": ["cache"]
   }

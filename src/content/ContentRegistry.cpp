@@ -186,6 +186,21 @@ bool knownNodeTypeId(const std::string& id)
     return ids.contains(id);
 }
 
+EngineeringDomain engineeringDomainFromId(const std::string& id)
+{
+    if (id == "frontend") return EngineeringDomain::Frontend;
+    if (id == "infrastructure" || id == "infra") return EngineeringDomain::Infrastructure;
+    if (id == "data") return EngineeringDomain::Data;
+    if (id == "operations" || id == "ops") return EngineeringDomain::Operations;
+    return EngineeringDomain::Backend;
+}
+
+bool knownEngineeringDomainId(const std::string& id)
+{
+    static const std::set<std::string> ids{"frontend", "backend", "infrastructure", "infra", "data", "operations", "ops"};
+    return ids.contains(id);
+}
+
 TrafficProfileType trafficTypeFromId(const std::string& id)
 {
     if (id == "gradual_growth") return TrafficProfileType::GradualGrowth;
@@ -320,6 +335,50 @@ BurstScenario parseBurst(const Json& object)
         numberAt(object, "period_seconds", 12.0),
         numberAt(object, "duration_seconds", 3.0),
     };
+}
+
+std::vector<EngineeringCost> parseEngineeringCosts(const Json& object)
+{
+    std::vector<EngineeringCost> costs;
+    const Json* value = object.find("engineering_costs");
+    if (value == nullptr) {
+        return costs;
+    }
+    if (value->isObject()) {
+        for (const auto& [domainId, amountJson] : value->asObject()) {
+            if (!amountJson.isNumber()) {
+                continue;
+            }
+            const int amount = static_cast<int>(amountJson.asNumber());
+            if (amount > 0) {
+                costs.push_back({engineeringDomainFromId(domainId), amount});
+            }
+        }
+    } else if (value->isArray()) {
+        for (const auto& entry : value->asArray()) {
+            const int amount = static_cast<int>(numberAt(entry, "amount"));
+            if (amount > 0) {
+                costs.push_back({engineeringDomainFromId(stringAt(entry, "domain")), amount});
+            }
+        }
+    }
+    return costs;
+}
+
+EngineeringCapacity parseEngineeringCapacity(const Json& object, EngineeringCapacity fallback = {})
+{
+    const Json* value = object.find("engineering_capacity");
+    if (value == nullptr || !value->isObject()) {
+        return fallback;
+    }
+    EngineeringCapacity capacity = fallback;
+    capacity.frontend = static_cast<int>(numberAt(*value, "frontend", capacity.frontend));
+    capacity.backend = static_cast<int>(numberAt(*value, "backend", capacity.backend));
+    capacity.infrastructure = static_cast<int>(numberAt(*value, "infrastructure", numberAt(*value, "infra", capacity.infrastructure)));
+    capacity.data = static_cast<int>(numberAt(*value, "data", capacity.data));
+    capacity.operations = static_cast<int>(numberAt(*value, "operations", numberAt(*value, "ops", capacity.operations)));
+    capacity.total = static_cast<int>(numberAt(*value, "total", capacity.total));
+    return capacity;
 }
 
 EventDefinition parseEvent(const Json& object)
@@ -575,6 +634,7 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.usefulWhen = stringsAt(object, "useful_when");
     intervention.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
     intervention.targetNodeTypes = mappedStrings<NodeType>(object, "node_types", nodeTypeFromId);
+    intervention.engineeringCosts = parseEngineeringCosts(object);
     intervention.architecturalPattern = stringAt(object, "architectural_pattern");
     intervention.technologyExample = stringAt(object, "technology_example");
     intervention.tags = stringsAt(object, "tags");
@@ -748,6 +808,30 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         if (numberAt(object, "region_slot_usage", 0.0) < 0.0) {
             result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid region slot usage.");
         }
+        if (const Json* costs = object.find("engineering_costs"); costs != nullptr) {
+            if (costs->isObject()) {
+                for (const auto& [domainId, amountJson] : costs->asObject()) {
+                    if (!knownEngineeringDomainId(domainId)) {
+                        result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid engineering domain: " + domainId);
+                    }
+                    if (!amountJson.isNumber() || amountJson.asNumber() < 0.0) {
+                        result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid engineering cost for " + domainId + ".");
+                    }
+                }
+            } else if (costs->isArray()) {
+                for (const auto& cost : costs->asArray()) {
+                    const std::string domainId = stringAt(cost, "domain");
+                    if (!knownEngineeringDomainId(domainId)) {
+                        result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid engineering domain: " + domainId);
+                    }
+                    if (numberAt(cost, "amount") < 0.0) {
+                        result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid engineering cost.");
+                    }
+                }
+            } else {
+                result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid engineering_costs shape.");
+            }
+        }
         for (const auto& nodeType : stringsAt(object, "node_types")) {
             if (!knownNodeTypeId(nodeType)) {
                 result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid node type id: " + nodeType);
@@ -802,6 +886,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         scenario.requiredCompletedScenarios = stringsAt(object, "required_completed_scenarios");
         scenario.requiredConceptTags = stringsAt(object, "required_concept_tags");
         scenario.sandboxLab = boolAt(object, "sandbox_lab");
+        scenario.engineeringCapacity = parseEngineeringCapacity(object, scenario.engineeringCapacity);
 
         if (const auto topology = topologies.find(scenario.topologyTemplateId); topology != topologies.end()) {
             scenario.nodes = parseNodes(topology->second);
@@ -849,6 +934,14 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         if (scenario.links.empty()) result.errors.push_back("Scenario " + scenario.id + " has no topology links.");
         if (scenario.objectives.empty()) result.errors.push_back("Scenario " + scenario.id + " has no objectives.");
         if (scenario.trafficProfile.baseMultiplier < 0.0) result.errors.push_back("Scenario " + scenario.id + " has invalid traffic multiplier.");
+        const EngineeringCapacity& capacity = scenario.engineeringCapacity;
+        if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0 || capacity.total < 0) {
+            result.errors.push_back("Scenario " + scenario.id + " has invalid engineering capacity.");
+        }
+        const int summedCapacity = capacity.frontend + capacity.backend + capacity.infrastructure + capacity.data + capacity.operations;
+        if (capacity.total > summedCapacity) {
+            result.errors.push_back("Scenario " + scenario.id + " total engineering capacity exceeds the sum of domain capacities.");
+        }
         for (const auto& node : scenario.nodes) {
             if (node.requestRatePerSecond < 0.0 || node.processingCapacityPerSecond < 0.0) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid node numeric ranges.");
@@ -905,6 +998,7 @@ void ContentRegistry::loadFallbackContent()
             .positiveEffects = {"API queue pressure decreases", "Compute headroom increases"},
             .negativeEffects = {"Downstream persistence pressure can become dominant", "Operational complexity increases"},
             .pressureShifts = {"Queue pressure can shift toward persistence"},
+            .engineeringCosts = {{EngineeringDomain::Infrastructure, 1}},
             .mechanic = MechanicType::ScaleUp,
             .complexityCost = 1.0,
             .maxScaleLevel = 3,

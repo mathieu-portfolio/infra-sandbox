@@ -21,6 +21,8 @@ private:
     void handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const;
     void executeMechanic(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const;
     void recordFeedback(UiState& uiState, const Simulation& simulation, std::string actionName, std::string target, std::string message) const;
+    void queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const;
+    void queueTopologyMutation(const Simulation& simulation, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const;
 
     MechanicExecutor mechanicExecutor_;
     PlacementCandidateGenerator candidateGenerator_;

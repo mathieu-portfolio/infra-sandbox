@@ -13,6 +13,7 @@
 #include "simulation/Simulation.hpp"
 
 #include <cstddef>
+#include <string>
 
 class Application {
 public:
@@ -28,6 +29,11 @@ private:
     void applyPendingScenarioSelection();
     void applySandboxRequests();
     void applyUiRequests();
+    void updatePhaseSimulation(float frameTime);
+    void beginTransition();
+    void applyPlannedInterventions();
+    void finishTransition(const MetricsSnapshot& beforeMetrics);
+    void appendResolutionSummary(std::string summary);
 
     InputManager inputManager_;
     ScenarioDefinition scenarioDefinition_;
@@ -41,6 +47,6 @@ private:
     OverlayInputController overlayController_;
     UiController uiController_;
     bool paused_ = false;
-    bool stepRequested_ = false;
     double fixedStepAccumulator_ = 0.0;
+    MetricsSnapshot transitionBaseline_{};
 };

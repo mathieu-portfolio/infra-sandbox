@@ -15,7 +15,7 @@ enum class InputTrigger {
 };
 
 struct InputBinding {
-    InputAction action = InputAction::PauseSimulation;
+    InputAction action = InputAction::ResetSimulation;
     InputDevice device = InputDevice::Keyboard;
     int code = 0;
     InputTrigger trigger = InputTrigger::Pressed;

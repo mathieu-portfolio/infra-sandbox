@@ -36,18 +36,3 @@ bool pointInUiPanel(Vector2 point, const UiLayout& layout)
         || CheckCollisionPointRec(point, layout.rightSidebar)
         || CheckCollisionPointRec(point, layout.bottomPanel);
 }
-
-Rectangle topBarPauseButton(const UiLayout&)
-{
-    return {728.0f, 12.0f, 34.0f, 30.0f};
-}
-
-Rectangle topBarPlayButton(const UiLayout&)
-{
-    return {766.0f, 12.0f, 34.0f, 30.0f};
-}
-
-Rectangle topBarSpeedButton(const UiLayout&, int index)
-{
-    return {590.0f + static_cast<float>(index) * 42.0f, 12.0f, 38.0f, 30.0f};
-}

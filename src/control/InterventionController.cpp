@@ -5,6 +5,8 @@
 #include "ui/UiLayout.hpp"
 
 #include <algorithm>
+#include <array>
+#include <cstdio>
 #include <string>
 
 namespace {
@@ -16,6 +18,75 @@ const content::InterventionDefinition* interventionFor(MechanicType mechanic)
         }
     }
     return nullptr;
+}
+
+int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
+{
+    switch (domain) {
+    case EngineeringDomain::Frontend:
+        return capacity.frontend;
+    case EngineeringDomain::Backend:
+        return capacity.backend;
+    case EngineeringDomain::Infrastructure:
+        return capacity.infrastructure;
+    case EngineeringDomain::Data:
+        return capacity.data;
+    case EngineeringDomain::Operations:
+        return capacity.operations;
+    case EngineeringDomain::Count:
+        break;
+    }
+    return 0;
+}
+
+std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomainUsage(const UiState& uiState)
+{
+    std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> usage{};
+    for (const auto& planned : uiState.plannedInterventions) {
+        for (const auto& cost : planned.engineeringCosts) {
+            usage[static_cast<std::size_t>(cost.domain)] += cost.amount;
+        }
+    }
+    return usage;
+}
+
+int plannedTotalUsage(const UiState& uiState)
+{
+    int total = 0;
+    for (const auto& planned : uiState.plannedInterventions) {
+        for (const auto& cost : planned.engineeringCosts) {
+            total += cost.amount;
+        }
+    }
+    return total;
+}
+
+bool canQueueEngineeringCosts(const UiState& uiState, const std::vector<EngineeringCost>& costs, std::string& reason)
+{
+    const auto usage = plannedDomainUsage(uiState);
+    int total = plannedTotalUsage(uiState);
+    for (const auto& cost : costs) {
+        const int next = usage[static_cast<std::size_t>(cost.domain)] + cost.amount;
+        const int cap = capacityForDomain(uiState.engineeringCapacity, cost.domain);
+        if (next > cap) {
+            reason = std::string("Insufficient ") + engineeringDomainName(cost.domain) + " capacity this turn.";
+            return false;
+        }
+        total += cost.amount;
+    }
+    if (total > uiState.engineeringCapacity.total) {
+        reason = "Shared engineering capacity is fully allocated this turn.";
+        return false;
+    }
+    return true;
+}
+
+std::vector<EngineeringCost> engineeringCostsFor(MechanicType mechanic)
+{
+    if (const auto* definition = interventionFor(mechanic)) {
+        return definition->engineeringCosts;
+    }
+    return {};
 }
 }
 
@@ -33,7 +104,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
         switch (event.action) {
         case InputAction::ScaleUp:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
+            queueMechanic(simulation, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
             break;
         case InputAction::ScaleOut:
             mechanicExecutor_.execute(simulation, {MechanicType::ScaleOut});
@@ -63,13 +134,13 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             uiState.placementActive = false;
             break;
         case InputAction::ToggleCache:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
+            queueMechanic(simulation, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
             break;
         case InputAction::ClearCache:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
+            queueMechanic(simulation, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
             break;
         case InputAction::ToggleRetries:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
+            queueMechanic(simulation, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
             break;
         case InputAction::ToggleTrafficBurst:
             simulation.toggleBurstMode();
@@ -78,13 +149,13 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             simulation.resetProcessingCapacity();
             break;
         case InputAction::EnableTracing:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
+            queueMechanic(simulation, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
             break;
         case InputAction::ThrottleTrafficUp:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
+            queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
             break;
         case InputAction::ThrottleTrafficDown:
-            executeMechanic(simulation, scenarioManager, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
+            queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
             break;
         default:
             break;
@@ -103,6 +174,12 @@ void InterventionController::startPlacement(const Simulation& simulation, UiStat
     }
     if (const auto* intervention = interventionFor(mechanic); intervention != nullptr && !simulation.hasAnyRegionCapacity(intervention->regionSlotUsage)) {
         uiState.latestFeedback = "No regional deployment slots are available for this action.";
+        return;
+    }
+    const std::vector<EngineeringCost> costs = engineeringCostsFor(mechanic);
+    std::string capacityReason;
+    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
+        uiState.latestFeedback = capacityReason;
         return;
     }
     uiState.placementActive = true;
@@ -148,7 +225,7 @@ void InterventionController::confirmPlacement(Simulation& simulation, ScenarioMa
             return;
         }
     }
-    if (preview.valid && topologyBuilder_.apply(simulation, preview.mutation)) {
+    if (preview.valid) {
         const std::string target = candidates[static_cast<std::size_t>(index)].displayName;
         std::string feedback = std::string(topologyMutationName(uiState.activeMutation)) + " applied in " + target + ". Watch latency, queue depth, and utilization.";
         if (const auto* intervention = interventionFor(mechanic); intervention != nullptr) {
@@ -159,18 +236,10 @@ void InterventionController::confirmPlacement(Simulation& simulation, ScenarioMa
                 feedback += " " + intervention->pressureShifts.front() + ".";
             }
         }
-        recordFeedback(uiState, simulation, topologyMutationName(uiState.activeMutation), target, feedback);
-        scenarioManager.notifyActionTriggered(mechanic);
-        uiState.pendingVisualFeedbackEvents.push_back({
-            .kind = VisualFeedbackKind::TopologyMutation,
-            .targetNodeId = -1,
-            .targetLinkId = -1,
-            .mechanic = mechanic,
-            .mutation = uiState.activeMutation,
-            .label = topologyMutationName(uiState.activeMutation),
-        });
+        queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), target, feedback);
         uiState.placementActive = false;
     }
+    (void)scenarioManager;
 }
 
 void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
@@ -190,7 +259,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             const auto& card = cards[static_cast<std::size_t>(uiState.selectedActionIndex)];
             if (card.available && card.kind == ActionCardKind::Mechanic) {
                 const double amount = card.mechanic == MechanicType::ThrottleTraffic ? -1.0 : 1.5;
-                executeMechanic(simulation, scenarioManager, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
+                queueMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
             } else if (card.available && card.kind == ActionCardKind::TopologyMutation) {
                 startPlacement(simulation, uiState, card.mutation);
             }
@@ -283,4 +352,53 @@ void InterventionController::recordFeedback(UiState& uiState, const Simulation& 
     while (uiState.actionHistory.size() > 8) {
         uiState.actionHistory.pop_front();
     }
+}
+
+void InterventionController::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
+{
+    if (!simulation.isMechanicAllowed(command.type)) {
+        uiState.latestFeedback = "This intervention is not available in the current scenario.";
+        return;
+    }
+    const std::vector<EngineeringCost> costs = engineeringCostsFor(command.type);
+    std::string capacityReason;
+    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
+        uiState.latestFeedback = capacityReason;
+        return;
+    }
+    uiState.gameplayPhase = GameplayPhase::Planning;
+    uiState.plannedInterventions.push_back({
+        .kind = PlannedInterventionKind::Mechanic,
+        .command = command,
+        .actionName = std::move(actionName),
+        .target = std::move(target),
+        .preview = "Queued for the next transition.",
+        .engineeringCosts = costs,
+    });
+    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Validate the plan to simulate consequences.";
+}
+
+void InterventionController::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
+{
+    const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
+        : type == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
+        : type == TopologyMutationType::AddQueue ? MechanicType::AddQueue
+        : MechanicType::AddRegionalCache;
+    const std::vector<EngineeringCost> costs = engineeringCostsFor(mechanic);
+    std::string capacityReason;
+    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
+        uiState.latestFeedback = capacityReason;
+        return;
+    }
+    uiState.gameplayPhase = GameplayPhase::Planning;
+    uiState.plannedInterventions.push_back({
+        .kind = PlannedInterventionKind::TopologyMutation,
+        .mutation = mutation,
+        .mutationType = type,
+        .actionName = std::move(actionName),
+        .target = std::move(target),
+        .preview = std::move(preview),
+        .engineeringCosts = costs,
+    });
+    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Validate the plan to simulate consequences.";
 }

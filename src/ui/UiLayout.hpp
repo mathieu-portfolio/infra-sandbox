@@ -22,6 +22,3 @@ struct UiTheme {
 
 UiLayout computeUiLayout(int screenWidth, int screenHeight);
 bool pointInUiPanel(Vector2 point, const UiLayout& layout);
-Rectangle topBarPauseButton(const UiLayout& layout);
-Rectangle topBarPlayButton(const UiLayout& layout);
-Rectangle topBarSpeedButton(const UiLayout& layout, int index);

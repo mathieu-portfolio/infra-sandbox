@@ -6,12 +6,43 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <algorithm>
+#include <array>
+#include <string>
 #include <vector>
 
 namespace {
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
 constexpr double kFixedStepSeconds = 1.0 / 60.0;
+
+std::string capacityUsageSummary(const UiState& state)
+{
+    std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> domainUsage{};
+    int total = 0;
+    for (const auto& planned : state.plannedInterventions) {
+        for (const auto& cost : planned.engineeringCosts) {
+            domainUsage[static_cast<std::size_t>(cost.domain)] += cost.amount;
+            total += cost.amount;
+        }
+    }
+    if (total == 0) {
+        return "0/" + std::to_string(state.engineeringCapacity.total);
+    }
+
+    std::string summary = std::to_string(total) + "/" + std::to_string(state.engineeringCapacity.total) + " total";
+    for (std::size_t index = 0; index < domainUsage.size(); ++index) {
+        if (domainUsage[index] <= 0) {
+            continue;
+        }
+        const auto domain = static_cast<EngineeringDomain>(index);
+        summary += ", ";
+        summary += engineeringDomainName(domain);
+        summary += " ";
+        summary += std::to_string(domainUsage[index]);
+    }
+    return summary;
+}
 }
 
 Application::Application()
@@ -38,21 +69,8 @@ void Application::run()
 {
     while (!WindowShouldClose()) {
         handleInput();
-        simulation_.setPaused(paused_);
         cameraController_.update(GetFrameTime());
-
-        if (!paused_) {
-            fixedStepAccumulator_ += GetFrameTime() * simulation_.simulationSpeed();
-            while (fixedStepAccumulator_ >= kFixedStepSeconds) {
-                scenarioManager_.update(kFixedStepSeconds, simulation_);
-                simulation_.update(kFixedStepSeconds);
-                fixedStepAccumulator_ -= kFixedStepSeconds;
-            }
-        } else if (stepRequested_) {
-            scenarioManager_.update(kFixedStepSeconds, simulation_);
-            simulation_.update(kFixedStepSeconds);
-        }
-        stepRequested_ = false;
+        updatePhaseSimulation(GetFrameTime());
 
         renderer_.draw(simulation_, scenarioManager_, paused_, cameraController_);
     }
@@ -69,7 +87,6 @@ void Application::handleInput()
     if (simulationResult.resetRequested) {
         resetScenario();
     }
-    stepRequested_ = simulationResult.stepRequested;
 
     interventionController_.handleActions(events, simulation_, scenarioManager_, renderer_.uiManager().state());
     cameraController_.handleActions(events, GetFrameTime());
@@ -92,6 +109,14 @@ void Application::resetScenario()
 {
     scenarioManager_.reset();
     simulation_ = Simulation(scenarioManager_.definition());
+    UiState& state = renderer_.uiManager().state();
+    state.gameplayPhase = GameplayPhase::Observation;
+    state.plannedInterventions.clear();
+    state.resolutionSummaries.clear();
+    state.lastCapacityUsageSummary.clear();
+    state.transitionActionsApplied = false;
+    state.transitionVisualElapsedSeconds = 0.0;
+    state.transitionSimulatedSeconds = 0.0;
     fixedStepAccumulator_ = 0.0;
 }
 
@@ -112,6 +137,11 @@ void Application::loadScenario(std::size_t scenarioIndex)
     state.actionHistory.clear();
     state.scenarioDroplistOpen = false;
     state.objectivesDroplistOpen = false;
+    state.gameplayPhase = GameplayPhase::Observation;
+    state.plannedInterventions.clear();
+    state.resolutionSummaries.clear();
+    state.lastCapacityUsageSummary.clear();
+    state.transitionActionsApplied = false;
     fixedStepAccumulator_ = 0.0;
 }
 
@@ -152,13 +182,14 @@ void Application::applySandboxRequests()
         state.sandboxClearTimelineRequested = false;
     }
     if (state.sandboxSlowMotionRequested) {
-        simulation_.setSimulationSpeed(0.25);
-        paused_ = false;
+        state.transitionPlaybackScale = 6.0;
+        beginTransition();
         state.sandboxSlowMotionRequested = false;
     }
     if (state.sandboxStepRequested) {
-        paused_ = true;
-        stepRequested_ = true;
+        state.transitionTargetSimulatedSeconds = 15.0;
+        state.transitionPlaybackScale = 10.0;
+        beginTransition();
         state.sandboxStepRequested = false;
     }
     if (state.sandboxResetSimulationRequested || state.sandboxRestoreTopologyRequested) {
@@ -177,6 +208,23 @@ void Application::applySandboxRequests()
 void Application::applyUiRequests()
 {
     UiState& state = renderer_.uiManager().state();
+    if (state.phaseAdvanceRequested) {
+        state.phaseAdvanceRequested = false;
+        if (state.gameplayPhase == GameplayPhase::Observation) {
+            state.gameplayPhase = GameplayPhase::Planning;
+            state.lastCapacityUsageSummary.clear();
+            state.latestFeedback = "Planning phase. Queue interventions, then validate the plan.";
+        } else if (state.gameplayPhase == GameplayPhase::Planning) {
+            state.transitionTargetSimulatedSeconds = 90.0;
+            state.transitionPlaybackScale = 24.0;
+            beginTransition();
+        } else if (state.gameplayPhase == GameplayPhase::Resolution) {
+            state.gameplayPhase = GameplayPhase::Observation;
+            state.resolutionSummaries.clear();
+            state.lastCapacityUsageSummary.clear();
+            state.latestFeedback = "Observation phase. Inspect pressure movement before planning again.";
+        }
+    }
     if (state.fullscreenToggleRequested) {
         if (IsWindowMaximized()) {
             RestoreWindow();
@@ -184,5 +232,127 @@ void Application::applyUiRequests()
             MaximizeWindow();
         }
         state.fullscreenToggleRequested = false;
+    }
+}
+
+void Application::beginTransition()
+{
+    UiState& state = renderer_.uiManager().state();
+    state.gameplayPhase = GameplayPhase::Transition;
+    state.transitionActionsApplied = false;
+    state.transitionVisualElapsedSeconds = 0.0;
+    state.transitionSimulatedSeconds = 0.0;
+    state.resolutionSummaries.clear();
+    state.latestFeedback = "Transition running. Simulating operational consequences.";
+    transitionBaseline_ = simulation_.metrics();
+    fixedStepAccumulator_ = 0.0;
+}
+
+void Application::updatePhaseSimulation(float frameTime)
+{
+    UiState& state = renderer_.uiManager().state();
+    if (state.gameplayPhase != GameplayPhase::Transition) {
+        simulation_.setPaused(true);
+        return;
+    }
+
+    simulation_.setPaused(false);
+    if (!state.transitionActionsApplied) {
+        applyPlannedInterventions();
+        state.transitionActionsApplied = true;
+    }
+
+    state.transitionVisualElapsedSeconds += frameTime;
+    const double remaining = std::max(0.0, state.transitionTargetSimulatedSeconds - state.transitionSimulatedSeconds);
+    const double simulatedDelta = std::min(remaining, static_cast<double>(frameTime) * state.transitionPlaybackScale);
+    fixedStepAccumulator_ += simulatedDelta;
+    while (fixedStepAccumulator_ >= kFixedStepSeconds && state.transitionSimulatedSeconds < state.transitionTargetSimulatedSeconds) {
+        scenarioManager_.update(kFixedStepSeconds, simulation_);
+        simulation_.update(kFixedStepSeconds);
+        fixedStepAccumulator_ -= kFixedStepSeconds;
+        state.transitionSimulatedSeconds += kFixedStepSeconds;
+    }
+
+    if (state.transitionSimulatedSeconds >= state.transitionTargetSimulatedSeconds || state.transitionVisualElapsedSeconds >= 5.0) {
+        finishTransition(transitionBaseline_);
+    }
+}
+
+void Application::applyPlannedInterventions()
+{
+    UiState& state = renderer_.uiManager().state();
+    MechanicExecutor executor;
+    TopologyBuilder topologyBuilder;
+    state.lastCapacityUsageSummary = capacityUsageSummary(state);
+    for (const auto& planned : state.plannedInterventions) {
+        if (planned.kind == PlannedInterventionKind::Mechanic) {
+            executor.execute(simulation_, planned.command);
+            scenarioManager_.notifyActionTriggered(planned.command.type);
+            state.pendingVisualFeedbackEvents.push_back({
+                .kind = planned.command.type == MechanicType::ThrottleTraffic ? VisualFeedbackKind::TrafficShift : VisualFeedbackKind::ActionAcknowledged,
+                .targetNodeId = planned.command.targetId,
+                .mechanic = planned.command.type,
+                .label = planned.actionName,
+            });
+        } else {
+            if (topologyBuilder.apply(simulation_, planned.mutation)) {
+                const MechanicType mechanic = planned.mutationType == TopologyMutationType::AddCache ? MechanicType::AddCache
+                    : planned.mutationType == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
+                    : planned.mutationType == TopologyMutationType::AddQueue ? MechanicType::AddQueue
+                    : MechanicType::AddRegionalCache;
+                scenarioManager_.notifyActionTriggered(mechanic);
+                state.pendingVisualFeedbackEvents.push_back({
+                    .kind = VisualFeedbackKind::TopologyMutation,
+                    .targetNodeId = -1,
+                    .targetLinkId = -1,
+                    .mechanic = mechanic,
+                    .mutation = planned.mutationType,
+                    .label = planned.actionName,
+                });
+            }
+        }
+        state.actionHistory.push_back({simulation_.timeSeconds(), planned.actionName, planned.target, planned.preview, simulation_.metrics(), true, false, 4.0});
+    }
+    state.plannedInterventions.clear();
+}
+
+void Application::finishTransition(const MetricsSnapshot& beforeMetrics)
+{
+    UiState& state = renderer_.uiManager().state();
+    const MetricsSnapshot after = simulation_.metrics();
+    state.gameplayPhase = GameplayPhase::Resolution;
+    state.transitionActionsApplied = false;
+    appendResolutionSummary("Simulated " + std::to_string(static_cast<int>(state.transitionSimulatedSeconds)) + " operational seconds.");
+    if (!state.lastCapacityUsageSummary.empty()) {
+        appendResolutionSummary("Engineering capacity used: " + state.lastCapacityUsageSummary + ".");
+    }
+    if (after.apiQueueDepth < beforeMetrics.apiQueueDepth) {
+        appendResolutionSummary("API queue pressure improved locally.");
+    } else if (after.apiQueueDepth > beforeMetrics.apiQueueDepth) {
+        appendResolutionSummary("API queue pressure increased during the transition.");
+    }
+    if (after.databaseQueueDepth > beforeMetrics.databaseQueueDepth) {
+        appendResolutionSummary("Persistence pressure increased downstream.");
+    } else if (after.databaseQueueDepth < beforeMetrics.databaseQueueDepth) {
+        appendResolutionSummary("Persistence pressure decreased after the plan.");
+    }
+    if (after.averageLatencySeconds > beforeMetrics.averageLatencySeconds * 1.1) {
+        appendResolutionSummary("Average latency worsened; inspect dependency paths.");
+    } else if (after.averageLatencySeconds + 0.01 < beforeMetrics.averageLatencySeconds) {
+        appendResolutionSummary("Latency improved over the transition window.");
+    }
+    if (simulation_.pressure().dominantPressure != PressureCategory::None) {
+        appendResolutionSummary(std::string("Emerging bottleneck: ") + pressureCategoryName(simulation_.pressure().dominantPressure) + " pressure.");
+    }
+    state.latestFeedback = state.resolutionSummaries.empty() ? "Transition complete. No major pressure movement detected." : state.resolutionSummaries.front();
+    fixedStepAccumulator_ = 0.0;
+}
+
+void Application::appendResolutionSummary(std::string summary)
+{
+    UiState& state = renderer_.uiManager().state();
+    state.resolutionSummaries.push_back(std::move(summary));
+    while (state.resolutionSummaries.size() > 5) {
+        state.resolutionSummaries.pop_front();
     }
 }

@@ -9,7 +9,6 @@ class SimulationController {
 public:
     struct Result {
         bool resetRequested = false;
-        bool stepRequested = false;
     };
 
     Result handleActions(std::span<const InputEvent> events, Simulation& simulation, bool& paused);

@@ -45,6 +45,29 @@ enum class ScenarioRunState {
     RecoverableFailure
 };
 
+enum class EngineeringDomain {
+    Frontend,
+    Backend,
+    Infrastructure,
+    Data,
+    Operations,
+    Count
+};
+
+struct EngineeringCapacity {
+    int frontend = 1;
+    int backend = 2;
+    int infrastructure = 1;
+    int data = 1;
+    int operations = 1;
+    int total = 4;
+};
+
+struct EngineeringCost {
+    EngineeringDomain domain = EngineeringDomain::Backend;
+    int amount = 0;
+};
+
 enum class ObjectiveConditionType {
     SurviveDuration,
     PressureDetected,
@@ -229,6 +252,7 @@ struct ScenarioDefinition {
     std::vector<std::string> unlocksScenarios;
     std::vector<std::string> requiredCompletedScenarios;
     std::vector<std::string> requiredConceptTags;
+    EngineeringCapacity engineeringCapacity;
     bool sandboxLab = false;
     std::vector<NodeScenario> nodes;
     std::vector<LinkScenario> links;
@@ -298,3 +322,4 @@ public:
 
 const char* progressionTierName(ProgressionTier tier);
 const char* scenarioArchetypeName(ScenarioArchetype archetype);
+const char* engineeringDomainName(EngineeringDomain domain);

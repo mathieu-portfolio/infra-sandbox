@@ -37,8 +37,24 @@ Scenarios reference reusable definitions by ID:
 - `disabled_interventions`
 - `unlocks_scenarios`
 - `required_completed_scenarios`
+- `engineering_capacity`
 
 Scenario intervention fields are the source of truth for action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
+
+Scenario `engineering_capacity` defines the planning budget that refills each turn:
+
+```json
+"engineering_capacity": {
+  "frontend": 1,
+  "backend": 2,
+  "infrastructure": 1,
+  "data": 1,
+  "operations": 1,
+  "total": 4
+}
+```
+
+Domain caps limit specialized work, while `total` is the shared cross-domain cap for the turn.
 
 ## Objective Chains And Rewards
 
@@ -101,6 +117,7 @@ The loader reports:
 - scenarios without topology, links, or objectives
 - invalid negative node or traffic numeric ranges
 - invalid intervention numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
+- invalid engineering domains, negative engineering costs, or impossible scenario capacity caps
 
 Load errors are emitted through raylib logs and displayed in the debug UI. If content loading fails, the registry installs a tiny fallback scenario so the app remains usable.
 
@@ -131,8 +148,9 @@ Add an entry in `content/interventions/` with:
 - `useful_when`: short diagnostic conditions shown in the preview
 - `architectural_pattern` and `technology_example`: future discovery hooks from concrete action to pattern and real-world technology
 - `complexity_cost`
+- `engineering_costs`: per-turn planning cost by domain, for example `{"backend": 1, "data": 1}`
 - `max_scale_level` and `diminishing_return` for scale interventions
 - `region_slot_usage` for topology-expanding interventions
 - simple `availability` metadata
 
-The JSON controls action-card metadata, preview wording, complexity impact, scale caps, and regional slot usage. The actual mechanic or topology mutation still executes in C++.
+The JSON controls action-card metadata, preview wording, engineering domain cost, complexity impact, scale caps, and regional slot usage. The actual mechanic or topology mutation still executes in C++.

@@ -3,14 +3,7 @@
 #include "raylib.h"
 
 enum class InputAction {
-    PauseSimulation,
-    StepSimulation,
     ResetSimulation,
-    IncreaseSimulationSpeed,
-    DecreaseSimulationSpeed,
-    SetSimulationSpeed1x,
-    SetSimulationSpeed2x,
-    SetSimulationSpeed5x,
     PanCamera,
     ZoomIn,
     ZoomOut,
@@ -57,7 +50,7 @@ enum class InputPhase {
 };
 
 struct InputEvent {
-    InputAction action = InputAction::PauseSimulation;
+    InputAction action = InputAction::ResetSimulation;
     InputPhase phase = InputPhase::Pressed;
     Vector2 mousePosition{};
     Vector2 mouseDelta{};

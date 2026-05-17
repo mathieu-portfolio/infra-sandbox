@@ -25,6 +25,11 @@ Rectangle objectivesDroplistBounds(int screenWidth)
     return {x, 11.0f, width, 32.0f};
 }
 
+Rectangle phaseButtonBounds()
+{
+    return {588.0f, 11.0f, 204.0f, 32.0f};
+}
+
 Rectangle feedbackBounds(int screenWidth)
 {
     return {static_cast<float>(screenWidth - 236), 11.0f, 98.0f, 32.0f};
@@ -126,6 +131,36 @@ Rectangle optionsRowBounds(Rectangle menu, int index)
     return {menu.x + 10.0f, menu.y + 34.0f + static_cast<float>(index) * 29.0f, menu.width - 20.0f, 25.0f};
 }
 
+const char* phaseName(GameplayPhase phase)
+{
+    switch (phase) {
+    case GameplayPhase::Observation:
+        return "Observation";
+    case GameplayPhase::Planning:
+        return "Planning";
+    case GameplayPhase::Transition:
+        return "Simulating";
+    case GameplayPhase::Resolution:
+        return "Resolution";
+    }
+    return "Unknown";
+}
+
+const char* phaseActionLabel(GameplayPhase phase)
+{
+    switch (phase) {
+    case GameplayPhase::Observation:
+        return "Start Planning";
+    case GameplayPhase::Planning:
+        return "Validate Plan";
+    case GameplayPhase::Transition:
+        return "Simulating";
+    case GameplayPhase::Resolution:
+        return "Analyze / Continue";
+    }
+    return "Advance";
+}
+
 void drawOptionRow(Rectangle row, const char* label, bool enabled)
 {
     DrawRectangleRounded(row, 0.12f, 6, {22, 27, 34, 175});
@@ -146,6 +181,7 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     const Rectangle objectiveField = objectivesDroplistBounds(context.screenWidth);
     const Rectangle optionsButton = optionsButtonBounds(context.screenWidth);
     const Rectangle optionsMenu = optionsMenuBounds(context.screenWidth, context.screenHeight);
+    const Rectangle phaseButton = phaseButtonBounds();
     const auto scenarios = ScenarioRegistry::createAll();
     const Rectangle scenarioMenu{scenarioField.x, scenarioField.y + scenarioField.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
     const auto& run = scenarioManager.run();
@@ -168,6 +204,13 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
         context.state->optionsMenuOpen = !context.state->optionsMenuOpen;
         context.state->scenarioDroplistOpen = false;
         context.state->objectivesDroplistOpen = false;
+        return;
+    }
+    if (CheckCollisionPointRec(mouse, phaseButton) && context.state->gameplayPhase != GameplayPhase::Transition) {
+        context.state->phaseAdvanceRequested = true;
+        context.state->scenarioDroplistOpen = false;
+        context.state->objectivesDroplistOpen = false;
+        context.state->optionsMenuOpen = false;
         return;
     }
     if (context.state->optionsMenuOpen) {
@@ -217,6 +260,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     if (context.state == nullptr || !context.state->showHud) {
         return;
     }
+    (void)simulation;
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
@@ -234,11 +278,9 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     std::snprintf(buffer, sizeof(buffer), "Time %02d:%02d", totalSeconds / 60, totalSeconds % 60);
     DrawText(buffer, 498, 20, 15, {230, 237, 243, 255});
 
-    drawTopButton(topBarSpeedButton(layout, 0), "1x", simulation.simulationSpeed() == 1.0);
-    drawTopButton(topBarSpeedButton(layout, 1), "2x", simulation.simulationSpeed() == 2.0);
-    drawTopButton(topBarSpeedButton(layout, 2), "5x", simulation.simulationSpeed() == 5.0);
-    drawTopButton(topBarPauseButton(layout), "||", context.paused);
-    drawTopButton(topBarPlayButton(layout), ">", !context.paused);
+    const Rectangle phaseButton = phaseButtonBounds();
+    drawTopButton(phaseButton, phaseActionLabel(context.state->gameplayPhase), context.state->gameplayPhase == GameplayPhase::Planning);
+    DrawText(phaseName(context.state->gameplayPhase), static_cast<int>(phaseButton.x + phaseButton.width + 16.0f), 20, 14, {139, 148, 158, 255});
 
     const Rectangle objectiveBox = objectivesDroplistBounds(context.screenWidth);
     icons.drawIcon("metric.objective", {objectiveBox.x + 10.0f, 15.0f, 20.0f, 20.0f}, {245, 184, 76, 255});

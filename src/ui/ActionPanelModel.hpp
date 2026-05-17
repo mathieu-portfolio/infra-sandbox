@@ -32,6 +32,7 @@ struct ActionCard {
     std::vector<std::string> categories;
     std::vector<std::string> usefulWhen;
     std::vector<PressureCategory> affectedPressures;
+    std::vector<EngineeringCost> engineeringCosts;
     std::string architecturalPattern;
     std::string technologyExample;
     std::string unavailableReason;

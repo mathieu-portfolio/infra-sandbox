@@ -28,6 +28,7 @@ struct InterventionDefinition {
     std::vector<std::string> usefulWhen;
     std::vector<PressureCategory> affectedPressures;
     std::vector<NodeType> targetNodeTypes;
+    std::vector<EngineeringCost> engineeringCosts;
     std::string architecturalPattern;
     std::string technologyExample;
     std::vector<std::string> tags;

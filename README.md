@@ -44,22 +44,7 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 
 ## Controls
 
-- `Space`: pause/resume simulation
-- `.`: single fixed-step while paused
-- `R`: reset scenario
-- `Up` / `Down` or `+` / `-`: increase/decrease client request rate
-- `1`: simulation speed 1x
-- `3`: simulation speed 2x
-- `5`: simulation speed 5x
-- Right mouse drag: pan camera
-- Mouse wheel: zoom camera
-- `Home`: reset camera
-- `A`: scale API processing capacity up
-- `2`: toggle cache on/off
-- `T`: toggle retries on/off
-- `C`: clear cache entries
-- `B`: toggle traffic bursts
-- `4`: reset API capacity, cache state, and burst state
+- Top phase button: move from observation to planning, validate a plan, then review resolution
 - `F1`-`F7`: switch overlay mode
 - `F8`: clear overlay mode
 - `F11`: bottleneck pressure overlay
@@ -67,3 +52,5 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 - `F9`: toggle debug UI
 - `F10`: toggle metrics UI
 - Left click a node: select it and show minimal node details
+- Right mouse drag: pan camera
+- Mouse wheel: zoom camera

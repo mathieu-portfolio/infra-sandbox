@@ -10,6 +10,7 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
+    state_.engineeringCapacity = scenarioManager.definition().engineeringCapacity;
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager);
