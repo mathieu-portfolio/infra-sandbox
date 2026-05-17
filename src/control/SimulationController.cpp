@@ -1,10 +1,34 @@
 #include "control/SimulationController.hpp"
 
+#include "ui/UiLayout.hpp"
+
+#include "raylib.h"
+
 SimulationController::Result SimulationController::handleActions(std::span<const InputEvent> events, Simulation& simulation, bool& paused)
 {
     Result result;
     for (const auto& event : events) {
         if (event.phase != InputPhase::Pressed) {
+            continue;
+        }
+
+        if (event.action == InputAction::Select) {
+            const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
+            if (CheckCollisionPointRec(event.mousePosition, topBarPauseButton(layout))) {
+                paused = true;
+                continue;
+            }
+            if (CheckCollisionPointRec(event.mousePosition, topBarPlayButton(layout))) {
+                paused = false;
+                continue;
+            }
+            for (int i = 0; i < 3; ++i) {
+                if (CheckCollisionPointRec(event.mousePosition, topBarSpeedButton(layout, i))) {
+                    const double speeds[3] = {1.0, 2.0, 5.0};
+                    simulation.setSimulationSpeed(speeds[i]);
+                    break;
+                }
+            }
             continue;
         }
 

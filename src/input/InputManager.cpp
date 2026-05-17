@@ -7,12 +7,7 @@
 InputMap::InputMap()
 {
     bindings_ = {
-        {InputAction::PauseSimulation, InputDevice::Keyboard, KEY_SPACE, InputTrigger::Pressed},
-        {InputAction::StepSimulation, InputDevice::Keyboard, KEY_PERIOD, InputTrigger::Pressed},
         {InputAction::ResetSimulation, InputDevice::Keyboard, KEY_R, InputTrigger::Pressed},
-        {InputAction::SetSimulationSpeed1x, InputDevice::Keyboard, KEY_ONE, InputTrigger::Pressed},
-        {InputAction::SetSimulationSpeed2x, InputDevice::Keyboard, KEY_THREE, InputTrigger::Pressed},
-        {InputAction::SetSimulationSpeed5x, InputDevice::Keyboard, KEY_FIVE, InputTrigger::Pressed},
         {InputAction::MoveCameraUp, InputDevice::Keyboard, KEY_I, InputTrigger::Held},
         {InputAction::MoveCameraDown, InputDevice::Keyboard, KEY_K, InputTrigger::Held},
         {InputAction::MoveCameraLeft, InputDevice::Keyboard, KEY_J, InputTrigger::Held},
