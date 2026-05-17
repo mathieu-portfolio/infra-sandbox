@@ -12,7 +12,7 @@ void CameraController::handleActions(std::span<const InputEvent> events, float d
             offset_.y += event.mouseDelta.y / zoom_;
             break;
         case InputAction::ZoomIn:
-            zoom_ = std::min(5.0f, zoom_ * 1.12f);
+            zoom_ = std::min(20.0f, zoom_ * 1.12f);
             break;
         case InputAction::ZoomOut:
             zoom_ = std::max(0.55f, zoom_ / 1.12f);
