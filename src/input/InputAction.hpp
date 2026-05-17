@@ -11,10 +11,7 @@ enum class InputAction {
     SetSimulationSpeed1x,
     SetSimulationSpeed2x,
     SetSimulationSpeed5x,
-    MoveCameraUp,
-    MoveCameraDown,
-    MoveCameraLeft,
-    MoveCameraRight,
+    PanCamera,
     ZoomIn,
     ZoomOut,
     ResetCamera,
@@ -63,4 +60,5 @@ struct InputEvent {
     InputAction action = InputAction::PauseSimulation;
     InputPhase phase = InputPhase::Pressed;
     Vector2 mousePosition{};
+    Vector2 mouseDelta{};
 };

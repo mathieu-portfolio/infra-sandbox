@@ -8,10 +8,6 @@ InputMap::InputMap()
 {
     bindings_ = {
         {InputAction::ResetSimulation, InputDevice::Keyboard, KEY_R, InputTrigger::Pressed},
-        {InputAction::MoveCameraUp, InputDevice::Keyboard, KEY_I, InputTrigger::Held},
-        {InputAction::MoveCameraDown, InputDevice::Keyboard, KEY_K, InputTrigger::Held},
-        {InputAction::MoveCameraLeft, InputDevice::Keyboard, KEY_J, InputTrigger::Held},
-        {InputAction::MoveCameraRight, InputDevice::Keyboard, KEY_L, InputTrigger::Held},
         {InputAction::ResetCamera, InputDevice::Keyboard, KEY_HOME, InputTrigger::Pressed},
         {InputAction::Select, InputDevice::MouseButton, MOUSE_BUTTON_LEFT, InputTrigger::Pressed},
         {InputAction::ClearSelection, InputDevice::Keyboard, KEY_ESCAPE, InputTrigger::Pressed},
@@ -50,6 +46,16 @@ std::vector<InputEvent> InputManager::poll()
                 .mousePosition = mouse,
             });
         }
+    }
+
+    const Vector2 mouseDelta = GetMouseDelta();
+    if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT) && (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f)) {
+        events.push_back({
+            .action = InputAction::PanCamera,
+            .phase = InputPhase::Held,
+            .mousePosition = mouse,
+            .mouseDelta = mouseDelta,
+        });
     }
 
     const float wheel = GetMouseWheelMove();

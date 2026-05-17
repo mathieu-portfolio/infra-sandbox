@@ -51,7 +51,7 @@ See [docs/architecture.md](docs/architecture.md) for the current split between l
 - `1`: simulation speed 1x
 - `3`: simulation speed 2x
 - `5`: simulation speed 5x
-- `I` / `J` / `K` / `L`: pan camera
+- Right mouse drag: pan camera
 - Mouse wheel: zoom camera
 - `Home`: reset camera
 - `A`: scale API processing capacity up
