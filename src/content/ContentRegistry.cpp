@@ -571,6 +571,12 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.positiveEffects = stringsAt(object, "positive_effects");
     intervention.negativeEffects = stringsAt(object, "negative_effects");
     intervention.pressureShifts = stringsAt(object, "pressure_shifts");
+    intervention.categories = stringsAt(object, "categories");
+    intervention.usefulWhen = stringsAt(object, "useful_when");
+    intervention.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
+    intervention.targetNodeTypes = mappedStrings<NodeType>(object, "node_types", nodeTypeFromId);
+    intervention.architecturalPattern = stringAt(object, "architectural_pattern");
+    intervention.technologyExample = stringAt(object, "technology_example");
     intervention.tags = stringsAt(object, "tags");
     intervention.kind = stringAt(object, "kind") == "topology_mutation" ? InterventionKind::TopologyMutation : InterventionKind::Mechanic;
     intervention.mechanic = mechanicFromId(stringAt(object, "mechanic"));
@@ -741,6 +747,11 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         }
         if (numberAt(object, "region_slot_usage", 0.0) < 0.0) {
             result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid region slot usage.");
+        }
+        for (const auto& nodeType : stringsAt(object, "node_types")) {
+            if (!knownNodeTypeId(nodeType)) {
+                result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid node type id: " + nodeType);
+            }
         }
         interventions_.push_back(parseIntervention(object));
     }

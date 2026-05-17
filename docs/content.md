@@ -125,6 +125,11 @@ Add an entry in `content/interventions/` with:
 - `positive_effects`
 - `negative_effects`
 - `pressure_shifts`
+- `node_types`: selected node types where the action appears
+- `categories`: lightweight groups such as `Scaling`, `Optimization`, or `Reliability`
+- `affected_pressures`: pressure categories that make the action contextually relevant
+- `useful_when`: short diagnostic conditions shown in the preview
+- `architectural_pattern` and `technology_example`: future discovery hooks from concrete action to pattern and real-world technology
 - `complexity_cost`
 - `max_scale_level` and `diminishing_return` for scale interventions
 - `region_slot_usage` for topology-expanding interventions

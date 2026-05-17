@@ -40,6 +40,8 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
         state.selection.nodeId = selectedNodeId;
         state.selection.requestId = -1;
         state.selection.linkId = -1;
+        state.selectedActionIndex = -1;
+        state.hoveredActionIndex = -1;
     }
 }
 

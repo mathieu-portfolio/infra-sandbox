@@ -40,9 +40,16 @@ Rectangle optionsButtonBounds(int screenWidth)
     return {static_cast<float>(screenWidth - 48), 10.0f, 34.0f, 34.0f};
 }
 
-Rectangle optionsMenuBounds(int screenWidth)
+Rectangle optionsMenuBounds(int screenWidth, int screenHeight)
 {
-    return {static_cast<float>(screenWidth - 264), 52.0f, 250.0f, 162.0f};
+    constexpr float width = 300.0f;
+    constexpr float height = 176.0f;
+    return {
+        static_cast<float>(screenWidth) * 0.5f - width * 0.5f,
+        static_cast<float>(screenHeight) * 0.5f - height * 0.5f,
+        width,
+        height,
+    };
 }
 
 bool pointInDroplistOrMenu(Vector2 point, Rectangle field, Rectangle menu)
@@ -138,7 +145,7 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     const Rectangle scenarioField = scenarioDroplistBounds();
     const Rectangle objectiveField = objectivesDroplistBounds(context.screenWidth);
     const Rectangle optionsButton = optionsButtonBounds(context.screenWidth);
-    const Rectangle optionsMenu = optionsMenuBounds(context.screenWidth);
+    const Rectangle optionsMenu = optionsMenuBounds(context.screenWidth, context.screenHeight);
     const auto scenarios = ScenarioRegistry::createAll();
     const Rectangle scenarioMenu{scenarioField.x, scenarioField.y + scenarioField.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
     const auto& run = scenarioManager.run();
@@ -332,10 +339,10 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     }
 
     if (context.state->optionsMenuOpen) {
-        const Rectangle menu = optionsMenuBounds(context.screenWidth);
+        const Rectangle menu = optionsMenuBounds(context.screenWidth, context.screenHeight);
         drawMenuShell(menu);
         DrawText("Options", static_cast<int>(menu.x + 12.0f), static_cast<int>(menu.y + 12.0f), 14, {89, 196, 255, 255});
-        drawOptionRow(optionsRowBounds(menu, 0), "Fullscreen", IsWindowFullscreen());
+        drawOptionRow(optionsRowBounds(menu, 0), "Maximized", IsWindowMaximized());
         drawOptionRow(optionsRowBounds(menu, 1), "Metrics panel", context.state->showMetrics);
         drawOptionRow(optionsRowBounds(menu, 2), "Debug UI", context.state->showDebug);
         drawOptionRow(optionsRowBounds(menu, 3), "Map grid", context.state->showGeoGrid);

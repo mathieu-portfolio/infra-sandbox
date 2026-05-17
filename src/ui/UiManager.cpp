@@ -83,11 +83,11 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     UiState* mutableState = const_cast<UiState*>(&state_);
     UiContext context{mutableState, GetScreenWidth(), GetScreenHeight(), paused};
     metricsPanel_.draw(context, simulation);
-    hudPanel_.draw(context, simulation, scenarioManager);
     interventionPanel_.draw(context, simulation);
     timelinePanel_.draw(context, simulation, scenarioManager);
     selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
+    hudPanel_.draw(context, simulation, scenarioManager);
 }
 
 const UiState& UiManager::state() const

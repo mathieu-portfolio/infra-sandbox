@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <string>
 
 namespace {
 void section(Rectangle bounds, const char* title, int step)
@@ -40,6 +41,29 @@ const char* iconForAction(const ActionCard& card)
         return "action.queue";
     }
     return "action.generic";
+}
+
+std::string categoryLabel(const ActionCard& card)
+{
+    if (!card.categories.empty()) {
+        return card.categories.front();
+    }
+    if (!card.affectedPressures.empty()) {
+        return pressureCategoryName(card.affectedPressures.front());
+    }
+    return "Local";
+}
+
+std::string pressureList(const ActionCard& card)
+{
+    std::string label;
+    for (const auto pressure : card.affectedPressures) {
+        if (!label.empty()) {
+            label += ", ";
+        }
+        label += pressureCategoryName(pressure);
+    }
+    return label.empty() ? "Contextual" : label;
 }
 }
 
@@ -96,17 +120,20 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
             DrawText(buffer, static_cast<int>(target.x + 14.0f), static_cast<int>(target.y + 162.0f), 14, {89, 196, 255, 255});
         }
     } else {
-        drawTextClipped("Click a node or choose a global action.", {target.x + 14.0f, target.y + 48.0f, target.width - 28.0f, 20.0f}, 14, {139, 148, 158, 255});
+        drawTextClipped("Click a node to inspect local interventions.", {target.x + 14.0f, target.y + 48.0f, target.width - 28.0f, 20.0f}, 14, {139, 148, 158, 255});
     }
 
     const float buttonY = sidebar.y + sidebar.height - 54.0f;
     const Rectangle preview{sidebar.x + 10.0f, buttonY - UiTheme::gap - 170.0f, sidebar.width - 20.0f, 170.0f};
     const Rectangle actions{sidebar.x + 10.0f, target.y + target.height + UiTheme::gap, sidebar.width - 20.0f, preview.y - (target.y + target.height + UiTheme::gap) - UiTheme::gap};
-    section(actions, "CHOOSE AN ACTION", 2);
+    section(actions, "LOCAL INTERVENTIONS", 2);
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const int maxCards = std::min(static_cast<int>(cards.size()), std::max(0, static_cast<int>((actions.height - 44.0f) / 62.0f)));
+    const int maxCards = std::min(static_cast<int>(cards.size()), std::max(0, static_cast<int>((actions.height - 44.0f) / 76.0f)));
     BeginScissorMode(static_cast<int>(actions.x), static_cast<int>(actions.y), static_cast<int>(actions.width), static_cast<int>(actions.height));
+    if (cards.empty()) {
+        drawTextClipped("Select an API, database, cache, or queue node to see contextual actions.", {actions.x + 14.0f, actions.y + 44.0f, actions.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
+    }
     for (int i = 0; i < maxCards; ++i) {
         const auto& card = cards[static_cast<std::size_t>(i)];
         const bool highlighted = i == context.state->hoveredActionIndex || i == context.state->selectedActionIndex;
@@ -114,12 +141,13 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         DrawRectangleRounded(card.bounds, 0.06f, 6, card.available ? Color{30, 36, 44, 235} : Color{24, 28, 35, 180});
         DrawRectangleRoundedLines(card.bounds, 0.06f, 6, border);
         IconRegistry::instance().drawIcon(iconForAction(card), {card.bounds.x + 10.0f, card.bounds.y + 10.0f, 24.0f, 24.0f}, card.available ? Color{89, 196, 255, 255} : Color{139, 148, 158, 160});
-        drawTextClipped(card.name, {card.bounds.x + 42.0f, card.bounds.y + 8.0f, card.bounds.width - 52.0f, 18.0f}, 15, availableText(card.available));
+        drawTextClipped(card.name, {card.bounds.x + 42.0f, card.bounds.y + 8.0f, card.bounds.width - 132.0f, 18.0f}, 15, availableText(card.available));
         if (!card.stateLabel.empty()) {
             drawTextClipped(card.stateLabel, {card.bounds.x + card.bounds.width - 88.0f, card.bounds.y + 8.0f, 78.0f, 15.0f}, 11, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
         }
         drawTextClipped(card.description, {card.bounds.x + 42.0f, card.bounds.y + 28.0f, card.bounds.width - 52.0f, 15.0f}, 12, {139, 148, 158, 255});
-        drawTextClipped(card.available ? card.helps : card.unavailableReason, {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 15.0f}, 12, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
+        drawTextClipped(categoryLabel(card) + " / " + pressureList(card), {card.bounds.x + 42.0f, card.bounds.y + 44.0f, card.bounds.width - 52.0f, 14.0f}, 11, {89, 196, 255, 210});
+        drawTextClipped(card.available ? card.helps : card.unavailableReason, {card.bounds.x + 42.0f, card.bounds.y + 58.0f, card.bounds.width - 52.0f, 13.0f}, 11, card.available ? Color{86, 210, 151, 220} : Color{235, 86, 100, 220});
     }
     EndScissorMode();
 
@@ -143,6 +171,11 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
             std::snprintf(impact, sizeof(impact), "Complexity +%.1f", card.complexityCost);
         }
         drawTextClipped(impact, {preview.x + 14.0f, preview.y + 128.0f, preview.width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
+        const std::string useful = !card.usefulWhen.empty() ? card.usefulWhen.front() : "Inspect local pressure before applying.";
+        drawTextClipped("Useful when: " + useful, {preview.x + 14.0f, preview.y + 146.0f, preview.width - 28.0f, 15.0f}, 11, {230, 237, 243, 220});
+        if (!card.architecturalPattern.empty()) {
+            drawTextClipped(card.architecturalPattern + (card.technologyExample.empty() ? "" : " -> " + card.technologyExample), {preview.x + 14.0f, preview.y + 160.0f, preview.width - 28.0f, 14.0f}, 10, {139, 148, 158, 220});
+        }
     } else {
         drawTextClipped("Hover or select an action to inspect effects.", {preview.x + 14.0f, preview.y + 46.0f, preview.width - 28.0f, 18.0f}, 14, {139, 148, 158, 255});
     }

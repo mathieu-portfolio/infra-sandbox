@@ -3,7 +3,30 @@
 #include "content/ContentRegistry.hpp"
 #include "ui/UiLayout.hpp"
 
+#include <algorithm>
+
 namespace {
+bool targetsSelectedNode(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+{
+    const Node* node = simulation.graph().node(state.selection.nodeId);
+    if (node == nullptr) {
+        return false;
+    }
+    if (definition.targetNodeTypes.empty()) {
+        return definition.mechanic == MechanicType::ToggleRetries || definition.mechanic == MechanicType::ThrottleTraffic;
+    }
+    return std::find(definition.targetNodeTypes.begin(), definition.targetNodeTypes.end(), node->type) != definition.targetNodeTypes.end();
+}
+
+bool pressureMatches(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+{
+    const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(state.selection.nodeId);
+    if (pressure == nullptr || pressure->dominant == PressureCategory::None) {
+        return false;
+    }
+    return std::find(definition.affectedPressures.begin(), definition.affectedPressures.end(), pressure->dominant) != definition.affectedPressures.end();
+}
+
 std::string selectedTarget(const Simulation& simulation, const UiState& state)
 {
     if (const Node* node = simulation.graph().node(state.selection.nodeId)) {
@@ -16,7 +39,8 @@ ActionCard mechanicCard(const Simulation& simulation, const UiState& state, cons
 {
     bool available = simulation.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
-    std::string stateLabel = available ? "Available" : "Locked";
+    const bool recommended = pressureMatches(simulation, state, definition);
+    std::string stateLabel = available ? (recommended ? "Suggested" : "Available") : "Locked";
     int currentScaleLevel = 0;
     int maxScaleLevel = 0;
     if (definition.mechanic == MechanicType::ScaleUp) {
@@ -47,8 +71,14 @@ ActionCard mechanicCard(const Simulation& simulation, const UiState& state, cons
         .positiveEffects = definition.positiveEffects,
         .negativeEffects = definition.negativeEffects,
         .pressureShifts = definition.pressureShifts,
+        .categories = definition.categories,
+        .usefulWhen = definition.usefulWhen,
+        .affectedPressures = definition.affectedPressures,
+        .architecturalPattern = definition.architecturalPattern,
+        .technologyExample = definition.technologyExample,
         .unavailableReason = unavailableReason,
         .stateLabel = stateLabel,
+        .recommended = recommended,
         .complexityCost = definition.complexityCost,
         .currentScaleLevel = currentScaleLevel,
         .maxScaleLevel = maxScaleLevel,
@@ -61,7 +91,8 @@ ActionCard topologyCard(const Simulation& simulation, const UiState& state, cons
 {
     bool available = simulation.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
-    std::string stateLabel = available ? "Available" : "Locked";
+    const bool recommended = pressureMatches(simulation, state, definition);
+    std::string stateLabel = available ? (recommended ? "Suggested" : "Available") : "Locked";
     if (available && !simulation.hasAnyRegionCapacity(definition.regionSlotUsage)) {
         available = false;
         unavailableReason = "Insufficient regional deployment capacity.";
@@ -79,8 +110,14 @@ ActionCard topologyCard(const Simulation& simulation, const UiState& state, cons
         .positiveEffects = definition.positiveEffects,
         .negativeEffects = definition.negativeEffects,
         .pressureShifts = definition.pressureShifts,
+        .categories = definition.categories,
+        .usefulWhen = definition.usefulWhen,
+        .affectedPressures = definition.affectedPressures,
+        .architecturalPattern = definition.architecturalPattern,
+        .technologyExample = definition.technologyExample,
         .unavailableReason = unavailableReason,
         .stateLabel = stateLabel,
+        .recommended = recommended,
         .complexityCost = definition.complexityCost,
         .regionSlotUsage = definition.regionSlotUsage,
         .available = available,
@@ -118,12 +155,18 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
         });
     } else {
         for (const auto& definition : content::ContentRegistry::instance().interventions()) {
+            if (!targetsSelectedNode(simulation, state, definition)) {
+                continue;
+            }
             if (definition.kind == content::InterventionKind::TopologyMutation) {
                 cards.push_back(topologyCard(simulation, state, definition));
             } else {
                 cards.push_back(mechanicCard(simulation, state, definition));
             }
         }
+        std::stable_sort(cards.begin(), cards.end(), [](const ActionCard& lhs, const ActionCard& rhs) {
+            return lhs.recommended && !rhs.recommended;
+        });
     }
 
     const Rectangle panel = panelBounds(screenWidth, screenHeight);
@@ -132,8 +175,8 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
     const float previewY = buttonY - UiTheme::gap - 170.0f;
     const Rectangle actions{panel.x + 10.0f, target.y + target.height + UiTheme::gap, panel.width - 20.0f, previewY - (target.y + target.height + UiTheme::gap) - UiTheme::gap};
     float y = actions.y + 38.0f;
-    const float cardHeight = 58.0f;
-    const float step = 62.0f;
+    const float cardHeight = 72.0f;
+    const float step = 76.0f;
     for (auto& card : cards) {
         card.bounds = {panel.x + 12.0f, y, panel.width - 24.0f, cardHeight};
         y += step;

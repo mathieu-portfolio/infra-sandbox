@@ -24,6 +24,12 @@ struct InterventionDefinition {
     std::vector<std::string> positiveEffects;
     std::vector<std::string> negativeEffects;
     std::vector<std::string> pressureShifts;
+    std::vector<std::string> categories;
+    std::vector<std::string> usefulWhen;
+    std::vector<PressureCategory> affectedPressures;
+    std::vector<NodeType> targetNodeTypes;
+    std::string architecturalPattern;
+    std::string technologyExample;
     std::vector<std::string> tags;
     InterventionKind kind = InterventionKind::Mechanic;
     MechanicType mechanic = MechanicType::ScaleUp;

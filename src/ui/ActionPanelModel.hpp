@@ -29,8 +29,14 @@ struct ActionCard {
     std::vector<std::string> positiveEffects;
     std::vector<std::string> negativeEffects;
     std::vector<std::string> pressureShifts;
+    std::vector<std::string> categories;
+    std::vector<std::string> usefulWhen;
+    std::vector<PressureCategory> affectedPressures;
+    std::string architecturalPattern;
+    std::string technologyExample;
     std::string unavailableReason;
     std::string stateLabel;
+    bool recommended = false;
     double complexityCost = 0.0;
     int currentScaleLevel = 0;
     int maxScaleLevel = 0;

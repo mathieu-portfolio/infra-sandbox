@@ -20,7 +20,7 @@ Application::Application()
       simulation_(scenarioManager_.definition()),
       renderer_(scenarioManager_.definition())
 {
-    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_FULLSCREEN_MODE);
+    SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
     InitWindow(kWindowWidth, kWindowHeight, "Infra Sandbox");
     SetTargetFPS(120);
     for (const auto& error : content::ContentRegistry::instance().loadErrors()) {
@@ -178,7 +178,11 @@ void Application::applyUiRequests()
 {
     UiState& state = renderer_.uiManager().state();
     if (state.fullscreenToggleRequested) {
-        ToggleFullscreen();
+        if (IsWindowMaximized()) {
+            RestoreWindow();
+        } else {
+            MaximizeWindow();
+        }
         state.fullscreenToggleRequested = false;
     }
 }
