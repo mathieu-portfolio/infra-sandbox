@@ -16,7 +16,7 @@ struct UiTheme {
     static constexpr float padding = 12.0f;
     static constexpr float topBarHeight = 54.0f;
     static constexpr float leftWidth = 250.0f;
-    static constexpr float rightWidth = 336.0f;
+    static constexpr float rightWidth = 520.0f;
     static constexpr float bottomHeight = 344.0f;
 };
 

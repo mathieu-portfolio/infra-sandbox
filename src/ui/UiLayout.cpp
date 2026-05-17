@@ -7,7 +7,7 @@ UiLayout computeUiLayout(int screenWidth, int screenHeight)
     const float width = static_cast<float>(screenWidth);
     const float height = static_cast<float>(screenHeight);
     const float leftWidth = std::min(UiTheme::leftWidth, width * 0.22f);
-    const float rightWidth = std::min(UiTheme::rightWidth, width * 0.28f);
+    const float rightWidth = std::min(UiTheme::rightWidth, width * 0.40f);
     const float bottomHeight = std::min(UiTheme::bottomHeight, height * 0.45f);
 
     UiLayout layout;
