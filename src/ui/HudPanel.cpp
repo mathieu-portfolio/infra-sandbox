@@ -262,8 +262,6 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     if (context.state == nullptr || !context.state->showHud) {
         return;
     }
-    (void)simulation;
-
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const TopBarLayout top = computeTopBarLayout(layout.topBar);
     DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
@@ -276,9 +274,8 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     const Rectangle scenarioBox = scenarioDroplistBounds(context.screenWidth);
     drawDroplistField(scenarioBox, "Scenario", scenarioManager.definition().name, context.state->scenarioDroplistOpen);
 
-    const int totalSeconds = static_cast<int>(scenarioManager.elapsedSeconds());
     char buffer[160];
-    std::snprintf(buffer, sizeof(buffer), "Time %02d:%02d", totalSeconds / 60, totalSeconds % 60);
+    std::snprintf(buffer, sizeof(buffer), "%s", scenarioManager.visibleCalendarLabel(simulation).c_str());
     DrawText(buffer, static_cast<int>(top.time.x), static_cast<int>(top.time.y + 10.0f), 15, {230, 237, 243, 255});
 
     const Rectangle phaseButton = phaseButtonBounds(context.screenWidth);

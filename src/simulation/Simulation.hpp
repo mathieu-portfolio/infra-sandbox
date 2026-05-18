@@ -38,7 +38,7 @@ public:
     void setScenarioLatencyMultiplier(double multiplier);
     void setScenarioDatabaseHeavyShareOverride(std::optional<double> share);
     void setScenarioRetryDelayMultiplier(double multiplier);
-    void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds);
+    void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays = 0.0);
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);
     bool applyTopologyMutation(const struct TopologyMutation& mutation);

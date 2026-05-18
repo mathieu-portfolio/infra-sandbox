@@ -1,6 +1,7 @@
 #include "gameplay/ScenarioManager.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <random>
 #include <sstream>
 #include <utility>
@@ -74,6 +75,7 @@ void ScenarioManager::createRun(std::uint32_t seed)
     run_.activeDefinition = createActiveDefinition(seed);
     run_.state = ScenarioRunState::Running;
     run_.elapsedSeconds = 0.0;
+    run_.calendarElapsedDays = 0.0;
     run_.objectiveProgress = 0.0;
     run_.currentPhaseIndex = run_.activeDefinition.phases.empty() ? -1 : 0;
     initializeScenarioRunState();
@@ -84,6 +86,7 @@ void ScenarioManager::createRun(std::uint32_t seed)
 void ScenarioManager::update(double dt, Simulation& simulation)
 {
     run_.elapsedSeconds += dt;
+    run_.calendarElapsedDays += dt * calendarDaysPerSimulationSecond_;
     run_.currentPhaseIndex = -1;
     for (int i = 0; i < static_cast<int>(run_.activeDefinition.phases.size()); ++i) {
         const auto& phase = run_.activeDefinition.phases[i];
@@ -96,9 +99,14 @@ void ScenarioManager::update(double dt, Simulation& simulation)
     const double phaseElapsed = currentPhase() != nullptr
         ? run_.elapsedSeconds - currentPhase()->startTimeSeconds
         : run_.elapsedSeconds;
-    simulation.setScenarioTime(run_.elapsedSeconds, phaseElapsed);
+    simulation.setScenarioTime(run_.elapsedSeconds, phaseElapsed, run_.calendarElapsedDays);
     applyPhaseToSimulation(simulation);
     updateState(simulation);
+}
+
+void ScenarioManager::setCalendarProgressionScale(double calendarDaysPerSimulationSecond)
+{
+    calendarDaysPerSimulationSecond_ = std::max(0.0, calendarDaysPerSimulationSecond);
 }
 
 const ScenarioDefinition& ScenarioManager::definition() const
@@ -259,6 +267,27 @@ ScenarioRunState ScenarioManager::state() const
 double ScenarioManager::elapsedSeconds() const
 {
     return run_.elapsedSeconds;
+}
+
+const GameplayDuration& ScenarioManager::currentTransitionDuration() const
+{
+    if (const ScenarioPhase* phase = currentPhase(); phase != nullptr) {
+        return phase->transitionDuration;
+    }
+    return run_.activeDefinition.turnDuration;
+}
+
+std::string ScenarioManager::visibleCalendarLabel(const Simulation& simulation) const
+{
+    const TimeState& time = simulation.timeState();
+    static constexpr const char* kMonths[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+    const int monthIndex = std::clamp(time.month, 1, 12) - 1;
+    char buffer[48];
+    std::snprintf(buffer, sizeof(buffer), "%s %02d, %d  %02d:%02d", kMonths[monthIndex], time.day, time.year, time.hour, time.minute);
+    return buffer;
 }
 
 std::string ScenarioManager::archetypeSummary() const

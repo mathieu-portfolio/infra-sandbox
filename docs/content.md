@@ -38,6 +38,7 @@ Scenarios reference reusable definitions by ID:
 - `unlocks_scenarios`
 - `required_completed_scenarios`
 - `engineering_capacity`
+- `turn_duration`
 
 Scenario intervention fields are the source of truth for action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
 
@@ -55,6 +56,20 @@ Scenario `engineering_capacity` defines the planning budget that refills each tu
 ```
 
 Domain caps limit specialized work, while `total` is the shared cross-domain cap for the turn.
+
+Scenario and phase durations define player-facing time progression. Raw simulation seconds remain internal; the visible clock/calendar and resolution summaries use the content duration:
+
+```json
+"turn_duration": {
+  "value": 3,
+  "unit": "months",
+  "label": "3 months of platform evolution",
+  "simulation_seconds": 90.0,
+  "advance_calendar": true
+}
+```
+
+Phases can override the turn duration with `transition_duration`. Supported units are `seconds`, `minutes`, `days`, `months`, and `years`. `simulation_seconds` controls accelerated playback length; `value`, `unit`, and `label` control gameplay presentation and calendar advancement.
 
 ## Objective Chains And Rewards
 
@@ -118,6 +133,7 @@ The loader reports:
 - invalid negative node or traffic numeric ranges
 - invalid intervention numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
 - invalid engineering domains, negative engineering costs, or impossible scenario capacity caps
+- invalid scenario or phase durations, including non-positive gameplay values or simulation seconds
 
 Load errors are emitted through raylib logs and displayed in the debug UI. If content loading fails, the registry installs a tiny fallback scenario so the app remains usable.
 

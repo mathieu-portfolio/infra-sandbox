@@ -187,7 +187,6 @@ void Application::applySandboxRequests()
         state.sandboxSlowMotionRequested = false;
     }
     if (state.sandboxStepRequested) {
-        state.transitionTargetSimulatedSeconds = 15.0;
         state.transitionPlaybackScale = 10.0;
         beginTransition();
         state.sandboxStepRequested = false;
@@ -215,7 +214,6 @@ void Application::applyUiRequests()
             state.lastCapacityUsageSummary.clear();
             state.latestFeedback = "Planning phase. Queue interventions, then validate the plan.";
         } else if (state.gameplayPhase == GameplayPhase::Planning) {
-            state.transitionTargetSimulatedSeconds = 90.0;
             state.transitionPlaybackScale = 24.0;
             beginTransition();
         } else if (state.gameplayPhase == GameplayPhase::Resolution) {
@@ -238,12 +236,19 @@ void Application::applyUiRequests()
 void Application::beginTransition()
 {
     UiState& state = renderer_.uiManager().state();
+    const GameplayDuration& duration = scenarioManager_.currentTransitionDuration();
+    state.transitionTargetSimulatedSeconds = duration.simulationSeconds;
+    state.transitionDurationLabel = duration.label.empty()
+        ? std::string("platform evolution")
+        : duration.label;
+    const double calendarDays = gameplayDurationCalendarDays(duration);
+    scenarioManager_.setCalendarProgressionScale(duration.simulationSeconds > 0.0 ? calendarDays / duration.simulationSeconds : 0.0);
     state.gameplayPhase = GameplayPhase::Transition;
     state.transitionActionsApplied = false;
     state.transitionVisualElapsedSeconds = 0.0;
     state.transitionSimulatedSeconds = 0.0;
     state.resolutionSummaries.clear();
-    state.latestFeedback = "Transition running. Simulating operational consequences.";
+    state.latestFeedback = "Transition running. Simulating " + state.transitionDurationLabel + ".";
     transitionBaseline_ = simulation_.metrics();
     fixedStepAccumulator_ = 0.0;
 }
@@ -322,7 +327,7 @@ void Application::finishTransition(const MetricsSnapshot& beforeMetrics)
     const MetricsSnapshot after = simulation_.metrics();
     state.gameplayPhase = GameplayPhase::Resolution;
     state.transitionActionsApplied = false;
-    appendResolutionSummary("Simulated " + std::to_string(static_cast<int>(state.transitionSimulatedSeconds)) + " operational seconds.");
+    appendResolutionSummary("Simulated " + state.transitionDurationLabel + ".");
     if (!state.lastCapacityUsageSummary.empty()) {
         appendResolutionSummary("Engineering capacity used: " + state.lastCapacityUsageSummary + ".");
     }

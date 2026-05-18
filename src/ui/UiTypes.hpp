@@ -122,8 +122,9 @@ struct UiState {
     bool transitionActionsApplied = false;
     double transitionVisualElapsedSeconds = 0.0;
     double transitionSimulatedSeconds = 0.0;
-    double transitionTargetSimulatedSeconds = 90.0;
+    double transitionTargetSimulatedSeconds = 0.0;
     double transitionPlaybackScale = 24.0;
+    std::string transitionDurationLabel = "platform evolution";
     std::deque<PlannedIntervention> plannedInterventions;
     std::deque<std::string> resolutionSummaries;
     EngineeringCapacity engineeringCapacity;

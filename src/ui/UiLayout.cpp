@@ -117,7 +117,7 @@ TopBarLayout computeTopBarLayout(Rectangle topBar)
     root->add(std::move(scenario));
     auto time = std::make_unique<ui::PanelNode>("time");
     ui::LayoutStyle timeStyle = brandStyle;
-    timeStyle.fixedWidth = 80.0f;
+    timeStyle.fixedWidth = 154.0f;
     time->style(timeStyle);
     root->add(std::move(time));
     auto phase = std::make_unique<ui::PanelNode>("phase");

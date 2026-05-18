@@ -100,6 +100,15 @@ ScenarioArchetype archetypeFromId(const std::string& id)
     return ScenarioArchetype::LocalStartup;
 }
 
+GameplayDurationUnit durationUnitFromId(const std::string& id)
+{
+    if (id == "minute" || id == "minutes") return GameplayDurationUnit::Minutes;
+    if (id == "day" || id == "days") return GameplayDurationUnit::Days;
+    if (id == "month" || id == "months") return GameplayDurationUnit::Months;
+    if (id == "year" || id == "years") return GameplayDurationUnit::Years;
+    return GameplayDurationUnit::Seconds;
+}
+
 EducationalFocus focusFromId(const std::string& id)
 {
     if (id == "queues") return EducationalFocus::Queues;
@@ -335,6 +344,24 @@ BurstScenario parseBurst(const Json& object)
         numberAt(object, "period_seconds", 12.0),
         numberAt(object, "duration_seconds", 3.0),
     };
+}
+
+GameplayDuration parseGameplayDuration(const Json& object, const std::string& key, GameplayDuration fallback = {})
+{
+    const Json* duration = object.find(key);
+    if (duration == nullptr || !duration->isObject()) {
+        return fallback;
+    }
+    GameplayDuration parsed = fallback;
+    parsed.value = numberAt(*duration, "value", parsed.value);
+    parsed.unit = durationUnitFromId(stringAt(*duration, "unit", gameplayDurationUnitName(parsed.unit)));
+    parsed.label = stringAt(*duration, "label", parsed.label);
+    parsed.simulationSeconds = numberAt(*duration, "simulation_seconds", parsed.simulationSeconds);
+    parsed.advancesCalendar = boolAt(*duration, "advance_calendar", parsed.advancesCalendar);
+    if (parsed.label.empty()) {
+        parsed.label = std::to_string(static_cast<int>(parsed.value)) + " " + gameplayDurationUnitName(parsed.unit) + " of platform evolution";
+    }
+    return parsed;
 }
 
 std::vector<EngineeringCost> parseEngineeringCosts(const Json& object)
@@ -608,6 +635,7 @@ std::vector<ScenarioPhase> parsePhases(const Json& object)
             phase.eventMessage = stringAt(entry, "event_message");
             phase.startTimeSeconds = numberAt(entry, "start_time_seconds");
             phase.durationSeconds = numberAt(entry, "duration_seconds", 30.0);
+            phase.transitionDuration = parseGameplayDuration(entry, "transition_duration", phase.transitionDuration);
             phase.trafficMultiplier = numberAt(entry, "traffic_multiplier", 1.0);
             if (const Json* burst = entry.find("burst_override"); burst != nullptr && burst->isObject()) {
                 phase.burstOverride = parseBurst(*burst);
@@ -887,6 +915,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         scenario.requiredConceptTags = stringsAt(object, "required_concept_tags");
         scenario.sandboxLab = boolAt(object, "sandbox_lab");
         scenario.engineeringCapacity = parseEngineeringCapacity(object, scenario.engineeringCapacity);
+        scenario.turnDuration = parseGameplayDuration(object, "turn_duration", scenario.turnDuration);
 
         if (const auto topology = topologies.find(scenario.topologyTemplateId); topology != topologies.end()) {
             scenario.nodes = parseNodes(topology->second);
@@ -934,6 +963,9 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         if (scenario.links.empty()) result.errors.push_back("Scenario " + scenario.id + " has no topology links.");
         if (scenario.objectives.empty()) result.errors.push_back("Scenario " + scenario.id + " has no objectives.");
         if (scenario.trafficProfile.baseMultiplier < 0.0) result.errors.push_back("Scenario " + scenario.id + " has invalid traffic multiplier.");
+        if (scenario.turnDuration.value <= 0.0 || scenario.turnDuration.simulationSeconds <= 0.0) {
+            result.errors.push_back("Scenario " + scenario.id + " has invalid turn duration.");
+        }
         const EngineeringCapacity& capacity = scenario.engineeringCapacity;
         if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0 || capacity.total < 0) {
             result.errors.push_back("Scenario " + scenario.id + " has invalid engineering capacity.");
@@ -945,6 +977,11 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         for (const auto& node : scenario.nodes) {
             if (node.requestRatePerSecond < 0.0 || node.processingCapacityPerSecond < 0.0) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid node numeric ranges.");
+            }
+        }
+        for (const auto& phase : scenario.phases) {
+            if (phase.transitionDuration.value <= 0.0 || phase.transitionDuration.simulationSeconds <= 0.0) {
+                result.errors.push_back("Scenario " + scenario.id + " phase " + phase.name + " has invalid transition duration.");
             }
         }
     }

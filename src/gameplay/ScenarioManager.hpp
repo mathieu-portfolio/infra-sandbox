@@ -16,6 +16,7 @@ public:
     void createRun(std::uint32_t seed);
     void reset();
     void update(double dt, Simulation& simulation);
+    void setCalendarProgressionScale(double calendarDaysPerSimulationSecond);
 
     [[nodiscard]] const ScenarioDefinition& definition() const;
     [[nodiscard]] const ScenarioDefinition& staticDefinition() const;
@@ -27,6 +28,8 @@ public:
     [[nodiscard]] const EventManager& eventManager() const;
     [[nodiscard]] ScenarioRunState state() const;
     [[nodiscard]] double elapsedSeconds() const;
+    [[nodiscard]] const GameplayDuration& currentTransitionDuration() const;
+    [[nodiscard]] std::string visibleCalendarLabel(const Simulation& simulation) const;
     [[nodiscard]] std::string archetypeSummary() const;
     [[nodiscard]] std::string progressionTierSummary() const;
     [[nodiscard]] std::string activeModifiersSummary() const;
@@ -63,5 +66,6 @@ private:
     SandboxControls sandboxControls_{};
     std::vector<MechanicType> actionsTriggered_;
     EventManager eventManager_;
+    double calendarDaysPerSimulationSecond_ = 1.0 / 86400.0;
     std::uint32_t nextSeed_ = 1;
 };

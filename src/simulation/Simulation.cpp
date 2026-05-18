@@ -156,10 +156,11 @@ void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
     scenarioRetryDelayMultiplier_ = std::max(0.1, multiplier);
 }
 
-void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds)
+void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays)
 {
     timeSystem_.setScenarioElapsed(elapsedSeconds);
     timeSystem_.setPhaseElapsed(phaseElapsedSeconds);
+    timeSystem_.setCalendarElapsedDays(calendarElapsedDays);
 }
 
 void Simulation::clearScenarioBurstOverride()

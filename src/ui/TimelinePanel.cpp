@@ -383,12 +383,11 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
         }
         const float y = static_cast<float>(timelineY + row * 22);
         const Color color = categoryColor(activity.category);
-        char timeBuffer[24];
-        std::snprintf(timeBuffer, sizeof(timeBuffer), "%.0fs", activity.timeSeconds);
+        const std::string timeLabel = scenarioManager.visibleCalendarLabel(simulation);
         IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "metric.objective" : "action.generic", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
-        DrawText(timeBuffer, static_cast<int>(panel.x + 38.0f), static_cast<int>(y), 12, {139, 148, 158, 255});
-        drawTextClipped(activity.title, {panel.x + 88.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
-        drawTextClipped(activity.detail, {panel.x + 250.0f, y, panel.width - 410.0f, 16.0f}, 12, {139, 148, 158, 255});
+        drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
+        drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
+        drawTextClipped(activity.detail, {panel.x + 322.0f, y, panel.width - 482.0f, 16.0f}, 12, {139, 148, 158, 255});
         drawCategoryBadge({panel.x + panel.width - 118.0f, y - 1.0f, 104.0f, 18.0f}, activity.category);
         ++row;
     }

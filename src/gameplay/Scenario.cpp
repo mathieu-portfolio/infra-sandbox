@@ -121,3 +121,40 @@ const char* engineeringDomainName(EngineeringDomain domain)
     }
     return "Unknown";
 }
+
+const char* gameplayDurationUnitName(GameplayDurationUnit unit)
+{
+    switch (unit) {
+    case GameplayDurationUnit::Seconds:
+        return "seconds";
+    case GameplayDurationUnit::Minutes:
+        return "minutes";
+    case GameplayDurationUnit::Days:
+        return "days";
+    case GameplayDurationUnit::Months:
+        return "months";
+    case GameplayDurationUnit::Years:
+        return "years";
+    }
+    return "time";
+}
+
+double gameplayDurationCalendarDays(const GameplayDuration& duration)
+{
+    if (!duration.advancesCalendar) {
+        return 0.0;
+    }
+    switch (duration.unit) {
+    case GameplayDurationUnit::Seconds:
+        return duration.value / 86400.0;
+    case GameplayDurationUnit::Minutes:
+        return duration.value / 1440.0;
+    case GameplayDurationUnit::Days:
+        return duration.value;
+    case GameplayDurationUnit::Months:
+        return duration.value * 30.0;
+    case GameplayDurationUnit::Years:
+        return duration.value * 360.0;
+    }
+    return 0.0;
+}

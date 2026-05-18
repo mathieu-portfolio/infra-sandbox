@@ -68,6 +68,22 @@ struct EngineeringCost {
     int amount = 0;
 };
 
+enum class GameplayDurationUnit {
+    Seconds,
+    Minutes,
+    Days,
+    Months,
+    Years
+};
+
+struct GameplayDuration {
+    double value = 90.0;
+    GameplayDurationUnit unit = GameplayDurationUnit::Seconds;
+    std::string label = "90 seconds of platform evolution";
+    double simulationSeconds = 90.0;
+    bool advancesCalendar = true;
+};
+
 enum class ObjectiveConditionType {
     SurviveDuration,
     PressureDetected,
@@ -219,6 +235,7 @@ struct ScenarioPhase {
     std::string eventMessage;
     double startTimeSeconds = 0.0;
     double durationSeconds = 30.0;
+    GameplayDuration transitionDuration;
     double trafficMultiplier = 1.0;
     std::optional<BurstScenario> burstOverride;
     std::vector<MechanicType> unlockMechanics;
@@ -265,6 +282,7 @@ struct ScenarioDefinition {
     std::vector<ScenarioObjective> failureConditions;
     std::vector<ScenarioPhase> phases;
     std::vector<EventDefinition> events;
+    GameplayDuration turnDuration;
     double requestTimeoutSeconds = 5.5;
 };
 
@@ -273,6 +291,7 @@ struct ScenarioRun {
     std::vector<ScenarioModifierDefinition> selectedModifiers;
     ScenarioRunState state = ScenarioRunState::Running;
     double elapsedSeconds = 0.0;
+    double calendarElapsedDays = 0.0;
     double objectiveProgress = 0.0;
     int currentPhaseIndex = -1;
     ScenarioDefinition activeDefinition;
@@ -323,3 +342,5 @@ public:
 const char* progressionTierName(ProgressionTier tier);
 const char* scenarioArchetypeName(ScenarioArchetype archetype);
 const char* engineeringDomainName(EngineeringDomain domain);
+const char* gameplayDurationUnitName(GameplayDurationUnit unit);
+double gameplayDurationCalendarDays(const GameplayDuration& duration);
