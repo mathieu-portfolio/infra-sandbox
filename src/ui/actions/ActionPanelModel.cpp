@@ -1,9 +1,7 @@
-#include "ui/ActionPanelModel.hpp"
-
-#include "ui/ActionCardView.hpp"
+#include "ui/actions/ActionPanelModel.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "ui/ActionCardView.hpp"
+#include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/RightSidebarLayout.hpp"
 #include "ui/UiLayout.hpp"
 
@@ -101,7 +99,7 @@ std::string selectedTarget(const Simulation& simulation, const UiState& state)
     return "Global";
 }
 
-ActionCard mechanicCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
     bool available = simulation.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
@@ -161,7 +159,7 @@ ActionCard mechanicCard(const Simulation& simulation, const UiState& state, cons
     };
 }
 
-ActionCard topologyCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+ActionCardModel topologyCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
 {
     bool available = simulation.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
@@ -213,9 +211,9 @@ Rectangle ActionPanelModel::panelBounds(int screenWidth, int screenHeight) const
     return computeUiLayout(screenWidth, screenHeight).rightSidebar;
 }
 
-std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const
+std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const
 {
-    std::vector<ActionCard> cards;
+    std::vector<ActionCardModel> cards;
     if (state.placementActive) {
         cards.push_back({
             .kind = ActionCardKind::ConfirmPreview,
@@ -246,7 +244,7 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
                 cards.push_back(mechanicCard(simulation, state, definition));
             }
         }
-        std::stable_sort(cards.begin(), cards.end(), [](const ActionCard& lhs, const ActionCard& rhs) {
+        std::stable_sort(cards.begin(), cards.end(), [](const ActionCardModel& lhs, const ActionCardModel& rhs) {
             return lhs.recommended && !rhs.recommended;
         });
     }
@@ -259,7 +257,7 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
     float x = layout.actionList.x;
     float y = layout.actionList.y;
     float rowHeight = 0.0f;
-    const ActionCardView cardView;
+    const NodeActionCardView cardView;
     for (auto& card : cards) {
         if (!card.available) {
             card.bounds = {};

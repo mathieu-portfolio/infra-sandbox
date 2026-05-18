@@ -1,4 +1,6 @@
-#include "ui/ActionCardView.hpp"
+#include "ui/actions/cards/NodeActionCardView.hpp"
+
+#include "ui/actions/cards/ActionCardCommon.hpp"
 
 #include "ui/IconRegistry.hpp"
 #include "ui/UiPrimitives.hpp"
@@ -24,67 +26,6 @@ constexpr float kFooterHeight = 28.0f;
 constexpr float kFooterBottomPad = 8.0f;
 constexpr float kMinHeight = 198.0f;
 
-const char* iconForAction(const ActionCard& card)
-{
-    if (!card.iconId.empty()) {
-        return card.iconId.c_str();
-    }
-    if (card.name.find("Scale") != std::string::npos) {
-        return "action.scale_up";
-    }
-    if (card.name.find("Cache") != std::string::npos) {
-        return "action.add_cache";
-    }
-    if (card.name.find("Replica") != std::string::npos) {
-        return "action.replica";
-    }
-    if (card.name.find("Queue") != std::string::npos) {
-        return "action.queue";
-    }
-    return "action.generic";
-}
-
-std::string categoryLabel(const ActionCard& card)
-{
-    if (!card.categories.empty()) {
-        return card.categories.front();
-    }
-    if (!card.affectedPressures.empty()) {
-        return pressureCategoryName(card.affectedPressures.front());
-    }
-    return "Local";
-}
-
-int actionPointCost(const std::vector<EngineeringCost>& costs)
-{
-    int total = 0;
-    for (const auto& cost : costs) {
-        total += cost.amount;
-    }
-    return total;
-}
-
-std::vector<std::string> usefulPoints(const ActionCard& card)
-{
-    if (!card.usefulWhen.empty()) {
-        return card.usefulWhen;
-    }
-    if (!card.positiveEffects.empty()) {
-        return card.positiveEffects;
-    }
-    return {"local pressure matches this action"};
-}
-
-std::vector<std::string> worsenPoints(const ActionCard& card)
-{
-    if (!card.negativeEffects.empty()) {
-        return card.negativeEffects;
-    }
-    if (!card.tradeOff.empty()) {
-        return {card.tradeOff};
-    }
-    return {"adds operational complexity"};
-}
 
 int estimatedWrappedLines(const std::string& text, float width, int fontSize, int maxLines)
 {
@@ -113,7 +54,7 @@ int estimatedWrappedLines(const std::string& text, float width, int fontSize, in
     return std::clamp(lines, 1, maxLines);
 }
 
-float descriptionHeight(const ActionCard& card, float contentWidth)
+float descriptionHeight(const ActionCardModel& card, float contentWidth)
 {
     const int lines = estimatedWrappedLines(card.description, contentWidth, 12, 3);
     return std::max(kDescriptionLineHeight, static_cast<float>(lines) * kDescriptionLineHeight);
@@ -143,11 +84,11 @@ float drawPointSection(
 }
 }
 
-float ActionCardView::measureHeight(const ActionCard& card, float width) const
+float NodeActionCardView::measureHeight(const ActionCardModel& card, float width) const
 {
     const float contentWidth = std::max(80.0f, width - kPad * 2.0f);
-    const auto useful = usefulPoints(card);
-    const auto worsen = worsenPoints(card);
+    const auto useful = actions_ui::cards::usefulPoints(card);
+    const auto worsen = actions_ui::cards::worsenPoints(card);
 
     const float bodyHeight =
         descriptionHeight(card, contentWidth) +
@@ -166,14 +107,12 @@ float ActionCardView::measureHeight(const ActionCard& card, float width) const
     return std::max(kMinHeight, total);
 }
 
-void ActionCardView::draw(const ActionCard& card, bool highlighted) const
+void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) const
 {
-    const Color border = highlighted ? Color{145, 109, 255, 230} : Color{74, 92, 120, 130};
-    DrawRectangleRounded(card.bounds, 0.045f, 8, highlighted ? Color{36, 32, 58, 238} : Color{23, 30, 42, 238});
-    DrawRectangleRoundedLines(card.bounds, 0.045f, 8, border);
+    actions_ui::cards::drawCardChrome(card.bounds, {.highlighted = highlighted});
 
     IconRegistry::instance().drawIcon(
-        iconForAction(card),
+        actions_ui::cards::iconForActionCard(card),
         {card.bounds.x + kPad, card.bounds.y + kPad, 30.0f, 30.0f},
         {89, 196, 255, 255});
 
@@ -195,8 +134,8 @@ void ActionCardView::draw(const ActionCard& card, bool highlighted) const
         {166, 176, 192, 255});
     y += descHeight + kDescriptionBottomGap;
 
-    const auto useful = usefulPoints(card);
-    const auto worsen = worsenPoints(card);
+    const auto useful = actions_ui::cards::usefulPoints(card);
+    const auto worsen = actions_ui::cards::worsenPoints(card);
 
     y += drawPointSection(
         "USEFUL WHEN",
@@ -213,9 +152,12 @@ void ActionCardView::draw(const ActionCard& card, bool highlighted) const
         {235, 86, 100, 255},
         {205, 213, 224, 255});
 
-    DrawRectangleRounded({card.bounds.x + kPad, footerY, 86.0f, 20.0f}, 0.2f, 6, {52, 43, 91, 230});
-    drawTextClipped(categoryLabel(card), {card.bounds.x + kPad + 9.0f, footerY + 4.0f, 68.0f, 14.0f}, 10, {205, 190, 255, 255});
+    actions_ui::cards::drawChip(
+        {card.bounds.x + kPad, footerY, 86.0f, 20.0f},
+        actions_ui::cards::categoryLabel(card),
+        {52, 43, 91, 230},
+        {205, 190, 255, 255});
 
-    const std::string price = std::to_string(actionPointCost(card.engineeringCosts)) + " AP";
+    const std::string price = std::to_string(actions_ui::cards::actionPointCost(card.engineeringCosts)) + " AP";
     drawTextClipped(price, {card.bounds.x + card.bounds.width - 64.0f, footerY + 2.0f, 52.0f, 16.0f}, 13, {86, 210, 151, 255});
 }

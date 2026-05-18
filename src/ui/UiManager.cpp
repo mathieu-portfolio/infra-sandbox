@@ -29,7 +29,7 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
     hudPanel_.update(context, simulation, scenarioManager);
     metricsPanel_.update(context, simulation);
     selectionPanel_.update(context, simulation);
-    interventionPanel_.update(context, simulation);
+    actionPanel_.update(context, simulation);
     timelinePanel_.update(context, simulation, scenarioManager);
     debugPanel_.update(context, simulation);
 }
@@ -97,12 +97,12 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     UiState* mutableState = const_cast<UiState*>(&state_);
     UiContext context{mutableState, GetScreenWidth(), GetScreenHeight(), paused};
     metricsPanel_.draw(context, simulation);
-    interventionPanel_.draw(context, simulation);
+    actionPanel_.draw(context, simulation);
     timelinePanel_.draw(context, simulation, scenarioManager);
     selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
     hudPanel_.draw(context, simulation, scenarioManager);
-    interventionPanel_.drawWorldActionOverlay(context);
+    actionPanel_.drawWorldActionOverlay(context);
 }
 
 const UiState& UiManager::state() const

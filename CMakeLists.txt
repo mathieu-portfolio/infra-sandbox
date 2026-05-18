@@ -27,63 +27,31 @@ if(INFRA_BUILD_APP AND NOT raylib_FOUND AND INFRA_FETCH_RAYLIB)
     FetchContent_MakeAvailable(raylib)
 endif()
 
+file(GLOB_RECURSE INFRA_SIMULATION_SOURCES CONFIGURE_DEPENDS
+    src/content/*.cpp
+    src/gameplay/*.cpp
+    src/simulation/*.cpp
+)
+
 add_library(infra_simulation
-    src/content/Json.cpp
-    src/content/ContentRegistry.cpp
-    src/simulation/InfrastructureGraph.cpp
-    src/simulation/Geography.cpp
-    src/simulation/Link.cpp
-    src/simulation/Mechanics.cpp
-    src/simulation/Metrics.cpp
-    src/simulation/Node.cpp
-    src/simulation/NodeDefinition.cpp
-    src/simulation/PressureAnalysis.cpp
-    src/simulation/RuntimeSystems.cpp
-    src/simulation/SimulationConfig.cpp
-    src/simulation/SimulationLayer.cpp
-    src/simulation/Simulation.cpp
-    src/simulation/SimulationTime.cpp
-    src/simulation/TopologyMutation.cpp
-    src/gameplay/Event.cpp
-    src/gameplay/Scenario.cpp
-    src/gameplay/ScenarioManager.cpp
+    ${INFRA_SIMULATION_SOURCES}
 )
 
 target_include_directories(infra_simulation PUBLIC src)
 target_compile_definitions(infra_simulation PUBLIC INFRA_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content")
 
+file(GLOB_RECURSE INFRA_APP_SOURCES CONFIGURE_DEPENDS
+    src/app/*.cpp
+    src/control/*.cpp
+    src/input/*.cpp
+    src/rendering/*.cpp
+    src/ui/*.cpp
+)
+
 if(INFRA_BUILD_APP)
     add_executable(infra_sandbox
         src/main.cpp
-        src/app/Application.cpp
-        src/control/InterventionController.cpp
-        src/control/OverlayController.cpp
-        src/control/SelectionController.cpp
-        src/control/SimulationController.cpp
-        src/control/UiController.cpp
-        src/input/InputManager.cpp
-        src/rendering/CameraController.cpp
-        src/rendering/GeoLayoutSystem.cpp
-        src/rendering/MapRenderer.cpp
-        src/rendering/Renderer.cpp
-        src/rendering/RenderPrimitives.cpp
-        src/rendering/VisualFeedbackSystem.cpp
-        src/ui/ActionCardView.cpp
-        src/ui/ActionPanelModel.cpp
-        src/ui/DebugPanel.cpp
-        src/ui/HudPanel.cpp
-        src/ui/IconRegistry.cpp
-        src/ui/InterventionPanel.cpp
-        src/ui/MetricsPanel.cpp
-        src/ui/OverlayController.cpp
-        src/ui/RightSidebarLayout.cpp
-        src/ui/SelectionPanel.cpp
-        src/ui/TimelinePanel.cpp
-        src/ui/UiLayout.cpp
-        src/ui/UiManager.cpp
-        src/ui/UiNode.cpp
-        src/ui/UiPrimitives.cpp
-        src/ui/UiTypes.cpp
+        ${INFRA_APP_SOURCES}
     )
 
     target_include_directories(infra_sandbox PRIVATE src)
@@ -118,9 +86,14 @@ if(INFRA_BUILD_TESTS)
         FetchContent_MakeAvailable(googletest)
     endif()
 
-    add_executable(infra_sandbox_tests
-        tests/simulation/SimulationTests.cpp
+    file(GLOB_RECURSE INFRA_TEST_SOURCES CONFIGURE_DEPENDS
+        tests/*.cpp
     )
+
+    add_executable(infra_sandbox_tests
+        ${INFRA_TEST_SOURCES}
+    )
+
     target_link_libraries(infra_sandbox_tests PRIVATE infra_simulation GTest::gtest_main)
 
     if(MSVC)

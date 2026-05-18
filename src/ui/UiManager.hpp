@@ -4,7 +4,7 @@
 #include "gameplay/ScenarioManager.hpp"
 #include "ui/DebugPanel.hpp"
 #include "ui/HudPanel.hpp"
-#include "ui/InterventionPanel.hpp"
+#include "ui/actions/ActionPanel.hpp"
 #include "ui/MetricsPanel.hpp"
 #include "ui/OverlayController.hpp"
 #include "ui/SelectionPanel.hpp"
@@ -30,7 +30,7 @@ private:
     HudPanel hudPanel_{};
     MetricsPanel metricsPanel_{};
     SelectionPanel selectionPanel_{};
-    InterventionPanel interventionPanel_{};
+    ActionPanel actionPanel_{};
     TimelinePanel timelinePanel_{};
     DebugPanel debugPanel_{};
 };

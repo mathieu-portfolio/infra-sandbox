@@ -1,7 +1,7 @@
 #include "control/InterventionController.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "ui/ActionPanelModel.hpp"
+#include "ui/actions/ActionPanelModel.hpp"
 #include "ui/UiLayout.hpp"
 
 #include <algorithm>

@@ -2,7 +2,7 @@
 
 #include "rendering/RenderPrimitives.hpp"
 #include "simulation/Geography.hpp"
-#include "ui/ActionPanelModel.hpp"
+#include "ui/actions/ActionPanelModel.hpp"
 #include "ui/IconRegistry.hpp"
 
 #include "raylib.h"
