@@ -14,10 +14,8 @@ bool handleLayerToggleClick(const InputEvent& event, UiState& state)
     }
 
     const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
-    const float x = layout.leftSidebar.x;
-    float y = layout.leftSidebar.y + 196.0f + UiTheme::gap + 166.0f + UiTheme::gap;
-    const float width = layout.leftSidebar.width;
-    const Rectangle layers{x, y, width, 178.0f};
+    const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, state.sandboxMode);
+    const Rectangle layers = left.layers;
     const std::array<UiLayer, 5> layerIds{UiLayer::Flow, UiLayer::Resources, UiLayer::Persistence, UiLayer::Reliability, UiLayer::Geography};
     const std::array<OverlayMode, 5> overlayModes{OverlayMode::Flow, OverlayMode::Utilization, OverlayMode::Queues, OverlayMode::Reliability, OverlayMode::Latency};
 

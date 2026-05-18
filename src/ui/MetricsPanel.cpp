@@ -37,9 +37,13 @@ void MetricsPanel::update(UiContext& context, const Simulation&)
         return;
     }
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
-    const float x = layout.leftSidebar.x;
-    const float width = layout.leftSidebar.width;
-    const float y = layout.leftSidebar.y + 196.0f + UiTheme::gap + 166.0f + UiTheme::gap;
+    const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
+    const float x = left.sandbox.x;
+    const float width = left.sandbox.width;
+    const float y = left.sandbox.y;
+    if (left.sandbox.height <= 0.0f) {
+        return;
+    }
     const Vector2 mouse = GetMousePosition();
     const char* requests[] = {"traffic_spike", "retry_storm", "db_slowdown", "regional_traffic_spike", "recovery"};
     for (int i = 0; i < 5; ++i) {
@@ -103,12 +107,14 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     }
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
     const float x = layout.leftSidebar.x;
     float y = layout.leftSidebar.y;
     const float width = layout.leftSidebar.width;
     const auto& metrics = simulation.metrics();
 
-    Rectangle overview{x, y, width, 226.0f};
+    Rectangle overview = left.overview;
+    y = overview.y;
     drawPanelFrame(overview, "System Overview");
     char buffer[80];
     std::snprintf(buffer, sizeof(buffer), "%.1f req/s", metrics.inputRatePerSecond);
@@ -124,8 +130,8 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     std::snprintf(buffer, sizeof(buffer), "%.1f / %.0f", metrics.complexity.current, metrics.complexity.recommendedThreshold);
     metricRow("layer.complexity", "Complexity", buffer, x + 14.0f, y + 192.0f, metrics.complexity.current > metrics.complexity.recommendedThreshold ? Color{245, 184, 76, 255} : Color{210, 168, 255, 255});
 
-    y += overview.height + UiTheme::gap;
-    Rectangle alerts{x, y, width, 166.0f};
+    Rectangle alerts = left.alerts;
+    y = alerts.y;
     drawPanelFrame(alerts, "Alerts");
     BeginScissorMode(static_cast<int>(alerts.x), static_cast<int>(alerts.y), static_cast<int>(alerts.width), static_cast<int>(alerts.height));
     int row = 0;
@@ -159,9 +165,9 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     }
     EndScissorMode();
 
-    y += alerts.height + UiTheme::gap;
     if (context.state->sandboxMode) {
-        Rectangle sandbox{x, y, width, 288.0f};
+        Rectangle sandbox = left.sandbox;
+        y = sandbox.y;
         drawPanelFrame(sandbox, "Infrastructure Lab");
         char labBuffer[80];
         std::snprintf(labBuffer, sizeof(labBuffer), "Traffic %.2fx  Latency %.2fx", context.state->sandboxTrafficMultiplier, context.state->sandboxLatencyMultiplier);
@@ -177,13 +183,13 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         }
         std::snprintf(labBuffer, sizeof(labBuffer), "Seed %d", context.state->sandboxSeed);
         drawTextClipped(labBuffer, {x + 14.0f, y + 274.0f, width - 28.0f, 14.0f}, 12, {89, 196, 255, 255});
-        y += sandbox.height + UiTheme::gap;
     }
 
-    if (y + 178.0f > layout.leftSidebar.y + layout.leftSidebar.height) {
+    if (left.layers.height <= 0.0f) {
         return;
     }
-    Rectangle layers{x, y, width, 178.0f};
+    Rectangle layers = left.layers;
+    y = layers.y;
     drawPanelFrame(layers, "Layers");
     const std::array<const char*, 5> layerNames{"Traffic Flow", "Resources", "Persistence", "Reliability", "Geography"};
     const std::array<const char*, 5> layerIcons{"layer.flow", "layer.resources", "layer.persistence", "layer.reliability", "layer.geography"};
@@ -196,8 +202,8 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         drawToggle({x + width - 48.0f, rowY - 1.0f, 34.0f, 18.0f}, enabled);
     }
 
-    y += layers.height + UiTheme::gap;
-    Rectangle legend{x, y, width, std::max(130.0f, layout.leftSidebar.y + layout.leftSidebar.height - y)};
+    Rectangle legend = left.legend;
+    y = legend.y;
     drawPanelFrame(legend, "Legend");
     BeginScissorMode(static_cast<int>(legend.x), static_cast<int>(legend.y), static_cast<int>(legend.width), static_cast<int>(legend.height));
     const std::array<const char*, 5> names{"Client Region", "Service", "Database", "Cache", "Network Link"};

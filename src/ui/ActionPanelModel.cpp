@@ -3,6 +3,8 @@
 #include "ui/ActionCardView.hpp"
 
 #include "content/ContentRegistry.hpp"
+#include "ui/ActionCardView.hpp"
+#include "ui/RightSidebarLayout.hpp"
 #include "ui/UiLayout.hpp"
 
 #include <algorithm>
@@ -248,22 +250,12 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
     }
 
     const Rectangle panel = panelBounds(screenWidth, screenHeight);
-    const float pad = 18.0f;
-    const float gap = 14.0f;
-    const float headerHeight = 64.0f;
-    const float tabsHeight = 46.0f;
-    const float overviewHeight = 208.0f;
-    const float actionsHeaderHeight = 206.0f;
-    const float footerHeight = 138.0f;
-    const float actionsTop = panel.y + pad + headerHeight + gap + tabsHeight + gap + overviewHeight + gap;
-    const float actionsBottom = panel.y + panel.height - pad - footerHeight - gap;
-    const float listTop = actionsTop + actionsHeaderHeight;
-    const float columns = panel.width >= 560.0f ? 2.0f : 1.0f;
+    const RightSidebarLayout layout = computeRightSidebarLayout(panel);
+    const float columns = layout.actionList.width >= 524.0f ? 2.0f : 1.0f;
     const float cardGap = 16.0f;
-    const float sideInset = 18.0f;
-    const float cardWidth = columns > 1.0f ? (panel.width - sideInset * 2.0f - cardGap) * 0.5f : panel.width - sideInset * 2.0f;
-    float x = panel.x + sideInset;
-    float y = listTop;
+    const float cardWidth = columns > 1.0f ? (layout.actionList.width - cardGap) * 0.5f : layout.actionList.width;
+    float x = layout.actionList.x;
+    float y = layout.actionList.y;
     float rowHeight = 0.0f;
     const ActionCardView cardView;
     for (auto& card : cards) {
@@ -273,7 +265,7 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
         }
 
         const float cardHeight = cardView.measureHeight(card, cardWidth);
-        if (y + cardHeight > actionsBottom) {
+        if (y + cardHeight > layout.actionList.y + layout.actionList.height) {
             card.bounds = {};
             continue;
         }
@@ -281,10 +273,10 @@ std::vector<ActionCard> ActionPanelModel::buildCards(const Simulation& simulatio
         card.bounds = {x, y, cardWidth, cardHeight};
         rowHeight = std::max(rowHeight, cardHeight);
 
-        if (columns > 1.0f && x < panel.x + sideInset + cardWidth) {
+        if (columns > 1.0f && x < layout.actionList.x + cardWidth) {
             x += cardWidth + cardGap;
         } else {
-            x = panel.x + sideInset;
+            x = layout.actionList.x;
             y += rowHeight + cardGap;
             rowHeight = 0.0f;
         }

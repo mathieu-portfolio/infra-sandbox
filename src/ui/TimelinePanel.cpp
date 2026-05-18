@@ -144,14 +144,12 @@ struct ActivityRow {
 
 Rectangle categoryDroplistBounds(Rectangle panel)
 {
-    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
-    return {panel.x + panel.width - 246.0f, panel.y + 38.0f + chartHeight + 10.0f, 112.0f, 28.0f};
+    return computeBottomPanelLayout(panel).categoryFilter;
 }
 
 Rectangle filterDroplistBounds(Rectangle panel)
 {
-    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
-    return {panel.x + panel.width - 126.0f, panel.y + 38.0f + chartHeight + 10.0f, 112.0f, 28.0f};
+    return computeBottomPanelLayout(panel).orderFilter;
 }
 
 Color categoryColor(TimelineCategory category)
@@ -357,29 +355,27 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const Rectangle panel = layout.bottomPanel;
+    const BottomPanelLayout bottom = computeBottomPanelLayout(panel);
     DrawRectangleRounded(panel, 0.025f, 8, {13, 17, 23, 232});
     DrawRectangleRoundedLines(panel, 0.025f, 8, {70, 86, 104, 95});
-    DrawText("Metrics", static_cast<int>(panel.x + 14.0f), static_cast<int>(panel.y + 10.0f), 16, {89, 196, 255, 255});
-    const float chartHeight = std::clamp(panel.height * 0.37f, 92.0f, 128.0f);
-    const float timelineHeaderY = panel.y + 38.0f + chartHeight + 12.0f;
-    DrawText("Activity Timeline", static_cast<int>(panel.x + 14.0f), static_cast<int>(timelineHeaderY), 16, {89, 196, 255, 255});
+    DrawText("Metrics", static_cast<int>(bottom.title.x + 2.0f), static_cast<int>(bottom.title.y), 16, {89, 196, 255, 255});
+    DrawText("Activity Timeline", static_cast<int>(bottom.timelineHeader.x + 2.0f), static_cast<int>(bottom.timelineHeader.y + 2.0f), 16, {89, 196, 255, 255});
     const Rectangle categoryField = categoryDroplistBounds(panel);
     const Rectangle filterField = filterDroplistBounds(panel);
     drawDroplist(categoryField, timelineCategoryName(context.state->timelineCategory), context.state->timelineCategoryDroplistOpen);
     drawDroplist(filterField, timelineFilterName(context.state->timelineFilter), context.state->timelineFilterDroplistOpen);
 
     (void)simulation;
-    const float chartY = panel.y + 38.0f;
-    const float chartW = (panel.width - 64.0f) / 5.0f;
-    drawChart({panel.x + 12.0f, chartY, chartW, chartHeight}, "Traffic (req/s)", {89, 196, 255, 255}, context.state->metricsHistory, 0);
-    drawChart({panel.x + 24.0f + chartW, chartY, chartW, chartHeight}, "Latency (ms)", {245, 184, 76, 255}, context.state->metricsHistory, 1);
-    drawChart({panel.x + 36.0f + chartW * 2.0f, chartY, chartW, chartHeight}, "Queues (req)", {235, 105, 76, 255}, context.state->metricsHistory, 2);
-    drawChart({panel.x + 48.0f + chartW * 3.0f, chartY, chartW, chartHeight}, "Utilization (%)", {86, 210, 151, 255}, context.state->metricsHistory, 3);
-    drawChart({panel.x + 60.0f + chartW * 4.0f, chartY, chartW, chartHeight}, "Cache (%)", {151, 111, 255, 255}, context.state->metricsHistory, 4);
+    const float chartW = (bottom.charts.width - 52.0f) / 5.0f;
+    drawChart({bottom.charts.x, bottom.charts.y, chartW, bottom.charts.height}, "Traffic (req/s)", {89, 196, 255, 255}, context.state->metricsHistory, 0);
+    drawChart({bottom.charts.x + 13.0f + chartW, bottom.charts.y, chartW, bottom.charts.height}, "Latency (ms)", {245, 184, 76, 255}, context.state->metricsHistory, 1);
+    drawChart({bottom.charts.x + 26.0f + chartW * 2.0f, bottom.charts.y, chartW, bottom.charts.height}, "Queues (req)", {235, 105, 76, 255}, context.state->metricsHistory, 2);
+    drawChart({bottom.charts.x + 39.0f + chartW * 3.0f, bottom.charts.y, chartW, bottom.charts.height}, "Utilization (%)", {86, 210, 151, 255}, context.state->metricsHistory, 3);
+    drawChart({bottom.charts.x + 52.0f + chartW * 4.0f, bottom.charts.y, chartW, bottom.charts.height}, "Cache (%)", {151, 111, 255, 255}, context.state->metricsHistory, 4);
 
     int row = 0;
-    const int timelineY = static_cast<int>(timelineHeaderY + 30.0f);
-    const int maxRows = std::max(4, static_cast<int>((panel.y + panel.height - static_cast<float>(timelineY) - 12.0f) / 22.0f));
+    const int timelineY = static_cast<int>(bottom.rows.y);
+    const int maxRows = std::max(4, static_cast<int>(bottom.rows.height / 22.0f));
     const auto rows = buildActivityRows(*context.state, simulation, scenarioManager);
     for (const auto& activity : rows) {
         if (row >= maxRows || !rowMatches(activity, *context.state)) {

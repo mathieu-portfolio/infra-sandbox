@@ -12,37 +12,39 @@
 #include <string>
 
 namespace {
-Rectangle scenarioDroplistBounds()
+TopBarLayout topBarLayoutForWidth(int screenWidth)
 {
-    return {206.0f, 11.0f, 270.0f, 32.0f};
+    return computeTopBarLayout({0.0f, 0.0f, static_cast<float>(screenWidth), UiTheme::topBarHeight});
+}
+
+Rectangle scenarioDroplistBounds(int screenWidth)
+{
+    return topBarLayoutForWidth(screenWidth).scenario;
 }
 
 Rectangle objectivesDroplistBounds(int screenWidth)
 {
-    const float rightControlsX = static_cast<float>(screenWidth - 264);
-    const float x = 812.0f;
-    const float width = std::max(190.0f, rightControlsX - x);
-    return {x, 11.0f, width, 32.0f};
+    return topBarLayoutForWidth(screenWidth).objectives;
 }
 
-Rectangle phaseButtonBounds()
+Rectangle phaseButtonBounds(int screenWidth)
 {
-    return {588.0f, 11.0f, 204.0f, 32.0f};
+    return topBarLayoutForWidth(screenWidth).phase;
 }
 
 Rectangle feedbackBounds(int screenWidth)
 {
-    return {static_cast<float>(screenWidth - 236), 11.0f, 98.0f, 32.0f};
+    return topBarLayoutForWidth(screenWidth).feedback;
 }
 
 Rectangle helpBounds(int screenWidth)
 {
-    return {static_cast<float>(screenWidth - 126), 11.0f, 62.0f, 32.0f};
+    return topBarLayoutForWidth(screenWidth).help;
 }
 
 Rectangle optionsButtonBounds(int screenWidth)
 {
-    return {static_cast<float>(screenWidth - 48), 10.0f, 34.0f, 34.0f};
+    return topBarLayoutForWidth(screenWidth).options;
 }
 
 Rectangle optionsMenuBounds(int screenWidth, int screenHeight)
@@ -177,11 +179,11 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     }
 
     const Vector2 mouse = GetMousePosition();
-    const Rectangle scenarioField = scenarioDroplistBounds();
+    const Rectangle scenarioField = scenarioDroplistBounds(context.screenWidth);
     const Rectangle objectiveField = objectivesDroplistBounds(context.screenWidth);
     const Rectangle optionsButton = optionsButtonBounds(context.screenWidth);
     const Rectangle optionsMenu = optionsMenuBounds(context.screenWidth, context.screenHeight);
-    const Rectangle phaseButton = phaseButtonBounds();
+    const Rectangle phaseButton = phaseButtonBounds(context.screenWidth);
     const auto scenarios = ScenarioRegistry::createAll();
     const Rectangle scenarioMenu{scenarioField.x, scenarioField.y + scenarioField.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
     const auto& run = scenarioManager.run();
@@ -263,35 +265,36 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     (void)simulation;
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const TopBarLayout top = computeTopBarLayout(layout.topBar);
     DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
     DrawLineEx({0.0f, layout.topBar.height}, {static_cast<float>(context.screenWidth), layout.topBar.height}, 1.0f, {70, 86, 104, 110});
 
     auto& icons = IconRegistry::instance();
-    icons.drawIcon("topbar.logo", {18.0f, 14.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
-    DrawText("INFRA SANDBOX", 52, 18, 18, {230, 237, 243, 255});
+    icons.drawIcon("topbar.logo", {top.brand.x + 4.0f, top.brand.y + 4.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
+    DrawText("INFRA SANDBOX", static_cast<int>(top.brand.x + 38.0f), static_cast<int>(top.brand.y + 8.0f), 18, {230, 237, 243, 255});
 
-    const Rectangle scenarioBox = scenarioDroplistBounds();
+    const Rectangle scenarioBox = scenarioDroplistBounds(context.screenWidth);
     drawDroplistField(scenarioBox, "Scenario", scenarioManager.definition().name, context.state->scenarioDroplistOpen);
 
     const int totalSeconds = static_cast<int>(scenarioManager.elapsedSeconds());
     char buffer[160];
     std::snprintf(buffer, sizeof(buffer), "Time %02d:%02d", totalSeconds / 60, totalSeconds % 60);
-    DrawText(buffer, 498, 20, 15, {230, 237, 243, 255});
+    DrawText(buffer, static_cast<int>(top.time.x), static_cast<int>(top.time.y + 10.0f), 15, {230, 237, 243, 255});
 
-    const Rectangle phaseButton = phaseButtonBounds();
+    const Rectangle phaseButton = phaseButtonBounds(context.screenWidth);
     drawTopButton(phaseButton, phaseActionLabel(context.state->gameplayPhase), context.state->gameplayPhase == GameplayPhase::Planning);
-    DrawText(phaseName(context.state->gameplayPhase), static_cast<int>(phaseButton.x + phaseButton.width + 16.0f), 20, 14, {139, 148, 158, 255});
+    DrawText(phaseName(context.state->gameplayPhase), static_cast<int>(top.phaseLabel.x), static_cast<int>(top.phaseLabel.y + 10.0f), 14, {139, 148, 158, 255});
 
     const Rectangle objectiveBox = objectivesDroplistBounds(context.screenWidth);
-    icons.drawIcon("metric.objective", {objectiveBox.x + 10.0f, 15.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
-    drawDroplistField({objectiveBox.x + 38.0f, objectiveBox.y, objectiveBox.width - 38.0f, objectiveBox.height}, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
+    icons.drawIcon("metric.objective", {objectiveBox.x + 2.0f, objectiveBox.y + 4.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
+    drawDroplistField({objectiveBox.x + 30.0f, objectiveBox.y, objectiveBox.width - 30.0f, objectiveBox.height}, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
 
     const Rectangle feedback = feedbackBounds(context.screenWidth);
-    icons.drawIcon("topbar.feedback", {feedback.x, 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Feedback", static_cast<int>(feedback.x + 28.0f), 20, 14, {139, 148, 158, 255});
+    icons.drawIcon("topbar.feedback", {feedback.x, feedback.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Feedback", static_cast<int>(feedback.x + 28.0f), static_cast<int>(feedback.y + 10.0f), 14, {139, 148, 158, 255});
     const Rectangle help = helpBounds(context.screenWidth);
-    icons.drawIcon("topbar.help", {help.x, 15.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Help", static_cast<int>(help.x + 26.0f), 20, 14, {139, 148, 158, 255});
+    icons.drawIcon("topbar.help", {help.x, help.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    DrawText("Help", static_cast<int>(help.x + 26.0f), static_cast<int>(help.y + 10.0f), 14, {139, 148, 158, 255});
     drawIconButton(optionsButtonBounds(context.screenWidth), "topbar.options", context.state->optionsMenuOpen);
 
     if (context.state->scenarioDroplistOpen) {

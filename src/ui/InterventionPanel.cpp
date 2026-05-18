@@ -3,6 +3,7 @@
 #include "ui/ActionPanelModel.hpp"
 #include "ui/ActionCardView.hpp"
 #include "ui/IconRegistry.hpp"
+#include "ui/RightSidebarLayout.hpp"
 #include "ui/UiLayout.hpp"
 #include "ui/UiPrimitives.hpp"
 #include "simulation/NodeDefinition.hpp"
@@ -15,20 +16,6 @@
 #include <string>
 
 namespace {
-void section(Rectangle bounds, const char* title, int step)
-{
-    DrawRectangleRounded(bounds, 0.04f, 8, {22, 27, 34, 224});
-    DrawRectangleRoundedLines(bounds, 0.04f, 8, {70, 86, 104, 95});
-    char label[96];
-    std::snprintf(label, sizeof(label), "%d.  %s", step, title);
-    drawTextClipped(label, {bounds.x + 12.0f, bounds.y + 10.0f, bounds.width - 24.0f, 20.0f}, 16, {89, 196, 255, 255});
-}
-
-Color availableText(bool available)
-{
-    return available ? Color{230, 237, 243, 255} : Color{139, 148, 158, 170};
-}
-
 int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
 {
     switch (domain) {
@@ -68,23 +55,6 @@ int totalUsage(const UiState& state)
         }
     }
     return total;
-}
-
-std::string engineeringCostLabel(const std::vector<EngineeringCost>& costs)
-{
-    if (costs.empty()) {
-        return "Engineering: none";
-    }
-    std::string label = "Engineering: ";
-    for (std::size_t i = 0; i < costs.size(); ++i) {
-        if (i > 0) {
-            label += ", ";
-        }
-        label += engineeringDomainName(costs[i].domain);
-        label += " ";
-        label += std::to_string(costs[i].amount);
-    }
-    return label;
 }
 
 const char* shortDomainName(EngineeringDomain domain)
@@ -308,47 +278,6 @@ void drawMetricBar(Rectangle bounds, const char* label, double value, Color colo
     DrawText(text, static_cast<int>(bounds.x + bounds.width - 42.0f), static_cast<int>(bounds.y - 1.0f), 13, {230, 237, 243, 255});
 }
 
-struct RightPanelLayout {
-    Rectangle header{};
-    Rectangle tabs{};
-    Rectangle overview{};
-    Rectangle actions{};
-    Rectangle actionList{};
-    Rectangle message{};
-    Rectangle locked{};
-    Rectangle button{};
-};
-
-RightPanelLayout computeRightPanelLayout(Rectangle sidebar)
-{
-    constexpr float pad = 18.0f;
-    constexpr float gap = 14.0f;
-    constexpr float headerHeight = 64.0f;
-    constexpr float tabsHeight = 46.0f;
-    constexpr float overviewHeight = 208.0f;
-    constexpr float actionsHeaderHeight = 206.0f;
-    constexpr float messageHeight = 26.0f;
-    constexpr float lockedHeight = 72.0f;
-    constexpr float buttonHeight = 46.0f;
-
-    RightPanelLayout layout;
-    const float contentX = sidebar.x + pad;
-    const float contentWidth = sidebar.width - pad * 2.0f;
-    float y = sidebar.y + pad;
-    layout.header = {contentX, y, contentWidth, headerHeight};
-    y += headerHeight + gap;
-    layout.tabs = {contentX, y, contentWidth, tabsHeight};
-    y += tabsHeight + gap;
-    layout.overview = {contentX, y, contentWidth, overviewHeight};
-    y += overviewHeight + gap;
-
-    layout.button = {contentX, sidebar.y + sidebar.height - pad - buttonHeight, contentWidth, buttonHeight};
-    layout.locked = {contentX, layout.button.y - gap - lockedHeight, contentWidth, lockedHeight};
-    layout.message = {contentX, layout.locked.y - gap - messageHeight, contentWidth, messageHeight};
-    layout.actions = {contentX, y, contentWidth, std::max(0.0f, layout.message.y - gap - y)};
-    layout.actionList = {contentX, y + actionsHeaderHeight, contentWidth, std::max(0.0f, layout.actions.height - actionsHeaderHeight)};
-    return layout;
-}
 }
 
 void InterventionPanel::update(UiContext& context, const Simulation& simulation)
@@ -376,7 +305,7 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const Rectangle sidebar = layout.rightSidebar;
-    const RightPanelLayout panel = computeRightPanelLayout(sidebar);
+    const RightSidebarLayout panel = computeRightSidebarLayout(sidebar);
     DrawRectangleRounded(sidebar, 0.018f, 8, {9, 16, 27, 242});
     DrawRectangleRoundedLines(sidebar, 0.018f, 8, {62, 82, 112, 130});
 
@@ -446,7 +375,7 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
 
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const Rectangle actions = panel.actions;
+    const Rectangle actions = panel.actionHeader;
     DrawText("AVAILABLE ACTIONS", static_cast<int>(actions.x), static_cast<int>(actions.y), 14, {230, 237, 243, 255});
     drawEngineeringCapacityBlock({actions.x, actions.y + 24.0f, actions.width, 142.0f}, *context.state);
     for (int i = 0; i < 4; ++i) {
@@ -489,7 +418,7 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
         const auto candidates = generator.generate(simulation, context.state->activeMutation);
         if (!candidates.empty()) {
             const int index = std::clamp(context.state->placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
-            drawTextClipped("Placement: " + candidates[static_cast<std::size_t>(index)].displayName, panel.message, 12, {89, 196, 255, 255});
+            drawTextClipped("Placement: " + candidates[static_cast<std::size_t>(index)].displayName, panel.statusMessage, 12, {89, 196, 255, 255});
         }
     }
 
@@ -498,11 +427,11 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
     DrawText(context.state->placementActive ? "Queue Placement" : (hasSelectedAction ? "Queue Action" : "Select an Action"), static_cast<int>(panel.button.x + panel.button.width * 0.5f - 58.0f), static_cast<int>(panel.button.y + 14.0f), 15, {230, 237, 243, 255});
 
     if (!context.state->latestFeedback.empty() && !context.state->placementActive) {
-        drawTextClipped(context.state->latestFeedback, panel.message, 13, {245, 184, 76, 255});
+        drawTextClipped(context.state->latestFeedback, panel.statusMessage, 13, {245, 184, 76, 255});
     }
     if (!context.state->plannedInterventions.empty()) {
-        drawTextClipped("Planned: " + plannedLabel(*context.state), panel.message, 12, {86, 210, 151, 255});
+        drawTextClipped("Planned: " + plannedLabel(*context.state), panel.summaryMessage, 12, {86, 210, 151, 255});
     } else if (!context.state->resolutionSummaries.empty()) {
-        drawTextClipped(context.state->resolutionSummaries.front(), panel.message, 12, {86, 210, 151, 255});
+        drawTextClipped(context.state->resolutionSummaries.front(), panel.summaryMessage, 12, {86, 210, 151, 255});
     }
 }

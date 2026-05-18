@@ -344,7 +344,12 @@ void Application::finishTransition(const MetricsSnapshot& beforeMetrics)
     if (simulation_.pressure().dominantPressure != PressureCategory::None) {
         appendResolutionSummary(std::string("Emerging bottleneck: ") + pressureCategoryName(simulation_.pressure().dominantPressure) + " pressure.");
     }
-    state.latestFeedback = state.resolutionSummaries.empty() ? "Transition complete. No major pressure movement detected." : state.resolutionSummaries.front();
+    // The resolution panel already renders resolutionSummaries. Keep latestFeedback
+    // as a compact status message so the UI does not show overlapping/duplicate
+    // transition result lines.
+    state.latestFeedback = state.resolutionSummaries.empty()
+        ? "Transition complete."
+        : "Transition complete. Review the resolution summary.";
     fixedStepAccumulator_ = 0.0;
 }
 
