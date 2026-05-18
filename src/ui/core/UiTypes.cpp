@@ -1,4 +1,4 @@
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 const char* overlayModeName(OverlayMode mode)
 {

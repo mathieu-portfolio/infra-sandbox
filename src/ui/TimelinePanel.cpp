@@ -1,8 +1,8 @@
 #include "ui/TimelinePanel.hpp"
 
 #include "ui/IconRegistry.hpp"
-#include "ui/UiLayout.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiLayout.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 #include "raylib.h"
 

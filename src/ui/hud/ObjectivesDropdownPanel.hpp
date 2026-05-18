@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gameplay/ScenarioManager.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"
 

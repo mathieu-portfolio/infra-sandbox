@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"
 

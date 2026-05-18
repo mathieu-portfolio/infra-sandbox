@@ -1,6 +1,6 @@
-#include "ui/UiLayout.hpp"
+#include "ui/core/UiLayout.hpp"
 
-#include "ui/UiNode.hpp"
+#include "ui/core/UiCore.hpp"
 
 #include <algorithm>
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "simulation/Simulation.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 #include "ui/actions/cards/ActionCardModel.hpp"
 
 #include "raylib.h"

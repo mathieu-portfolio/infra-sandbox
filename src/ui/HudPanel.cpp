@@ -2,7 +2,7 @@
 
 #include "ui/IconRegistry.hpp"
 #include "ui/hud/HudPanelPrimitives.hpp"
-#include "ui/UiLayout.hpp"
+#include "ui/core/UiLayout.hpp"
 
 #include "raylib.h"
 

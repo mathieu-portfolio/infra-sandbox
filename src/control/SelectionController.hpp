@@ -3,7 +3,7 @@
 #include "input/InputAction.hpp"
 #include "rendering/CameraController.hpp"
 #include "simulation/Simulation.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include <span>
 

@@ -3,7 +3,7 @@
 #include "ui/actions/cards/ActionCardCommon.hpp"
 
 #include "ui/IconRegistry.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 #include "raylib.h"
 

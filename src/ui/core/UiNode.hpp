@@ -2,7 +2,6 @@
 
 #include "raylib.h"
 
-#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -62,6 +61,7 @@ public:
 
     UiNode& style(LayoutStyle style);
     UiNode& add(std::unique_ptr<UiNode> child);
+
     [[nodiscard]] UiNode* find(const std::string& id);
     [[nodiscard]] const UiNode* find(const std::string& id) const;
 
@@ -86,69 +86,6 @@ protected:
     std::vector<std::unique_ptr<UiNode>> children_;
 };
 
-class StackNode : public UiNode {
-public:
-    StackNode(Axis axis, std::string id = {});
-
-    Size measure(Size available) override;
-    void layout(Rectangle bounds) override;
-
-private:
-    Axis axis_ = Axis::Vertical;
-};
-
-class PanelNode : public UiNode {
-public:
-    explicit PanelNode(std::string id = {});
-    void draw() const override;
-
-    Color background{0, 0, 0, 0};
-    Color border{0, 0, 0, 0};
-    float radius = 0.0f;
-};
-
-class TextBlockNode : public UiNode {
-public:
-    TextBlockNode(std::string text, int fontSize, std::string id = {});
-
-    Size measure(Size available) override;
-    void draw() const override;
-
-    std::string text;
-    int fontSize = 12;
-    Color color{230, 237, 243, 255};
-    int maxLines = 4;
-};
-
-class ButtonNode : public TextBlockNode {
-public:
-    ButtonNode(std::string text, int fontSize, std::string id = {});
-    void draw() const override;
-
-    Color background{97, 64, 196, 180};
-    Color border{145, 109, 255, 160};
-    float radius = 0.08f;
-};
-
-class ScrollAreaNode : public StackNode {
-public:
-    explicit ScrollAreaNode(std::string id = {});
-    void draw() const override;
-};
-
-class CardListNode : public UiNode {
-public:
-    explicit CardListNode(std::string id = {});
-
-    Size measure(Size available) override;
-    void layout(Rectangle bounds) override;
-
-    std::vector<float> cardHeights;
-    int columns = 1;
-};
-
-std::unique_ptr<StackNode> verticalStack(std::string id = {});
-std::unique_ptr<StackNode> horizontalStack(std::string id = {});
 LayoutStyle fixedHeight(float height, float minWidth = 0.0f);
 LayoutStyle flex(float grow = 1.0f, float minHeight = 0.0f);
 

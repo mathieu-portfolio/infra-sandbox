@@ -5,7 +5,7 @@
 #include "ui/hud/ObjectivesDropdownPanel.hpp"
 #include "ui/hud/OptionsMenuPanel.hpp"
 #include "ui/hud/ScenarioDropdownPanel.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 class HudPanel {
 public:

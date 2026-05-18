@@ -2,7 +2,7 @@
 
 #include "simulation/Node.hpp"
 #include "simulation/Simulation.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"
 

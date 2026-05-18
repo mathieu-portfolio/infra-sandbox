@@ -1,7 +1,7 @@
 #include "ui/hud/OptionsMenuPanel.hpp"
 
 #include "ui/hud/HudPanelPrimitives.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 namespace {
 Rectangle optionsRowBounds(Rectangle menu, int index)

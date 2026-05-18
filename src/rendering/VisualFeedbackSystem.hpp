@@ -1,7 +1,7 @@
 #pragma once
 
 #include "simulation/Simulation.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include <unordered_map>
 #include <vector>

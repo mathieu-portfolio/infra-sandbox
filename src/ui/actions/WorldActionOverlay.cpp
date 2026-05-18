@@ -1,11 +1,53 @@
 #include "ui/actions/WorldActionOverlay.hpp"
 
 #include "ui/IconRegistry.hpp"
-#include "ui/UiLayout.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiCore.hpp"
+#include "ui/core/UiLayout.hpp"
+#include "ui/core/UiPrimitives.hpp"
 #include "ui/actions/cards/WorldActionCardView.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <string>
+#include <utility>
+
+
+namespace {
+Rectangle nodeBounds(const ui::UiNode& root, const char* id)
+{
+    if (const ui::UiNode* node = root.find(id); node != nullptr) {
+        return node->bounds();
+    }
+    return {};
+}
+
+Rectangle draftCardsArea(Rectangle overlay)
+{
+    return {overlay.x + 20.0f, overlay.y + 86.0f, overlay.width - 40.0f, overlay.height - 116.0f};
+}
+
+Rectangle draftCardBoundsFromGrid(Rectangle overlay, int index, int count)
+{
+    auto root = ui::grid(std::max(1, count), "worldActionCards");
+    ui::LayoutStyle rootStyle;
+    rootStyle.gap = 14.0f;
+    root->style(rootStyle);
+    root->columnGap = 14.0f;
+    root->fixedCellHeight = draftCardsArea(overlay).height;
+
+    for (int i = 0; i < std::max(1, count); ++i) {
+        auto card = std::make_unique<ui::PanelNode>("card" + std::to_string(i));
+        card->style(ui::fixedHeight(draftCardsArea(overlay).height));
+        root->add(std::move(card));
+    }
+
+    const Rectangle area = draftCardsArea(overlay);
+    root->measure({area.width, area.height});
+    root->layout(area);
+    return nodeBounds(*root, ("card" + std::to_string(std::clamp(index, 0, std::max(1, count) - 1))).c_str());
+}
+} // namespace
+
 
 Rectangle WorldActionOverlay::toggleBounds(int screenWidth)
 {
@@ -21,11 +63,7 @@ Rectangle WorldActionOverlay::overlayBounds(int screenWidth, int screenHeight)
 
 Rectangle WorldActionOverlay::draftCardBounds(Rectangle overlay, int index, int count)
 {
-    constexpr float gap = 14.0f;
-    const float contentX = overlay.x + 20.0f;
-    const float contentWidth = overlay.width - 40.0f;
-    const float width = (contentWidth - gap * static_cast<float>(std::max(0, count - 1))) / static_cast<float>(std::max(1, count));
-    return {contentX + static_cast<float>(index) * (width + gap), overlay.y + 86.0f, width, overlay.height - 116.0f};
+    return draftCardBoundsFromGrid(overlay, index, count);
 }
 
 void WorldActionOverlay::draw(const UiContext& context) const

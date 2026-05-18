@@ -2,9 +2,60 @@
 
 #include "ui/IconRegistry.hpp"
 #include "ui/hud/HudPanelPrimitives.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiCore.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
+
+
+namespace {
+Rectangle nodeBounds(const ui::UiNode& root, const char* id)
+{
+    if (const ui::UiNode* node = root.find(id); node != nullptr) {
+        return node->bounds();
+    }
+    return {};
+}
+
+struct ObjectivesFieldLayout {
+    Rectangle icon;
+    Rectangle field;
+};
+
+ObjectivesFieldLayout computeObjectivesFieldLayout(Rectangle bounds)
+{
+    auto root = ui::horizontalStack("objectivesField");
+    ui::LayoutStyle rootStyle;
+    rootStyle.gap = 8.0f;
+    root->style(rootStyle);
+
+    auto icon = std::make_unique<ui::PanelNode>("icon");
+    ui::LayoutStyle iconStyle = ui::fixedHeight(bounds.height);
+    iconStyle.fixedWidth = 22.0f;
+    iconStyle.widthMode = ui::SizeMode::Fixed;
+    icon->style(iconStyle);
+    root->add(std::move(icon));
+
+    auto field = std::make_unique<ui::PanelNode>("field");
+    ui::LayoutStyle fieldStyle;
+    fieldStyle.widthMode = ui::SizeMode::Flex;
+    fieldStyle.heightMode = ui::SizeMode::Flex;
+    fieldStyle.flexGrow = 1.0f;
+    field->style(fieldStyle);
+    root->add(std::move(field));
+
+    root->measure({bounds.width, bounds.height});
+    root->layout(bounds);
+
+    return {
+        .icon = nodeBounds(*root, "icon"),
+        .field = nodeBounds(*root, "field"),
+    };
+}
+} // namespace
+
 
 Rectangle ObjectivesDropdownPanel::menuBounds(const UiContext& context, const ScenarioManager& scenarioManager) const
 {
@@ -40,9 +91,9 @@ void ObjectivesDropdownPanel::drawField(const UiContext& context, const Scenario
         return;
     }
 
-    const Rectangle field = hudObjectivesDroplistBounds(context.screenWidth);
-    IconRegistry::instance().drawIcon("metric.objective", {field.x + 2.0f, field.y + 4.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
-    drawHudDroplistField({field.x + 30.0f, field.y, field.width - 30.0f, field.height}, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
+    const ObjectivesFieldLayout layout = computeObjectivesFieldLayout(hudObjectivesDroplistBounds(context.screenWidth));
+    IconRegistry::instance().drawIcon("metric.objective", {layout.icon.x + 1.0f, layout.icon.y + 4.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
+    drawHudDroplistField(layout.field, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
 }
 
 void ObjectivesDropdownPanel::drawMenu(const UiContext& context, const ScenarioManager& scenarioManager) const

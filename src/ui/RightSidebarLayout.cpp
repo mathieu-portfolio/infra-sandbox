@@ -1,6 +1,6 @@
 #include "ui/RightSidebarLayout.hpp"
 
-#include "ui/UiNode.hpp"
+#include "ui/core/UiCore.hpp"
 
 namespace {
 constexpr float kPad = 18.0f;
@@ -8,7 +8,7 @@ constexpr float kGap = 14.0f;
 constexpr float kHeaderHeight = 64.0f;
 constexpr float kTabsHeight = 46.0f;
 constexpr float kOverviewHeight = 208.0f;
-constexpr float kActionHeaderHeight = 190.0f;
+constexpr float kActionHeaderHeight = 214.0f;
 constexpr float kActionMinHeight = 240.0f;
 constexpr float kMessageHeight = 56.0f;
 constexpr float kStatusMessageHeight = 24.0f;

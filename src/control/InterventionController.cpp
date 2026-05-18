@@ -2,7 +2,7 @@
 
 #include "content/ContentRegistry.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
-#include "ui/UiLayout.hpp"
+#include "ui/core/UiLayout.hpp"
 
 #include <algorithm>
 #include <array>

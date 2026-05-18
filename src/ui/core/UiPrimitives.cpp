@@ -1,4 +1,4 @@
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 std::string ellipsizeText(const std::string& text, int fontSize, float maxWidth)
 {

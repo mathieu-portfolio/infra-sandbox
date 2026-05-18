@@ -9,7 +9,7 @@
 #include "ui/OverlayController.hpp"
 #include "ui/SelectionPanel.hpp"
 #include "ui/TimelinePanel.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 class UiManager {
 public:

@@ -5,8 +5,9 @@
 #include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/IconRegistry.hpp"
 #include "ui/RightSidebarLayout.hpp"
-#include "ui/UiLayout.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiCore.hpp"
+#include "ui/core/UiLayout.hpp"
+#include "ui/core/UiPrimitives.hpp"
 #include "ui/actions/ActionFiltering.hpp"
 #include "ui/actions/ActionText.hpp"
 #include "ui/actions/PressurePresentation.hpp"
@@ -15,9 +16,95 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <memory>
 #include <string>
+#include <utility>
 
 namespace {
+
+Rectangle nodeBounds(const ui::UiNode& root, const char* id)
+{
+    if (const ui::UiNode* node = root.find(id); node != nullptr) {
+        return node->bounds();
+    }
+    return {};
+}
+
+struct ActionHeaderLayout {
+    Rectangle title;
+    Rectangle capacity;
+    Rectangle worldStatus;
+    Rectangle filters[4]{};
+};
+
+ActionHeaderLayout computeActionHeaderLayout(Rectangle bounds)
+{
+    auto root = ui::verticalStack("actionHeaderRoot");
+    ui::LayoutStyle rootStyle;
+    rootStyle.gap = 8.0f;
+    root->style(rootStyle);
+
+    auto title = std::make_unique<ui::PanelNode>("title");
+    title->style(ui::fixedHeight(18.0f));
+    root->add(std::move(title));
+
+    auto capacity = std::make_unique<ui::PanelNode>("capacity");
+    capacity->style(ui::fixedHeight(126.0f));
+    root->add(std::move(capacity));
+
+    auto worldStatus = std::make_unique<ui::PanelNode>("worldStatus");
+    worldStatus->style(ui::fixedHeight(18.0f));
+    root->add(std::move(worldStatus));
+
+    auto filters = ui::grid(4, "filters");
+    ui::LayoutStyle filtersStyle;
+    filtersStyle.heightMode = ui::SizeMode::Fixed;
+    filtersStyle.fixedHeight = 26.0f;
+    filtersStyle.widthMode = ui::SizeMode::Flex;
+    filtersStyle.flexGrow = 1.0f;
+    filters->style(filtersStyle);
+    filters->columnGap = 10.0f;
+    filters->fixedCellHeight = 26.0f;
+    for (int i = 0; i < 4; ++i) {
+        auto filter = std::make_unique<ui::PanelNode>("filter" + std::to_string(i));
+        filter->style(ui::fixedHeight(26.0f));
+        filters->add(std::move(filter));
+    }
+    root->add(std::move(filters));
+
+    root->measure({bounds.width, bounds.height});
+    root->layout(bounds);
+
+    ActionHeaderLayout layout;
+    layout.title = nodeBounds(*root, "title");
+    layout.capacity = nodeBounds(*root, "capacity");
+    layout.worldStatus = nodeBounds(*root, "worldStatus");
+    for (int i = 0; i < 4; ++i) {
+        layout.filters[i] = nodeBounds(*root, ("filter" + std::to_string(i)).c_str());
+    }
+    return layout;
+}
+
+
+Rectangle tabBounds(Rectangle bounds, int index, int count)
+{
+    auto root = ui::grid(std::max(1, count), "tabs");
+    ui::LayoutStyle rootStyle;
+    rootStyle.gap = 0.0f;
+    root->style(rootStyle);
+    root->fixedCellHeight = bounds.height;
+
+    for (int i = 0; i < std::max(1, count); ++i) {
+        auto tab = std::make_unique<ui::PanelNode>("tab" + std::to_string(i));
+        tab->style(ui::fixedHeight(bounds.height));
+        root->add(std::move(tab));
+    }
+
+    root->measure({bounds.width, bounds.height});
+    root->layout(bounds);
+    return nodeBounds(*root, ("tab" + std::to_string(std::clamp(index, 0, std::max(1, count) - 1))).c_str());
+}
+
 std::string plannedLabel(const UiState& state)
 {
     std::string label;
@@ -120,11 +207,10 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     DrawLine(static_cast<int>(sidebar.x), static_cast<int>(panel.tabs.y - 5.0f), static_cast<int>(sidebar.x + sidebar.width), static_cast<int>(panel.tabs.y - 5.0f), {31, 42, 58, 255});
     const char* tabs[] = {"Overview", "Metrics", "Traffic", "Dependencies"};
     for (int i = 0; i < 4; ++i) {
-        const float tabWidth = panel.tabs.width / 4.0f;
-        const float x = panel.tabs.x + static_cast<float>(i) * tabWidth;
-        drawTextClipped(tabs[i], {x + 4.0f, panel.tabs.y + 10.0f, tabWidth - 8.0f, 18.0f}, 13, i == 0 ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
+        const Rectangle tab = tabBounds(panel.tabs, i, 4);
+        drawTextClipped(tabs[i], {tab.x + 4.0f, tab.y + 10.0f, tab.width - 8.0f, 18.0f}, 13, i == 0 ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
         if (i == 0) {
-            DrawRectangleRounded({x, panel.tabs.y + panel.tabs.height - 4.0f, tabWidth - 10.0f, 3.0f}, 0.4f, 6, {145, 109, 255, 255});
+            DrawRectangleRounded({tab.x, tab.y + tab.height - 4.0f, tab.width - 10.0f, 3.0f}, 0.4f, 6, {145, 109, 255, 255});
         }
     }
 
@@ -162,18 +248,17 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
 
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const Rectangle actions = panel.actionHeader;
-    DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.x), static_cast<int>(actions.y), 14, {230, 237, 243, 255});
-    engineeringCapacityPanel_.draw({actions.x, actions.y + 24.0f, actions.width, 126.0f}, *context.state);
+    const ActionHeaderLayout actions = computeActionHeaderLayout(panel.actionHeader);
+    DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.title.x), static_cast<int>(actions.title.y), 14, {230, 237, 243, 255});
+    engineeringCapacityPanel_.draw(actions.capacity, *context.state);
     if (context.state->gameplayPhase == GameplayPhase::Planning) {
         const std::string worldActionLabel = context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())
             ? "World Action: " + context.state->worldActionDraft[static_cast<std::size_t>(context.state->selectedWorldActionIndex)].name
             : "Pick a World Action before selecting Node Actions.";
-        drawTextClipped(worldActionLabel, {actions.x, actions.y + 154.0f, actions.width, 18.0f}, 12, context.state->selectedWorldActionIndex >= 0 ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+        drawTextClipped(worldActionLabel, actions.worldStatus, 12, context.state->selectedWorldActionIndex >= 0 ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
     }
     for (int i = 0; i < 4; ++i) {
-        const float w = i == 0 ? 48.0f : 96.0f;
-        drawFilterPill({actions.x + static_cast<float>(i) * 108.0f, actions.y + 164.0f, w, 26.0f}, actions_ui::categoryFilterLabel(cards, i), i == 0);
+        drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == 0);
     }
     BeginScissorMode(static_cast<int>(panel.actionList.x - 2.0f), static_cast<int>(panel.actionList.y), static_cast<int>(panel.actionList.width + 4.0f), static_cast<int>(panel.actionList.height));
     if (cards.empty()) {

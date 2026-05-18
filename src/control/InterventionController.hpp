@@ -5,7 +5,7 @@
 #include "simulation/Mechanics.hpp"
 #include "simulation/Simulation.hpp"
 #include "simulation/TopologyMutation.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include <span>
 #include <string>

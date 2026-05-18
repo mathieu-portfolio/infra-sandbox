@@ -1,7 +1,7 @@
 #include "ui/hud/ScenarioDropdownPanel.hpp"
 
 #include "ui/hud/HudPanelPrimitives.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 #include <cstddef>
 

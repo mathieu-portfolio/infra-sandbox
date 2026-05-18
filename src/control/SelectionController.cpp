@@ -2,7 +2,7 @@
 
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/RenderPrimitives.hpp"
-#include "ui/UiLayout.hpp"
+#include "ui/core/UiLayout.hpp"
 
 #include "raylib.h"
 

@@ -1,7 +1,7 @@
 #include "ui/actions/cards/WorldActionCardView.hpp"
 
 #include "ui/IconRegistry.hpp"
-#include "ui/UiPrimitives.hpp"
+#include "ui/core/UiPrimitives.hpp"
 #include "ui/actions/ActionText.hpp"
 
 #include <algorithm>

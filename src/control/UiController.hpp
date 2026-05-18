@@ -1,7 +1,7 @@
 #pragma once
 
 #include "input/InputAction.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 #include <span>
 

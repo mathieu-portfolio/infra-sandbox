@@ -2,7 +2,7 @@
 
 #include "simulation/Simulation.hpp"
 #include "gameplay/ScenarioManager.hpp"
-#include "ui/UiTypes.hpp"
+#include "ui/core/UiTypes.hpp"
 
 class TimelinePanel {
 public:
