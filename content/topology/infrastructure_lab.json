@@ -1,7 +1,7 @@
 {
   "id": "infrastructure_lab",
   "display_name": "Infrastructure Lab topology",
-  "description": "Richer lab topology for pressure, intervention, routing, and geography testing.",
+  "description": "Richer lab topology for pressure, action, routing, and geography testing.",
   "tags": ["sandbox", "lab"],
   "regions": ["Europe", "NorthAmerica"],
   "nodes": [

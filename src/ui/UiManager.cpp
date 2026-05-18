@@ -6,11 +6,24 @@
 
 #include <string>
 
+namespace {
+EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapacity& bonus)
+{
+    base.frontend += bonus.frontend;
+    base.backend += bonus.backend;
+    base.infrastructure += bonus.infrastructure;
+    base.data += bonus.data;
+    base.operations += bonus.operations;
+    base.total += bonus.total;
+    return base;
+}
+}
+
 void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
-    state_.engineeringCapacity = scenarioManager.definition().engineeringCapacity;
+    state_.engineeringCapacity = addCapacity(scenarioManager.definition().engineeringCapacity, state_.worldActionCapacityBonus);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager);
@@ -89,6 +102,7 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
     hudPanel_.draw(context, simulation, scenarioManager);
+    interventionPanel_.drawWorldActionOverlay(context);
 }
 
 const UiState& UiManager::state() const

@@ -6,6 +6,13 @@
 
 #include "raylib.h"
 
+namespace {
+Rectangle worldActionToggleBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
+}
+}
+
 void SelectionController::handleActions(std::span<const InputEvent> events, const Simulation& simulation, const CameraController& camera, UiState& state)
 {
     for (const auto& event : events) {
@@ -13,8 +20,18 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
             continue;
         }
 
+        if (state.suppressMapSelectionOnce) {
+            state.suppressMapSelectionOnce = false;
+            continue;
+        }
+
         if (mouseOverScreenPanel(event.mousePosition, GetScreenWidth(), GetScreenHeight())) {
             continue;
+        }
+        if (state.gameplayPhase == GameplayPhase::Planning && !state.worldActionDraft.empty()) {
+            if (state.worldActionDraftVisible || CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(GetScreenWidth()))) {
+                continue;
+            }
         }
 
         UiState selectionState = state;

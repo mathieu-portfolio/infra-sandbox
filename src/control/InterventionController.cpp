@@ -88,6 +88,32 @@ std::vector<EngineeringCost> engineeringCostsFor(MechanicType mechanic)
     }
     return {};
 }
+
+Rectangle worldActionToggleBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
+}
+
+Rectangle worldActionOverlayBounds(int screenWidth, int screenHeight)
+{
+    const float width = std::min(840.0f, static_cast<float>(screenWidth) - 96.0f);
+    const float height = std::min(360.0f, static_cast<float>(screenHeight) - 160.0f);
+    return {static_cast<float>(screenWidth) * 0.5f - width * 0.5f, static_cast<float>(screenHeight) * 0.5f - height * 0.5f, width, height};
+}
+
+Rectangle worldActionOverlayCardBounds(Rectangle overlay, int index, int count)
+{
+    constexpr float gap = 14.0f;
+    const float contentX = overlay.x + 20.0f;
+    const float contentWidth = overlay.width - 40.0f;
+    const float width = (contentWidth - gap * static_cast<float>(std::max(0, count - 1))) / static_cast<float>(std::max(1, count));
+    return {contentX + static_cast<float>(index) * (width + gap), overlay.y + 86.0f, width, overlay.height - 116.0f};
+}
+
+bool worldActionRequiredBeforeNodeActions(const UiState& uiState)
+{
+    return uiState.gameplayPhase == GameplayPhase::Planning && !uiState.worldActionDraft.empty() && uiState.selectedWorldActionIndex < 0;
+}
 }
 
 void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState)
@@ -165,6 +191,10 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
 void InterventionController::startPlacement(const Simulation& simulation, UiState& uiState, TopologyMutationType type) const
 {
+    if (worldActionRequiredBeforeNodeActions(uiState)) {
+        uiState.latestFeedback = "Pick a World Action before selecting Node Actions.";
+        return;
+    }
     const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
         : type == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
         : type == TopologyMutationType::AddQueue ? MechanicType::AddQueue
@@ -246,8 +276,39 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
 {
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, uiState, GetScreenWidth(), GetScreenHeight());
-    const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
+    const int screenWidth = GetScreenWidth();
+    const int screenHeight = GetScreenHeight();
+    const UiLayout layout = computeUiLayout(screenWidth, screenHeight);
     const Rectangle sidebar = layout.rightSidebar;
+    if (uiState.gameplayPhase == GameplayPhase::Planning && !uiState.worldActionDraft.empty()) {
+        if (CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(screenWidth))) {
+            uiState.worldActionDraftVisible = !uiState.worldActionDraftVisible;
+            uiState.suppressMapSelectionOnce = true;
+            return;
+        }
+        if (uiState.worldActionDraftVisible) {
+            const Rectangle overlay = worldActionOverlayBounds(screenWidth, screenHeight);
+            const int count = static_cast<int>(uiState.worldActionDraft.size());
+            for (int i = 0; i < count; ++i) {
+                if (!CheckCollisionPointRec(event.mousePosition, worldActionOverlayCardBounds(overlay, i, count))) {
+                    continue;
+                }
+                uiState.selectedWorldActionIndex = i;
+                uiState.worldActionCapacityBonus = uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus;
+                uiState.worldActionDraftVisible = false;
+                uiState.suppressMapSelectionOnce = true;
+                uiState.latestFeedback = uiState.worldActionDraft[static_cast<std::size_t>(i)].name + " selected as the world action for this plan.";
+                return;
+            }
+            uiState.suppressMapSelectionOnce = true;
+            return;
+        }
+    }
+    if (worldActionRequiredBeforeNodeActions(uiState) && CheckCollisionPointRec(event.mousePosition, sidebar)) {
+        uiState.selectedActionIndex = -1;
+        uiState.latestFeedback = "Pick a World Action before selecting Node Actions.";
+        return;
+    }
     const float buttonY = sidebar.y + sidebar.height - 54.0f;
     const Rectangle actionButton{sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f};
     if (CheckCollisionPointRec(event.mousePosition, actionButton)) {
@@ -356,8 +417,12 @@ void InterventionController::recordFeedback(UiState& uiState, const Simulation& 
 
 void InterventionController::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
 {
+    if (worldActionRequiredBeforeNodeActions(uiState)) {
+        uiState.latestFeedback = "Pick a World Action before selecting Node Actions.";
+        return;
+    }
     if (!simulation.isMechanicAllowed(command.type)) {
-        uiState.latestFeedback = "This intervention is not available in the current scenario.";
+        uiState.latestFeedback = "This action is not available in the current scenario.";
         return;
     }
     const std::vector<EngineeringCost> costs = engineeringCostsFor(command.type);
@@ -380,6 +445,10 @@ void InterventionController::queueMechanic(const Simulation& simulation, UiState
 
 void InterventionController::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
 {
+    if (worldActionRequiredBeforeNodeActions(uiState)) {
+        uiState.latestFeedback = "Pick a World Action before selecting Node Actions.";
+        return;
+    }
     const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
         : type == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
         : type == TopologyMutationType::AddQueue ? MechanicType::AddQueue

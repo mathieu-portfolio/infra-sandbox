@@ -10,7 +10,8 @@ Gameplay metadata lives under `content/`. C++ still owns simulation, evaluation,
 - `objectives/`: reusable objective and failure-limit definitions.
 - `events/`: reusable event definitions.
 - `modifiers/`: reusable scenario modifiers.
-- `interventions/`: UI/action metadata for mechanics and topology mutations.
+- `interventions/`: Node Action metadata for mechanics and topology mutations.
+- `world_actions/`: authored World Action templates used for planning drafts.
 - `traffic/`: reusable traffic profile definitions.
 - `balancing/`: shared gameplay tuning such as pressure thresholds, interpretation text, and history windows.
 
@@ -42,7 +43,7 @@ Scenarios reference reusable definitions by ID:
 - `turn_duration`
 - `sandbox_events`
 
-Scenario intervention fields are the source of truth for action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
+Scenario action fields are the source of truth for Node Action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
 
 Scenario `engineering_capacity` defines the planning budget that refills each turn:
 
@@ -89,6 +90,8 @@ Supported scopes are:
 - `node_type`: effect applies only to matching node types, for example `{"scope": "node_type", "node_type": "database"}`.
 
 Shared balancing values live in `content/balancing/`. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
+
+World Actions are authored templates. During planning, the runtime drafts a small set and may vary intensity and resulting capacity bonus deterministically from the scenario/run state. Node Action cards are not procedurally mutated.
 
 ## Objective Chains And Rewards
 
@@ -150,7 +153,7 @@ The loader reports:
 - unresolved scenario references
 - scenarios without topology, links, or objectives
 - invalid negative node or traffic numeric ranges
-- invalid intervention numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
+- invalid action numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
 - invalid engineering domains, negative engineering costs, or impossible scenario capacity caps
 - invalid scenario or phase durations, including non-positive gameplay values or simulation seconds
 
@@ -162,10 +165,10 @@ Load errors are emitted through raylib logs and displayed in the debug UI. If co
 2. Add or reuse a traffic profile in `content/traffic/`.
 3. Add objective and failure-limit references from `content/objectives/`.
 4. Add scenario JSON under `content/scenarios/`.
-5. Reference interventions, events, and modifiers by ID.
+5. Reference actions, events, and modifiers by ID.
 6. Run the app or tests and check the debug UI for content errors.
 
-## Adding an Intervention
+## Adding a Node Action
 
 Add an entry in `content/interventions/` with:
 
@@ -185,8 +188,24 @@ Add an entry in `content/interventions/` with:
 - `architectural_pattern` and `technology_example`: future discovery hooks from concrete action to pattern and real-world technology
 - `complexity_cost`
 - `engineering_costs`: per-turn planning cost by domain, for example `{"backend": 1, "data": 1}`
-- `max_scale_level` and `diminishing_return` for scale interventions
-- `region_slot_usage` for topology-expanding interventions
+- `max_scale_level` and `diminishing_return` for scale actions
+- `region_slot_usage` for topology-expanding actions
 - simple `availability` metadata
 
 The JSON controls action-card metadata, preview wording, engineering domain cost, complexity impact, scale caps, and regional slot usage. The actual mechanic or topology mutation still executes in C++.
+
+## Adding a World Action
+
+Add an entry in `content/world_actions/` with:
+
+- `display_name`
+- `description`
+- `categories`
+- `useful_when`
+- `tradeoffs`
+- `icon_id`
+- `affected_pressures`
+- `capacity_bonus`
+- optional `pressure_resistance`, `event_intensity_multiplier`, `complexity_delta`, and `intensity_range`
+
+World Actions are strategic planning choices. They can change the turn's engineering capacity and record broad organizational effects, but they do not directly replace Node Action execution logic.

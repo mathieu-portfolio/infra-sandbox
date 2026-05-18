@@ -16,6 +16,8 @@
 #include <string>
 
 namespace {
+void drawWrappedTextClipped(const std::string& text, Rectangle bounds, int fontSize, Color color, float lineSpacing = 4.0f);
+
 int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
 {
     switch (domain) {
@@ -143,6 +145,77 @@ void drawEngineeringCapacityBlock(Rectangle bounds, const UiState& state)
     }
 }
 
+Rectangle worldActionCardBounds(Rectangle actionHeader, int index)
+{
+    constexpr float gap = 8.0f;
+    const float y = actionHeader.y + 174.0f;
+    const float width = (actionHeader.width - gap * 2.0f) / 3.0f;
+    return {actionHeader.x + static_cast<float>(index) * (width + gap), y, width, 78.0f};
+}
+
+Rectangle worldActionToggleBounds(int screenWidth)
+{
+    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
+}
+
+Rectangle worldActionOverlayBounds(int screenWidth, int screenHeight)
+{
+    const float width = std::min(840.0f, static_cast<float>(screenWidth) - 96.0f);
+    const float height = std::min(360.0f, static_cast<float>(screenHeight) - 160.0f);
+    return {static_cast<float>(screenWidth) * 0.5f - width * 0.5f, static_cast<float>(screenHeight) * 0.5f - height * 0.5f, width, height};
+}
+
+Rectangle worldActionOverlayCardBounds(Rectangle overlay, int index, int count)
+{
+    constexpr float gap = 14.0f;
+    const float contentX = overlay.x + 20.0f;
+    const float contentWidth = overlay.width - 40.0f;
+    const float width = (contentWidth - gap * static_cast<float>(std::max(0, count - 1))) / static_cast<float>(std::max(1, count));
+    return {contentX + static_cast<float>(index) * (width + gap), overlay.y + 86.0f, width, overlay.height - 116.0f};
+}
+
+void drawWorldActionCard(Rectangle bounds, const WorldActionDraft& action, bool selected, bool hovered)
+{
+    const Color fill = selected ? Color{42, 37, 68, 245} : hovered ? Color{29, 38, 54, 240} : Color{18, 24, 34, 230};
+    const Color border = selected ? Color{145, 109, 255, 230} : Color{70, 86, 104, 120};
+    DrawRectangleRounded(bounds, 0.07f, 8, fill);
+    DrawRectangleRoundedLines(bounds, 0.07f, 8, border);
+    IconRegistry::instance().drawIcon(action.iconId.empty() ? "action.generic" : action.iconId.c_str(), {bounds.x + 9.0f, bounds.y + 10.0f, 18.0f, 18.0f}, {89, 196, 255, 255});
+    drawTextClipped(action.name, {bounds.x + 33.0f, bounds.y + 8.0f, bounds.width - 42.0f, 18.0f}, 11, {230, 237, 243, 255});
+    drawTextClipped(action.category, {bounds.x + 10.0f, bounds.y + 32.0f, bounds.width - 20.0f, 14.0f}, 10, {189, 135, 255, 255});
+    std::string bonus;
+    if (action.capacityBonus.backend > 0) bonus += "Back +" + std::to_string(action.capacityBonus.backend) + " ";
+    if (action.capacityBonus.infrastructure > 0) bonus += "Infra +" + std::to_string(action.capacityBonus.infrastructure) + " ";
+    if (action.capacityBonus.operations > 0) bonus += "Ops +" + std::to_string(action.capacityBonus.operations) + " ";
+    if (action.capacityBonus.data > 0) bonus += "Data +" + std::to_string(action.capacityBonus.data) + " ";
+    if (bonus.empty() && action.capacityBonus.total > 0) bonus = "Total +" + std::to_string(action.capacityBonus.total);
+    drawTextClipped(bonus.empty() ? "Strategic focus" : bonus, {bounds.x + 10.0f, bounds.y + 55.0f, bounds.width - 20.0f, 14.0f}, 10, {86, 210, 151, 255});
+}
+
+void drawWorldActionDraftCard(Rectangle bounds, const WorldActionDraft& action, bool selected, bool hovered)
+{
+    const Color fill = selected ? Color{41, 35, 65, 250} : hovered ? Color{24, 34, 50, 250} : Color{15, 22, 33, 246};
+    const Color border = selected ? Color{145, 109, 255, 235} : hovered ? Color{89, 196, 255, 190} : Color{70, 86, 104, 130};
+    DrawRectangleRounded(bounds, 0.035f, 8, fill);
+    DrawRectangleRoundedLines(bounds, 0.035f, 8, border);
+    IconRegistry::instance().drawIcon(action.iconId.empty() ? "action.generic" : action.iconId.c_str(), {bounds.x + 16.0f, bounds.y + 16.0f, 28.0f, 28.0f}, {89, 196, 255, 255});
+    drawTextClipped(action.name, {bounds.x + 54.0f, bounds.y + 14.0f, bounds.width - 70.0f, 24.0f}, 18, {241, 245, 249, 255});
+    drawTextClipped(action.category, {bounds.x + 54.0f, bounds.y + 41.0f, bounds.width - 70.0f, 18.0f}, 12, {189, 135, 255, 255});
+    drawWrappedTextClipped(action.description, {bounds.x + 16.0f, bounds.y + 74.0f, bounds.width - 32.0f, 54.0f}, 13, {205, 213, 224, 255});
+    drawTextClipped("Useful when", {bounds.x + 16.0f, bounds.y + 138.0f, bounds.width - 32.0f, 16.0f}, 11, {86, 210, 151, 255});
+    drawWrappedTextClipped(action.usefulWhen.empty() ? "the current pressure pattern matches this strategic focus" : action.usefulWhen, {bounds.x + 16.0f, bounds.y + 156.0f, bounds.width - 32.0f, 38.0f}, 12, {185, 195, 210, 255});
+    drawTextClipped("May worsen", {bounds.x + 16.0f, bounds.y + 202.0f, bounds.width - 32.0f, 16.0f}, 11, {245, 184, 76, 255});
+    drawWrappedTextClipped(action.tradeOff.empty() ? "coordination complexity" : action.tradeOff, {bounds.x + 16.0f, bounds.y + 220.0f, bounds.width - 32.0f, 38.0f}, 12, {185, 195, 210, 255});
+    std::string bonus;
+    if (action.capacityBonus.backend > 0) bonus += "Backend +" + std::to_string(action.capacityBonus.backend) + " ";
+    if (action.capacityBonus.infrastructure > 0) bonus += "Infra +" + std::to_string(action.capacityBonus.infrastructure) + " ";
+    if (action.capacityBonus.operations > 0) bonus += "Ops +" + std::to_string(action.capacityBonus.operations) + " ";
+    if (action.capacityBonus.data > 0) bonus += "Data +" + std::to_string(action.capacityBonus.data) + " ";
+    if (action.capacityBonus.frontend > 0) bonus += "Frontend +" + std::to_string(action.capacityBonus.frontend) + " ";
+    if (bonus.empty() && action.capacityBonus.total > 0) bonus = "Total +" + std::to_string(action.capacityBonus.total);
+    drawTextClipped(bonus.empty() ? "No capacity change" : bonus, {bounds.x + 16.0f, bounds.y + bounds.height - 30.0f, bounds.width - 32.0f, 18.0f}, 12, {86, 210, 151, 255});
+}
+
 std::string plannedLabel(const UiState& state)
 {
     std::string label;
@@ -214,7 +287,7 @@ void drawFilterPill(Rectangle bounds, const std::string& label, bool active)
 }
 
 
-void drawWrappedTextClipped(const std::string& text, Rectangle bounds, int fontSize, Color color, float lineSpacing = 4.0f)
+void drawWrappedTextClipped(const std::string& text, Rectangle bounds, int fontSize, Color color, float lineSpacing)
 {
     if (text.empty() || bounds.width <= 0.0f || bounds.height <= 0.0f) {
         return;
@@ -289,6 +362,17 @@ void InterventionPanel::update(UiContext& context, const Simulation& simulation)
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
+    context.state->hoveredWorldActionIndex = -1;
+    if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->worldActionDraftVisible) {
+        const Rectangle overlay = worldActionOverlayBounds(context.screenWidth, context.screenHeight);
+        const int count = static_cast<int>(context.state->worldActionDraft.size());
+        for (int i = 0; i < static_cast<int>(context.state->worldActionDraft.size()); ++i) {
+            if (CheckCollisionPointRec(mouse, worldActionOverlayCardBounds(overlay, i, count))) {
+                context.state->hoveredWorldActionIndex = i;
+                return;
+            }
+        }
+    }
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         if (CheckCollisionPointRec(mouse, cards[static_cast<std::size_t>(i)].bounds)) {
             context.state->hoveredActionIndex = i;
@@ -376,11 +460,17 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
     const Rectangle actions = panel.actionHeader;
-    DrawText("AVAILABLE ACTIONS", static_cast<int>(actions.x), static_cast<int>(actions.y), 14, {230, 237, 243, 255});
-    drawEngineeringCapacityBlock({actions.x, actions.y + 24.0f, actions.width, 142.0f}, *context.state);
+    DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.x), static_cast<int>(actions.y), 14, {230, 237, 243, 255});
+    drawEngineeringCapacityBlock({actions.x, actions.y + 24.0f, actions.width, 126.0f}, *context.state);
+    if (context.state->gameplayPhase == GameplayPhase::Planning) {
+        const std::string worldActionLabel = context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())
+            ? "World Action: " + context.state->worldActionDraft[static_cast<std::size_t>(context.state->selectedWorldActionIndex)].name
+            : "Pick a World Action before selecting Node Actions.";
+        drawTextClipped(worldActionLabel, {actions.x, actions.y + 154.0f, actions.width, 18.0f}, 12, context.state->selectedWorldActionIndex >= 0 ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+    }
     for (int i = 0; i < 4; ++i) {
         const float w = i == 0 ? 48.0f : 96.0f;
-        drawFilterPill({actions.x + static_cast<float>(i) * 108.0f, actions.y + 176.0f, w, 26.0f}, categoryFilterLabel(cards, i), i == 0);
+        drawFilterPill({actions.x + static_cast<float>(i) * 108.0f, actions.y + 164.0f, w, 26.0f}, categoryFilterLabel(cards, i), i == 0);
     }
     BeginScissorMode(static_cast<int>(panel.actionList.x - 2.0f), static_cast<int>(panel.actionList.y), static_cast<int>(panel.actionList.width + 4.0f), static_cast<int>(panel.actionList.height));
     if (cards.empty()) {
@@ -431,7 +521,46 @@ void InterventionPanel::draw(const UiContext& context, const Simulation& simulat
     }
     if (!context.state->plannedInterventions.empty()) {
         drawTextClipped("Planned: " + plannedLabel(*context.state), panel.summaryMessage, 12, {86, 210, 151, 255});
+    } else if (context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())) {
+        drawTextClipped("World action: " + context.state->worldActionDraft[static_cast<std::size_t>(context.state->selectedWorldActionIndex)].name, panel.summaryMessage, 12, {86, 210, 151, 255});
     } else if (!context.state->resolutionSummaries.empty()) {
         drawTextClipped(context.state->resolutionSummaries.front(), panel.summaryMessage, 12, {86, 210, 151, 255});
+    }
+}
+
+void InterventionPanel::drawWorldActionOverlay(const UiContext& context) const
+{
+    if (context.state == nullptr || context.state->gameplayPhase != GameplayPhase::Planning || context.state->worldActionDraft.empty()) {
+        return;
+    }
+
+    const Rectangle toggle = worldActionToggleBounds(context.screenWidth);
+    const bool hasPick = context.state->selectedWorldActionIndex >= 0;
+    DrawRectangleRounded(toggle, 0.28f, 8, context.state->worldActionDraftVisible ? Color{24, 34, 50, 245} : Color{17, 24, 34, 235});
+    DrawRectangleRoundedLines(toggle, 0.28f, 8, hasPick ? Color{86, 210, 151, 210} : Color{245, 184, 76, 190});
+    IconRegistry::instance().drawIcon("action.generic", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+    const char* toggleText = context.state->worldActionDraftVisible ? "Hide World Actions" : (hasPick ? "Show World Actions" : "Pick World Action");
+    drawTextClipped(toggleText, {toggle.x + 38.0f, toggle.y + 9.0f, toggle.width - 50.0f, 16.0f}, 13, {230, 237, 243, 255});
+
+    if (!context.state->worldActionDraftVisible) {
+        return;
+    }
+
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    DrawRectangleRec(layout.worldView, {0, 0, 0, 128});
+
+    const Rectangle overlay = worldActionOverlayBounds(context.screenWidth, context.screenHeight);
+    DrawRectangleRounded(overlay, 0.025f, 8, {9, 16, 27, 248});
+    DrawRectangleRoundedLines(overlay, 0.025f, 8, {89, 196, 255, 120});
+    DrawText("WORLD ACTION DRAFT", static_cast<int>(overlay.x + 22.0f), static_cast<int>(overlay.y + 20.0f), 14, {139, 148, 158, 255});
+    drawTextClipped("Choose one strategic action for this planning phase. Node Actions unlock after a choice is made.", {overlay.x + 22.0f, overlay.y + 46.0f, overlay.width - 44.0f, 20.0f}, 13, {205, 213, 224, 255});
+
+    const int count = static_cast<int>(context.state->worldActionDraft.size());
+    for (int i = 0; i < count; ++i) {
+        drawWorldActionDraftCard(
+            worldActionOverlayCardBounds(overlay, i, count),
+            context.state->worldActionDraft[static_cast<std::size_t>(i)],
+            i == context.state->selectedWorldActionIndex,
+            i == context.state->hoveredWorldActionIndex);
     }
 }

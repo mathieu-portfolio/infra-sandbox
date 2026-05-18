@@ -209,6 +209,11 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
         return;
     }
     if (CheckCollisionPointRec(mouse, phaseButton) && context.state->gameplayPhase != GameplayPhase::Transition) {
+        if (context.state->gameplayPhase == GameplayPhase::Planning && !context.state->worldActionDraft.empty() && context.state->selectedWorldActionIndex < 0) {
+            context.state->worldActionDraftVisible = true;
+            context.state->latestFeedback = "Pick a World Action before validating the plan.";
+            return;
+        }
         context.state->phaseAdvanceRequested = true;
         context.state->scenarioDroplistOpen = false;
         context.state->objectivesDroplistOpen = false;
@@ -357,7 +362,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
             drawDetailRow("Limit", "No failure limits configured.", menu.x + 14.0f, rowY, menu.width - 28.0f);
             rowY += 21.0f;
         }
-        DrawText("Unlocked interventions", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
+        DrawText("Unlocked actions", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
         rowY += 20.0f;
         if (run.unlockedInterventions.empty()) {
             drawDetailRow("Action", "None yet.", menu.x + 14.0f, rowY, menu.width - 28.0f);

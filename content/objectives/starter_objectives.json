@@ -9,7 +9,7 @@
     "duration_seconds": 10.0,
     "starts_active": true,
     "rewards": [
-      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Use it when API queue pressure becomes dominant."}
+      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up action unlocked. Use it when API queue pressure becomes dominant."}
     ],
     "next_objectives": ["stabilize_api_queue"],
     "tags": ["diagnosis", "traffic"]
@@ -56,7 +56,7 @@
     "pressure": "persistence",
     "starts_active": true,
     "rewards": [
-      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Test whether API capacity fixes the bottleneck."}
+      {"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up action unlocked. Test whether API capacity fixes the bottleneck."}
     ],
     "next_objectives": ["observe_scale_limited"]
   },
@@ -69,7 +69,7 @@
     "metric": "scale_up",
     "summary": "Use Scale Up and observe whether persistence pressure remains.",
     "rewards": [
-      {"type": "unlock_intervention", "id": "add_cache", "message": "Add Cache unlocked. Cache can reduce downstream persistence pressure."}
+      {"type": "unlock_intervention", "id": "add_cache", "message": "Add Cache action unlocked. Cache can reduce downstream persistence pressure."}
     ],
     "next_objectives": ["reduce_db_pressure"]
   },

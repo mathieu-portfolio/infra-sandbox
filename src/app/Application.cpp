@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,38 @@ std::string capacityUsageSummary(const UiState& state)
         summary += std::to_string(domainUsage[index]);
     }
     return summary;
+}
+
+EngineeringCapacity scaledCapacityBonus(EngineeringCapacity bonus, double intensity)
+{
+    auto scale = [intensity](int value) {
+        return static_cast<int>(std::round(static_cast<double>(value) * intensity));
+    };
+    bonus.frontend = scale(bonus.frontend);
+    bonus.backend = scale(bonus.backend);
+    bonus.infrastructure = scale(bonus.infrastructure);
+    bonus.data = scale(bonus.data);
+    bonus.operations = scale(bonus.operations);
+    bonus.total = scale(bonus.total);
+    return bonus;
+}
+
+EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapacity& bonus)
+{
+    base.frontend += bonus.frontend;
+    base.backend += bonus.backend;
+    base.infrastructure += bonus.infrastructure;
+    base.data += bonus.data;
+    base.operations += bonus.operations;
+    base.total += bonus.total;
+    return base;
+}
+
+double deterministicIntensity(const std::string& id, std::uint32_t seed, double minValue, double maxValue)
+{
+    const std::size_t hash = std::hash<std::string>{}(id) ^ (static_cast<std::size_t>(seed) * 0x9e3779b9U);
+    const double t = static_cast<double>(hash % 1000U) / 999.0;
+    return minValue + (maxValue - minValue) * t;
 }
 }
 
@@ -94,7 +127,10 @@ void Application::handleInput()
     }
 
     interventionController_.handleActions(events, simulation_, scenarioManager_, renderer_.uiManager().state());
-    cameraController_.handleActions(events, GetFrameTime());
+    const UiState& uiState = renderer_.uiManager().state();
+    if (!(uiState.gameplayPhase == GameplayPhase::Planning && uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty())) {
+        cameraController_.handleActions(events, GetFrameTime());
+    }
     overlayController_.handleActions(events, renderer_.uiManager().state());
     selectionController_.handleActions(events, simulation_, cameraController_, renderer_.uiManager().state());
     uiController_.handleActions(events, renderer_.uiManager().state());
@@ -117,6 +153,7 @@ void Application::resetScenario()
     UiState& state = renderer_.uiManager().state();
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    clearWorldActionPlan();
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
     state.transitionActionsApplied = false;
@@ -144,6 +181,7 @@ void Application::loadScenario(std::size_t scenarioIndex)
     state.objectivesDroplistOpen = false;
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    clearWorldActionPlan();
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
     state.transitionActionsApplied = false;
@@ -217,14 +255,21 @@ void Application::applyUiRequests()
         if (state.gameplayPhase == GameplayPhase::Observation) {
             state.gameplayPhase = GameplayPhase::Planning;
             state.lastCapacityUsageSummary.clear();
-            state.latestFeedback = "Planning phase. Queue interventions, then validate the plan.";
+            generateWorldActionDraft();
+            state.latestFeedback = "Planning phase. Queue actions, then validate the plan.";
         } else if (state.gameplayPhase == GameplayPhase::Planning) {
+            if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
+                state.worldActionDraftVisible = true;
+                state.latestFeedback = "Pick a World Action before validating the plan.";
+                return;
+            }
             state.transitionPlaybackScale = 24.0;
             beginTransition();
         } else if (state.gameplayPhase == GameplayPhase::Resolution) {
             state.gameplayPhase = GameplayPhase::Observation;
             state.resolutionSummaries.clear();
             state.lastCapacityUsageSummary.clear();
+            clearWorldActionPlan();
             state.latestFeedback = "Observation phase. Inspect pressure movement before planning again.";
         }
     }
@@ -253,6 +298,7 @@ void Application::beginTransition()
     state.transitionVisualElapsedSeconds = 0.0;
     state.transitionSimulatedSeconds = 0.0;
     state.resolutionSummaries.clear();
+    applyWorldActionPlan();
     state.latestFeedback = "Transition running. Simulating " + state.transitionDurationLabel + ".";
     transitionBaseline_ = simulation_.metrics();
     fixedStepAccumulator_ = 0.0;
@@ -293,7 +339,13 @@ void Application::applyPlannedInterventions()
     UiState& state = renderer_.uiManager().state();
     MechanicExecutor executor;
     TopologyBuilder topologyBuilder;
+    const std::string worldActionSummary = state.lastCapacityUsageSummary;
     state.lastCapacityUsageSummary = capacityUsageSummary(state);
+    if (!worldActionSummary.empty()) {
+        state.lastCapacityUsageSummary = state.lastCapacityUsageSummary.empty()
+            ? worldActionSummary
+            : state.lastCapacityUsageSummary + "; " + worldActionSummary;
+    }
     for (const auto& planned : state.plannedInterventions) {
         if (planned.kind == PlannedInterventionKind::Mechanic) {
             executor.execute(simulation_, planned.command);
@@ -324,6 +376,73 @@ void Application::applyPlannedInterventions()
         state.actionHistory.push_back({simulation_.timeSeconds(), planned.actionName, planned.target, planned.preview, simulation_.metrics(), true, false, 4.0});
     }
     state.plannedInterventions.clear();
+    clearWorldActionPlan();
+}
+
+void Application::generateWorldActionDraft()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (!state.worldActionDraft.empty()) {
+        return;
+    }
+
+    std::vector<content::WorldActionDefinition> candidates = content::ContentRegistry::instance().worldActions();
+    const PressureCategory dominant = simulation_.pressure().dominantPressure;
+    std::stable_sort(candidates.begin(), candidates.end(), [dominant](const auto& lhs, const auto& rhs) {
+        const bool lhsMatch = std::find(lhs.affectedPressures.begin(), lhs.affectedPressures.end(), dominant) != lhs.affectedPressures.end();
+        const bool rhsMatch = std::find(rhs.affectedPressures.begin(), rhs.affectedPressures.end(), dominant) != rhs.affectedPressures.end();
+        return lhsMatch && !rhsMatch;
+    });
+
+    const std::size_t maxDraft = std::min<std::size_t>(3, candidates.size());
+    for (std::size_t i = 0; i < maxDraft; ++i) {
+        const auto& definition = candidates[i];
+        const double intensity = deterministicIntensity(definition.id, scenarioManager_.run().seed + static_cast<std::uint32_t>(scenarioManager_.elapsedSeconds()), definition.minIntensity, definition.maxIntensity);
+        state.worldActionDraft.push_back({
+            .id = definition.id,
+            .name = definition.displayName,
+            .description = definition.description,
+            .category = definition.categories.empty() ? "World" : definition.categories.front(),
+            .usefulWhen = definition.usefulWhen,
+            .tradeOff = definition.tradeoffs,
+            .iconId = definition.iconId,
+            .capacityBonus = scaledCapacityBonus(definition.capacityBonus, intensity),
+            .intensity = intensity,
+            .pressureResistance = definition.pressureResistance * intensity,
+            .eventIntensityMultiplier = definition.eventIntensityMultiplier,
+            .complexityDelta = definition.complexityDelta * intensity,
+        });
+    }
+    state.selectedWorldActionIndex = -1;
+    state.hoveredWorldActionIndex = -1;
+    state.worldActionCapacityBonus = {};
+    state.worldActionDraftVisible = !state.worldActionDraft.empty();
+}
+
+void Application::clearWorldActionPlan()
+{
+    UiState& state = renderer_.uiManager().state();
+    state.worldActionDraft.clear();
+    state.worldActionDraftVisible = false;
+    state.selectedWorldActionIndex = -1;
+    state.hoveredWorldActionIndex = -1;
+    state.worldActionCapacityBonus = {};
+}
+
+void Application::applyWorldActionPlan()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (state.selectedWorldActionIndex < 0 || state.selectedWorldActionIndex >= static_cast<int>(state.worldActionDraft.size())) {
+        return;
+    }
+    const WorldActionDraft& action = state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)];
+    if (action.complexityDelta > 0.0) {
+        simulation_.addComplexity(action.complexityDelta);
+    }
+    state.actionHistory.push_back({simulation_.timeSeconds(), action.name, "World", action.description, simulation_.metrics(), false, true, 0.0});
+    state.lastCapacityUsageSummary = state.lastCapacityUsageSummary.empty()
+        ? "World action: " + action.name
+        : state.lastCapacityUsageSummary + "; world action: " + action.name;
 }
 
 void Application::finishTransition(const MetricsSnapshot& beforeMetrics)

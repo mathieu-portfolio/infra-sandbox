@@ -29,6 +29,9 @@ private:
     void applyPendingScenarioSelection();
     void applySandboxRequests();
     void applyUiRequests();
+    void generateWorldActionDraft();
+    void clearWorldActionPlan();
+    void applyWorldActionPlan();
     void updatePhaseSimulation(float frameTime);
     void beginTransition();
     void applyPlannedInterventions();

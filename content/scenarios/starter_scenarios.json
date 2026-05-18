@@ -2,7 +2,7 @@
   {
     "id": "infrastructure_lab",
     "display_name": "Infrastructure Lab",
-    "description": "Sandbox environment for testing interventions, pressures, topology evolution, overlays, metrics, and visual feedback.",
+    "description": "Sandbox environment for testing actions, pressures, topology evolution, overlays, metrics, and visual feedback.",
     "tags": ["sandbox", "lab"],
     "sandbox_lab": true,
     "archetype": "global_read_platform",
@@ -77,7 +77,7 @@
     "unlockable_interventions": ["scale_up", "throttle_traffic"],
     "recommended_interventions": ["scale_up"],
     "objectives": [
-      {"objective_id": "observe_traffic_latency", "starts_active": true, "next_objectives": ["stabilize_api_queue"], "rewards": [{"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Use it to test the API bottleneck."}]},
+      {"objective_id": "observe_traffic_latency", "starts_active": true, "next_objectives": ["stabilize_api_queue"], "rewards": [{"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up action unlocked. Use it to test the API bottleneck."}]},
       {"objective_id": "stabilize_api_queue", "rewards": [{"type": "complete_scenario", "message": "Local startup stabilized. Database Bottleneck unlocked."}]}
     ],
     "failure_conditions": ["latency_under_6s"],
@@ -114,8 +114,8 @@
     "unlockable_interventions": ["scale_up", "add_cache", "clear_cache", "add_read_replica", "toggle_retries"],
     "recommended_interventions": ["enable_cache", "clear_cache"],
     "objectives": [
-      {"objective_id": "detect_persistence_pressure", "starts_active": true, "next_objectives": ["observe_scale_limited"], "rewards": [{"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up unlocked. Test whether compute scaling changes the bottleneck."}]},
-      {"objective_id": "observe_scale_limited", "next_objectives": ["reduce_db_pressure"], "rewards": [{"type": "unlock_intervention", "id": "add_cache", "message": "Persistence remains important. Add Cache unlocked."}]},
+      {"objective_id": "detect_persistence_pressure", "starts_active": true, "next_objectives": ["observe_scale_limited"], "rewards": [{"type": "unlock_intervention", "id": "scale_up", "message": "Scale Up action unlocked. Test whether compute scaling changes the bottleneck."}]},
+      {"objective_id": "observe_scale_limited", "next_objectives": ["reduce_db_pressure"], "rewards": [{"type": "unlock_intervention", "id": "add_cache", "message": "Persistence remains important. Add Cache action unlocked."}]},
       {"objective_id": "reduce_db_pressure", "rewards": [{"type": "complete_scenario", "message": "Database pressure reduced. Burst Traffic unlocked."}]}
     ],
     "failure_conditions": ["timeout_under_3s"],

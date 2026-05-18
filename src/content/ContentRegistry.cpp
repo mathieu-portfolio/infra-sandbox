@@ -424,6 +424,26 @@ EngineeringCapacity parseEngineeringCapacity(const Json& object, EngineeringCapa
     return capacity;
 }
 
+EngineeringCapacity parseCapacityBonus(const Json& object)
+{
+    EngineeringCapacity bonus;
+    bonus.frontend = 0;
+    bonus.backend = 0;
+    bonus.infrastructure = 0;
+    bonus.data = 0;
+    bonus.operations = 0;
+    bonus.total = 0;
+    if (const Json* value = object.find("capacity_bonus"); value != nullptr && value->isObject()) {
+        bonus.frontend = static_cast<int>(numberAt(*value, "frontend"));
+        bonus.backend = static_cast<int>(numberAt(*value, "backend"));
+        bonus.infrastructure = static_cast<int>(numberAt(*value, "infrastructure", numberAt(*value, "infra")));
+        bonus.data = static_cast<int>(numberAt(*value, "data"));
+        bonus.operations = static_cast<int>(numberAt(*value, "operations", numberAt(*value, "ops")));
+        bonus.total = static_cast<int>(numberAt(*value, "total"));
+    }
+    return bonus;
+}
+
 EventDefinition parseEvent(const Json& object)
 {
     EventDefinition event;
@@ -700,6 +720,29 @@ InterventionDefinition parseIntervention(const Json& object)
     return intervention;
 }
 
+WorldActionDefinition parseWorldAction(const Json& object)
+{
+    WorldActionDefinition action;
+    action.id = stringAt(object, "id");
+    action.displayName = stringAt(object, "display_name", action.id);
+    action.description = stringAt(object, "description");
+    action.tags = stringsAt(object, "tags");
+    action.categories = stringsAt(object, "categories");
+    action.usefulWhen = stringAt(object, "useful_when");
+    action.tradeoffs = stringAt(object, "tradeoffs");
+    action.iconId = stringAt(object, "icon_id", "action.generic");
+    action.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
+    action.capacityBonus = parseCapacityBonus(object);
+    action.pressureResistance = numberAt(object, "pressure_resistance");
+    action.eventIntensityMultiplier = numberAt(object, "event_intensity_multiplier", 1.0);
+    action.complexityDelta = numberAt(object, "complexity_delta");
+    if (const Json* intensity = object.find("intensity_range"); intensity != nullptr && intensity->isObject()) {
+        action.minIntensity = numberAt(*intensity, "min", action.minIntensity);
+        action.maxIntensity = numberAt(*intensity, "max", action.maxIntensity);
+    }
+    return action;
+}
+
 std::vector<Json> loadDirectoryObjects(const std::filesystem::path& directory, ContentLoadResult& result)
 {
     std::vector<Json> objects;
@@ -849,6 +892,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     progressionTiers_.clear();
     scenarios_.clear();
     interventions_.clear();
+    worldActions_.clear();
     simulationConfig_ = SimulationConfig{};
 
     for (const auto& object : loadOptionalDirectoryObjects(root / "balancing", result)) {
@@ -983,6 +1027,18 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
             }
         }
         interventions_.push_back(parseIntervention(object));
+    }
+
+    for (const auto& object : loadOptionalDirectoryObjects(root / "world_actions", result)) {
+        WorldActionDefinition action = parseWorldAction(object);
+        if (action.capacityBonus.frontend < 0 || action.capacityBonus.backend < 0 || action.capacityBonus.infrastructure < 0
+            || action.capacityBonus.data < 0 || action.capacityBonus.operations < 0 || action.capacityBonus.total < 0) {
+            result.errors.push_back("World action " + action.id + " has invalid negative capacity bonus.");
+        }
+        if (action.minIntensity <= 0.0 || action.maxIntensity < action.minIntensity) {
+            result.errors.push_back("World action " + action.id + " has invalid intensity range.");
+        }
+        worldActions_.push_back(std::move(action));
     }
 
     for (const auto& object : loadDirectoryObjects(root / "scenarios", result)) {
@@ -1126,6 +1182,10 @@ void ContentRegistry::validate(ContentLoadResult& result) const
     std::vector<std::string> interventionIds;
     for (const auto& intervention : interventions_) interventionIds.push_back(intervention.id);
     requireIdSet("Intervention", interventionIds, result);
+
+    std::vector<std::string> worldActionIds;
+    for (const auto& action : worldActions_) worldActionIds.push_back(action.id);
+    requireIdSet("World action", worldActionIds, result);
 }
 
 void ContentRegistry::loadFallbackContent()
@@ -1175,6 +1235,18 @@ void ContentRegistry::loadFallbackContent()
             .diminishingReturn = 0.72,
         },
     };
+    worldActions_ = {
+        {
+            .id = "fallback_tooling",
+            .displayName = "Improve Backend Tooling",
+            .description = "Free a small amount of backend capacity for the next plan.",
+            .categories = {"Organization"},
+            .usefulWhen = "Backend work is constraining local actions.",
+            .tradeoffs = "Creates little immediate infrastructure change.",
+            .iconId = "action.generic",
+            .capacityBonus = {.backend = 1, .total = 1},
+        },
+    };
 }
 
 const std::vector<ProgressionTierDefinition>& ContentRegistry::progressionTiers() const { return progressionTiers_; }
@@ -1196,6 +1268,7 @@ const ScenarioDefinition& ContentRegistry::defaultScenario() const
     return it != scenarios_.end() ? *it : scenarios_.front();
 }
 const std::vector<InterventionDefinition>& ContentRegistry::interventions() const { return interventions_; }
+const std::vector<WorldActionDefinition>& ContentRegistry::worldActions() const { return worldActions_; }
 const SimulationConfig& ContentRegistry::simulationConfig() const { return simulationConfig_; }
 const std::vector<std::string>& ContentRegistry::loadErrors() const { return loadErrors_; }
 bool ContentRegistry::loadedFromContent() const { return loadedFromContent_; }

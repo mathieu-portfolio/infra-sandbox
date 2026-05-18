@@ -116,6 +116,21 @@ struct PlannedIntervention {
     std::vector<EngineeringCost> engineeringCosts;
 };
 
+struct WorldActionDraft {
+    std::string id;
+    std::string name;
+    std::string description;
+    std::string category;
+    std::string usefulWhen;
+    std::string tradeOff;
+    std::string iconId;
+    EngineeringCapacity capacityBonus;
+    double intensity = 1.0;
+    double pressureResistance = 0.0;
+    double eventIntensityMultiplier = 1.0;
+    double complexityDelta = 0.0;
+};
+
 struct UiState {
     GameplayPhase gameplayPhase = GameplayPhase::Observation;
     bool phaseAdvanceRequested = false;
@@ -126,6 +141,12 @@ struct UiState {
     double transitionPlaybackScale = 24.0;
     std::string transitionDurationLabel = "platform evolution";
     std::deque<PlannedIntervention> plannedInterventions;
+    std::vector<WorldActionDraft> worldActionDraft;
+    bool worldActionDraftVisible = false;
+    int selectedWorldActionIndex = -1;
+    int hoveredWorldActionIndex = -1;
+    bool suppressMapSelectionOnce = false;
+    EngineeringCapacity worldActionCapacityBonus;
     std::deque<std::string> resolutionSummaries;
     EngineeringCapacity engineeringCapacity;
     std::string lastCapacityUsageSummary;

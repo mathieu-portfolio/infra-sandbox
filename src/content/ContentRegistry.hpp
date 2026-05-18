@@ -44,6 +44,24 @@ struct InterventionDefinition {
     int regionSlotUsage = 0;
 };
 
+struct WorldActionDefinition {
+    std::string id;
+    std::string displayName;
+    std::string description;
+    std::vector<std::string> tags;
+    std::vector<std::string> categories;
+    std::string usefulWhen;
+    std::string tradeoffs;
+    std::string iconId;
+    std::vector<PressureCategory> affectedPressures;
+    EngineeringCapacity capacityBonus;
+    double pressureResistance = 0.0;
+    double eventIntensityMultiplier = 1.0;
+    double complexityDelta = 0.0;
+    double minIntensity = 0.85;
+    double maxIntensity = 1.25;
+};
+
 struct ContentLoadResult {
     bool loaded = false;
     std::vector<std::string> errors;
@@ -61,6 +79,7 @@ public:
     [[nodiscard]] const std::vector<ScenarioDefinition>& scenarios() const;
     [[nodiscard]] const ScenarioDefinition& defaultScenario() const;
     [[nodiscard]] const std::vector<InterventionDefinition>& interventions() const;
+    [[nodiscard]] const std::vector<WorldActionDefinition>& worldActions() const;
     [[nodiscard]] const SimulationConfig& simulationConfig() const;
     [[nodiscard]] const std::vector<std::string>& loadErrors() const;
     [[nodiscard]] bool loadedFromContent() const;
@@ -72,6 +91,7 @@ private:
     std::vector<ProgressionTierDefinition> progressionTiers_;
     std::vector<ScenarioDefinition> scenarios_;
     std::vector<InterventionDefinition> interventions_;
+    std::vector<WorldActionDefinition> worldActions_;
     SimulationConfig simulationConfig_;
     std::vector<std::string> loadErrors_;
     bool loadedFromContent_ = false;
