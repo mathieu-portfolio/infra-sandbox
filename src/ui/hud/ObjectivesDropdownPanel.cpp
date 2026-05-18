@@ -92,7 +92,7 @@ void ObjectivesDropdownPanel::drawField(const UiContext& context, const Scenario
     }
 
     const ObjectivesFieldLayout layout = computeObjectivesFieldLayout(hudObjectivesDroplistBounds(context.screenWidth));
-    IconRegistry::instance().drawIcon("metric.objective", {layout.icon.x + 1.0f, layout.icon.y + 4.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
+    IconRegistry::instance().drawIcon("objective.dropdown", {layout.icon.x + 1.0f, layout.icon.y + 4.0f, 20.0f, 20.0f}, {245, 184, 76, 255});
     drawHudDroplistField(layout.field, "Objectives", scenarioManager.objectiveSummary(), context.state->objectivesDroplistOpen);
 }
 

@@ -189,7 +189,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     if (selected != nullptr) {
         DrawRectangleRounded({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {37, 50, 82, 255});
         DrawRectangleRoundedLines({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {130, 93, 255, 220});
-        IconRegistry::instance().drawIcon("node.service", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {89, 196, 255, 255});
+        IconRegistry::instance().drawIcon("node.header_selected", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {89, 196, 255, 255});
         drawTextClipped(selected->name, {header.x + 70.0f, header.y + 4.0f, header.width - 150.0f, 30.0f}, 25, {241, 245, 249, 255});
         const char* region = selected->hasGeoLocation ? selected->geoLocation.regionName.c_str() : "local";
         drawTextClipped(region, {header.x + 70.0f, header.y + 40.0f, 140.0f, 20.0f}, 14, {166, 176, 192, 255});
@@ -199,7 +199,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
         drawTextClipped(status, {header.x + header.width - 112.0f, header.y + 6.0f, 108.0f, 18.0f}, 14, actions_ui::pressureColor(load));
     } else {
         DrawRectangleRounded({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {37, 50, 82, 255});
-        IconRegistry::instance().drawIcon("node.service", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {139, 148, 158, 255});
+        IconRegistry::instance().drawIcon("node.header_empty", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {139, 148, 158, 255});
         drawTextClipped("Select a Node", {header.x + 70.0f, header.y + 6.0f, header.width - 84.0f, 30.0f}, 25, {241, 245, 249, 255});
         drawTextClipped("Inspect local actions and pressures", {header.x + 70.0f, header.y + 42.0f, header.width - 84.0f, 20.0f}, 14, {166, 176, 192, 255});
     }
@@ -277,7 +277,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     const Rectangle locked = panel.locked;
     DrawRectangleRounded(locked, 0.045f, 8, {17, 24, 34, 230});
     DrawRectangleRoundedLines(locked, 0.045f, 8, {70, 86, 104, 110});
-    IconRegistry::instance().drawIcon("action.generic", {locked.x + 16.0f, locked.y + 24.0f, 24.0f, 24.0f}, {139, 148, 158, 180});
+    IconRegistry::instance().drawIcon("action.locked", {locked.x + 16.0f, locked.y + 24.0f, 24.0f, 24.0f}, {139, 148, 158, 180});
     int lockedCount = 0;
     std::string lockedReason = "More actions will be discovered as scenarios unlock concepts.";
     for (const auto& card : cards) {

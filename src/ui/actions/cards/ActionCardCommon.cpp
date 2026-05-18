@@ -23,7 +23,7 @@ const char* iconForActionCard(const ActionCardModel& card)
     if (card.name.find("Queue") != std::string::npos) {
         return "action.queue";
     }
-    return "action.generic";
+    return "action.default";
 }
 
 std::string categoryLabel(const ActionCardModel& card)

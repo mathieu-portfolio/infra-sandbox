@@ -58,14 +58,14 @@ const char* shortDomainName(EngineeringDomain domain)
 const char* domainIcon(EngineeringDomain domain)
 {
     switch (domain) {
-    case EngineeringDomain::Frontend: return "node.client";
-    case EngineeringDomain::Backend: return "node.service";
-    case EngineeringDomain::Infrastructure: return "action.scale_up";
-    case EngineeringDomain::Data: return "node.database";
-    case EngineeringDomain::Operations: return "action.queue";
+    case EngineeringDomain::Frontend: return "engineering.frontend";
+    case EngineeringDomain::Backend: return "engineering.backend";
+    case EngineeringDomain::Infrastructure: return "engineering.infrastructure";
+    case EngineeringDomain::Data: return "engineering.data";
+    case EngineeringDomain::Operations: return "engineering.operations";
     case EngineeringDomain::Count: break;
     }
-    return "action.generic";
+    return "engineering.total";
 }
 
 void drawCapacitySquares(Vector2 pos, int used, int max)
@@ -102,7 +102,7 @@ void EngineeringCapacityPanel::draw(Rectangle bounds, const UiState& state) cons
     drawTextClipped("ENGINEERING CAPACITY", {bounds.x, bounds.y, bounds.width, 14.0f}, 11, {139, 148, 158, 255});
 
     float y = bounds.y + 24.0f;
-    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "action.generic", "Total", totalUsage(state), state.engineeringCapacity.total, {230, 237, 243, 255});
+    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "engineering.total", "Total", totalUsage(state), state.engineeringCapacity.total, {230, 237, 243, 255});
     y += 22.0f;
 
     for (int i = 0; i < static_cast<int>(EngineeringDomain::Count); ++i) {

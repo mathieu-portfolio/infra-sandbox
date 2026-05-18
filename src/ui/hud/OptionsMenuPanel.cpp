@@ -69,7 +69,7 @@ void OptionsMenuPanel::drawButton(const UiContext& context) const
     if (context.state == nullptr) {
         return;
     }
-    drawHudIconButton(hudOptionsButtonBounds(context.screenWidth), "topbar.options", context.state->optionsMenuOpen);
+    drawHudIconButton(hudOptionsButtonBounds(context.screenWidth), "hud.options", context.state->optionsMenuOpen);
 }
 
 void OptionsMenuPanel::drawMenu(const UiContext& context) const

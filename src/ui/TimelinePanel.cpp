@@ -387,7 +387,7 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
         const float y = static_cast<float>(timelineY + row * 22);
         const Color color = categoryColor(activity.category);
         const std::string timeLabel = scenarioManager.visibleCalendarLabel(simulation);
-        IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "metric.objective" : "action.generic", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
+        IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
         drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
         drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
         drawTextClipped(activity.detail, {panel.x + 322.0f, y, panel.width - 482.0f, 16.0f}, 12, {139, 148, 158, 255});

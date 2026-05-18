@@ -94,7 +94,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     DrawLineEx({0.0f, layout.topBar.height}, {static_cast<float>(context.screenWidth), layout.topBar.height}, 1.0f, {70, 86, 104, 110});
 
     auto& icons = IconRegistry::instance();
-    icons.drawIcon("topbar.logo", {top.brand.x + 4.0f, top.brand.y + 4.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
+    icons.drawIcon("hud.logo", {top.brand.x + 4.0f, top.brand.y + 4.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
     DrawText("INFRA SANDBOX", static_cast<int>(top.brand.x + 38.0f), static_cast<int>(top.brand.y + 8.0f), 18, {230, 237, 243, 255});
 
     scenarioDropdown_.drawField(context, scenarioManager);
@@ -109,11 +109,11 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     objectivesDropdown_.drawField(context, scenarioManager);
 
     const Rectangle feedback = hudFeedbackBounds(context.screenWidth);
-    icons.drawIcon("topbar.feedback", {feedback.x, feedback.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    icons.drawIcon("hud.feedback", {feedback.x, feedback.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
     DrawText("Feedback", static_cast<int>(feedback.x + 28.0f), static_cast<int>(feedback.y + 10.0f), 14, {139, 148, 158, 255});
 
     const Rectangle help = hudHelpBounds(context.screenWidth);
-    icons.drawIcon("topbar.help", {help.x, help.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
+    icons.drawIcon("hud.help", {help.x, help.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
     DrawText("Help", static_cast<int>(help.x + 26.0f), static_cast<int>(help.y + 10.0f), 14, {139, 148, 158, 255});
 
     optionsMenu_.drawButton(context);

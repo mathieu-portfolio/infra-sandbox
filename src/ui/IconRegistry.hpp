@@ -23,6 +23,12 @@ private:
 
     IconEntry& entryFor(const std::string& id);
     std::string pathFor(const std::string& id) const;
+    std::string resolveIconId(const std::string& id) const;
+    void ensureConfigLoaded();
+    void loadConfig(const std::string& path);
 
     std::unordered_map<std::string, IconEntry> icons_;
+    std::unordered_map<std::string, std::string> iconPaths_;
+    std::unordered_map<std::string, std::string> aliases_;
+    bool configLoaded_ = false;
 };

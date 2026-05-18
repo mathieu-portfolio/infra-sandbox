@@ -76,7 +76,7 @@ void WorldActionOverlay::draw(const UiContext& context) const
     const bool hasPick = context.state->selectedWorldActionIndex >= 0;
     DrawRectangleRounded(toggle, 0.28f, 8, context.state->worldActionDraftVisible ? Color{24, 34, 50, 245} : Color{17, 24, 34, 235});
     DrawRectangleRoundedLines(toggle, 0.28f, 8, hasPick ? Color{86, 210, 151, 210} : Color{245, 184, 76, 190});
-    IconRegistry::instance().drawIcon("action.generic", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+    IconRegistry::instance().drawIcon("action.world_toggle", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
     const char* toggleText = context.state->worldActionDraftVisible ? "Hide World Actions" : (hasPick ? "Show World Actions" : "Pick World Action");
     drawTextClipped(toggleText, {toggle.x + 38.0f, toggle.y + 9.0f, toggle.width - 50.0f, 16.0f}, 13, {230, 237, 243, 255});
 

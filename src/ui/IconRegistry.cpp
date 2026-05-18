@@ -1,6 +1,32 @@
 #include "ui/IconRegistry.hpp"
 
+#include "content/Json.hpp"
+
 #include <algorithm>
+#include <fstream>
+#include <sstream>
+
+namespace {
+std::string readTextFile(const std::string& path)
+{
+    std::ifstream input(path);
+    if (!input) {
+        return {};
+    }
+
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    return buffer.str();
+}
+
+std::string stringAt(const content::Json& object, const std::string& key, const std::string& fallback = {})
+{
+    if (const content::Json* value = object.find(key); value != nullptr && value->isString()) {
+        return value->asString();
+    }
+    return fallback;
+}
+}
 
 IconRegistry& IconRegistry::instance()
 {
@@ -17,7 +43,7 @@ bool IconRegistry::drawIcon(const std::string& id, Rectangle bounds, Color tint)
 {
     auto& entry = entryFor(id);
     if (!entry.loaded) {
-        drawFallback(id, bounds, tint);
+        drawFallback(resolveIconId(id), bounds, tint);
         return false;
     }
 
@@ -68,10 +94,13 @@ void IconRegistry::release()
 
 IconRegistry::IconEntry& IconRegistry::entryFor(const std::string& id)
 {
-    auto& entry = icons_[id];
+    ensureConfigLoaded();
+
+    const std::string resolvedId = resolveIconId(id);
+    auto& entry = icons_[resolvedId];
     if (!entry.attempted) {
         entry.attempted = true;
-        const std::string path = pathFor(id);
+        const std::string path = pathFor(resolvedId);
         if (FileExists(path.c_str())) {
             entry.texture = LoadTexture(path.c_str());
             entry.loaded = entry.texture.id > 0;
@@ -82,7 +111,62 @@ IconRegistry::IconEntry& IconRegistry::entryFor(const std::string& id)
 
 std::string IconRegistry::pathFor(const std::string& id) const
 {
+    if (const auto it = iconPaths_.find(id); it != iconPaths_.end()) {
+        return it->second;
+    }
+
     std::string file = id;
     std::replace(file.begin(), file.end(), '.', '_');
     return "assets/icons/" + file + ".png";
+}
+
+std::string IconRegistry::resolveIconId(const std::string& id) const
+{
+    if (const auto it = aliases_.find(id); it != aliases_.end()) {
+        return it->second;
+    }
+    return id;
+}
+
+void IconRegistry::ensureConfigLoaded()
+{
+    if (configLoaded_) {
+        return;
+    }
+    configLoaded_ = true;
+    loadConfig("content/ui/icons.json");
+}
+
+void IconRegistry::loadConfig(const std::string& path)
+{
+    const std::string text = readTextFile(path);
+    if (text.empty()) {
+        return;
+    }
+
+    const content::JsonParseResult parsed = content::parseJson(text);
+    if (!parsed.error.empty() || !parsed.value.isObject()) {
+        return;
+    }
+
+    if (const content::Json* icons = parsed.value.find("icons"); icons != nullptr && icons->isObject()) {
+        for (const auto& [id, entry] : icons->asObject()) {
+            if (entry.isString()) {
+                iconPaths_[id] = entry.asString();
+            } else if (entry.isObject()) {
+                const std::string iconPath = stringAt(entry, "path");
+                if (!iconPath.empty()) {
+                    iconPaths_[id] = iconPath;
+                }
+            }
+        }
+    }
+
+    if (const content::Json* aliases = parsed.value.find("aliases"); aliases != nullptr && aliases->isObject()) {
+        for (const auto& [alias, target] : aliases->asObject()) {
+            if (target.isString()) {
+                aliases_[alias] = target.asString();
+            }
+        }
+    }
 }

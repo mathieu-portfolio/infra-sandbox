@@ -118,17 +118,17 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     drawPanelFrame(overview, "System Overview");
     char buffer[80];
     std::snprintf(buffer, sizeof(buffer), "%.1f req/s", metrics.inputRatePerSecond);
-    metricRow("metric.traffic", "Total Traffic", buffer, x + 14.0f, y + 42.0f, {89, 196, 255, 255});
+    metricRow("metric.total_traffic", "Total Traffic", buffer, x + 14.0f, y + 42.0f, {89, 196, 255, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.averageLatencySeconds * 1000.0);
-    metricRow("metric.latency", "Avg Latency", buffer, x + 14.0f, y + 72.0f, metrics.averageLatencySeconds > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    metricRow("metric.latency_average", "Avg Latency", buffer, x + 14.0f, y + 72.0f, metrics.averageLatencySeconds > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%.1f/s", metrics.timeoutRatePerSecond);
-    metricRow("metric.errors", "Error Rate", buffer, x + 14.0f, y + 102.0f, metrics.timeoutRatePerSecond > 0.5 ? Color{235, 86, 100, 255} : Color{86, 210, 151, 255});
+    metricRow("metric.error_rate", "Error Rate", buffer, x + 14.0f, y + 102.0f, metrics.timeoutRatePerSecond > 0.5 ? Color{235, 86, 100, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%d / %d", metrics.apiQueueDepth, metrics.databaseQueueDepth);
-    metricRow("metric.queue", "API / DB Queue", buffer, x + 14.0f, y + 132.0f, {245, 184, 76, 255});
+    metricRow("metric.queue_depth", "API / DB Queue", buffer, x + 14.0f, y + 132.0f, {245, 184, 76, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f%%", metrics.cacheHitRate * 100.0);
-    metricRow("node.cache", "Cache Hit Rate", buffer, x + 14.0f, y + 162.0f, {151, 111, 255, 255});
+    metricRow("metric.cache_hit_rate", "Cache Hit Rate", buffer, x + 14.0f, y + 162.0f, {151, 111, 255, 255});
     std::snprintf(buffer, sizeof(buffer), "%.1f / %.0f", metrics.complexity.current, metrics.complexity.recommendedThreshold);
-    metricRow("layer.complexity", "Complexity", buffer, x + 14.0f, y + 192.0f, metrics.complexity.current > metrics.complexity.recommendedThreshold ? Color{245, 184, 76, 255} : Color{210, 168, 255, 255});
+    metricRow("metric.complexity", "Complexity", buffer, x + 14.0f, y + 192.0f, metrics.complexity.current > metrics.complexity.recommendedThreshold ? Color{245, 184, 76, 255} : Color{210, 168, 255, 255});
 
     Rectangle alerts = left.alerts;
     y = alerts.y;
@@ -139,7 +139,7 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         if (row >= 3) {
             break;
         }
-        IconRegistry::instance().drawIcon("alert.warning", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {245, 184, 76, 255});
+        IconRegistry::instance().drawIcon("alert.hint", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {245, 184, 76, 255});
         drawTextClipped(hint, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
@@ -147,7 +147,7 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         if (row >= 3) {
             break;
         }
-        IconRegistry::instance().drawIcon("alert.warning", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {151, 111, 255, 255});
+        IconRegistry::instance().drawIcon("alert.pattern", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {151, 111, 255, 255});
         drawTextClipped(pattern, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
@@ -155,12 +155,12 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         if (row >= 3) {
             break;
         }
-        IconRegistry::instance().drawIcon("alert.ok", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {89, 196, 255, 255});
+        IconRegistry::instance().drawIcon("alert.explanation", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {89, 196, 255, 255});
         drawTextClipped(explanation, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
     if (row == 0) {
-        IconRegistry::instance().drawIcon("alert.ok", {x + 14.0f, y + 42.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
+        IconRegistry::instance().drawIcon("alert.empty_state", {x + 14.0f, y + 42.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
         drawTextClipped("No active incidents", {x + 38.0f, y + 40.0f, width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
     }
     EndScissorMode();
@@ -207,7 +207,7 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     drawPanelFrame(legend, "Legend");
     BeginScissorMode(static_cast<int>(legend.x), static_cast<int>(legend.y), static_cast<int>(legend.width), static_cast<int>(legend.height));
     const std::array<const char*, 5> names{"Client Region", "Service", "Database", "Cache", "Network Link"};
-    const std::array<const char*, 5> icons{"node.client", "node.service", "node.database", "node.cache", "legend.link"};
+    const std::array<const char*, 5> icons{"legend.client", "legend.service", "legend.database", "legend.cache", "legend.link"};
     for (int i = 0; i < 5; ++i) {
         const float rowY = y + 42.0f + static_cast<float>(i) * 24.0f;
         IconRegistry::instance().drawIcon(icons[static_cast<std::size_t>(i)], {x + 14.0f, rowY, 15.0f, 15.0f}, {89, 196, 255, 255});

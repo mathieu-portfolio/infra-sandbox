@@ -1,0 +1,127 @@
+{
+  "icons": {
+    "action.add_cache": {
+      "path": "assets/icons/action_add_cache.png"
+    },
+    "action.generic": {
+      "path": "assets/icons/action_generic.png"
+    },
+    "action.queue": {
+      "path": "assets/icons/action_queue.png"
+    },
+    "action.scale_up": {
+      "path": "assets/icons/action_scale_up.png"
+    },
+    "alert.ok": {
+      "path": "assets/icons/alert_ok.png"
+    },
+    "alert.warning": {
+      "path": "assets/icons/alert_warning.png"
+    },
+    "layer.complexity": {
+      "path": "assets/icons/layer_complexity.png"
+    },
+    "layer.flow": {
+      "path": "assets/icons/layer_flow.png"
+    },
+    "layer.geography": {
+      "path": "assets/icons/layer_geography.png"
+    },
+    "layer.persistence": {
+      "path": "assets/icons/layer_persistence.png"
+    },
+    "layer.reliability": {
+      "path": "assets/icons/layer_reliability.png"
+    },
+    "layer.resources": {
+      "path": "assets/icons/layer_resources.png"
+    },
+    "metric.errors": {
+      "path": "assets/icons/metric_errors.png"
+    },
+    "metric.latency": {
+      "path": "assets/icons/metric_latency.png"
+    },
+    "metric.objective": {
+      "path": "assets/icons/metric_objective.png"
+    },
+    "metric.queue": {
+      "path": "assets/icons/metric_queue.png"
+    },
+    "metric.traffic": {
+      "path": "assets/icons/metric_traffic.png"
+    },
+    "node.cache": {
+      "path": "assets/icons/node_cache.png"
+    },
+    "node.client": {
+      "path": "assets/icons/node_client.png"
+    },
+    "node.database": {
+      "path": "assets/icons/node_database.png"
+    },
+    "node.generic": {
+      "path": "assets/icons/node_generic.png"
+    },
+    "node.queue": {
+      "path": "assets/icons/node_queue.png"
+    },
+    "node.service": {
+      "path": "assets/icons/node_service.png"
+    },
+    "topbar.feedback": {
+      "path": "assets/icons/topbar_feedback.png"
+    },
+    "topbar.help": {
+      "path": "assets/icons/topbar_help.png"
+    },
+    "topbar.logo": {
+      "path": "assets/icons/topbar_logo.png"
+    },
+    "topbar.options": {
+      "path": "assets/icons/topbar_options.png"
+    },
+    "action.replica": {
+      "path": "assets/icons/action_replica.png"
+    },
+    "legend.link": {
+      "path": "assets/icons/legend_link.png"
+    }
+  },
+  "aliases": {
+    "action.default": "action.generic",
+    "action.locked": "action.generic",
+    "action.world_toggle": "action.generic",
+    "alert.empty_state": "alert.ok",
+    "alert.explanation": "alert.ok",
+    "alert.hint": "alert.warning",
+    "alert.pattern": "alert.warning",
+    "hud.feedback": "topbar.feedback",
+    "hud.help": "topbar.help",
+    "hud.logo": "topbar.logo",
+    "hud.options": "topbar.options",
+    "metric.cache_hit_rate": "node.cache",
+    "metric.complexity": "layer.complexity",
+    "metric.error_rate": "metric.errors",
+    "metric.latency_average": "metric.latency",
+    "metric.queue_depth": "metric.queue",
+    "metric.total_traffic": "metric.traffic",
+    "node.header_empty": "node.service",
+    "node.header_selected": "node.service",
+    "node.selection_panel": "node.service",
+    "objective.dropdown": "metric.objective",
+    "timeline.action": "action.generic",
+    "timeline.objective": "metric.objective",
+    "engineering.backend": "node.service",
+    "engineering.data": "node.database",
+    "engineering.frontend": "node.client",
+    "engineering.infrastructure": "action.scale_up",
+    "engineering.operations": "action.queue",
+    "engineering.total": "action.generic",
+    "legend.client": "node.client",
+    "legend.service": "node.service",
+    "legend.database": "node.database",
+    "legend.cache": "node.cache",
+    "legend.link": "legend.link"
+  }
+}
