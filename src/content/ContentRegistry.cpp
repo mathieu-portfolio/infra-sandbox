@@ -309,6 +309,7 @@ EventEffectType effectTypeFromId(const std::string& id)
 
 EventLocationScope eventLocationScopeFromId(const std::string& id)
 {
+    if (id == "random_region") return EventLocationScope::RandomRegion;
     if (id == "region") return EventLocationScope::Region;
     if (id == "node_type") return EventLocationScope::NodeType;
     return EventLocationScope::Global;
@@ -435,6 +436,7 @@ EventDefinition parseEvent(const Json& object)
     if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
         event.location.scope = eventLocationScopeFromId(stringAt(*location, "scope", "global"));
         event.location.region = stringAt(*location, "region");
+        event.location.candidateRegions = stringsAt(*location, "regions");
         event.location.nodeType = nodeTypeFromId(stringAt(*location, "node_type"));
     }
     if (const Json* trigger = object.find("trigger")) {
@@ -876,7 +878,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     for (const auto& object : loadDirectoryObjects(root / "events", result)) {
         if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
             const std::string scope = stringAt(*location, "scope", "global");
-            if (scope != "global" && scope != "region" && scope != "node_type") {
+            if (scope != "global" && scope != "region" && scope != "node_type" && scope != "random_region") {
                 result.errors.push_back("Event " + stringAt(object, "id") + " has invalid location scope: " + scope);
             }
             if (scope == "region" && stringAt(*location, "region").empty()) {

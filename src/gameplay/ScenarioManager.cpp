@@ -225,7 +225,7 @@ void ScenarioManager::setSandboxSeed(std::uint32_t seed)
     createRun(seed);
 }
 
-void ScenarioManager::injectSandboxEvent(const std::string& id)
+void ScenarioManager::injectSandboxEvent(const std::string& id, const Simulation& simulation)
 {
     const std::string contentId = id.rfind("sandbox_", 0) == 0 ? id : "sandbox_" + id;
     const auto preset = std::find_if(run_.activeDefinition.sandboxEvents.begin(), run_.activeDefinition.sandboxEvents.end(), [&](const EventDefinition& event) {
@@ -234,7 +234,7 @@ void ScenarioManager::injectSandboxEvent(const std::string& id)
     if (preset != run_.activeDefinition.sandboxEvents.end()) {
         EventDefinition event = *preset;
         event.trigger = {.type = EventTriggerType::TimeBased, .timeSeconds = run_.elapsedSeconds};
-        eventManager_.inject(std::move(event), run_.elapsedSeconds);
+        eventManager_.inject(std::move(event), run_.elapsedSeconds, simulation);
         return;
     }
 
@@ -266,7 +266,7 @@ void ScenarioManager::injectSandboxEvent(const std::string& id)
         event.category = EventCategory::RecoveryEvent;
         event.effect = {.type = EventEffectType::PartialRecovery, .trafficMultiplier = 0.75, .databaseCapacityMultiplier = 1.2, .retryDelayMultiplier = 1.1};
     }
-    eventManager_.inject(std::move(event), run_.elapsedSeconds);
+    eventManager_.inject(std::move(event), run_.elapsedSeconds, simulation);
 }
 
 void ScenarioManager::clearSandboxEvents()

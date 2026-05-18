@@ -41,7 +41,7 @@ public:
     void setSandboxLatencyMultiplier(double multiplier);
     void setSandboxQueueBuildup(bool enabled);
     void setSandboxSeed(std::uint32_t seed);
-    void injectSandboxEvent(const std::string& id);
+    void injectSandboxEvent(const std::string& id, const Simulation& simulation);
     void clearSandboxEvents();
 
 private:

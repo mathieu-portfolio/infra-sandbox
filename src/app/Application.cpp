@@ -172,7 +172,7 @@ void Application::applySandboxRequests()
     scenarioManager_.setSandboxLatencyMultiplier(state.sandboxLatencyMultiplier);
     scenarioManager_.setSandboxQueueBuildup(state.sandboxQueueBuildup);
     if (!state.sandboxEventRequest.empty()) {
-        scenarioManager_.injectSandboxEvent(state.sandboxEventRequest);
+        scenarioManager_.injectSandboxEvent(state.sandboxEventRequest, simulation_);
         state.latestFeedback = "Injected lab event: " + state.sandboxEventRequest;
         state.pendingVisualFeedbackEvents.push_back({
             .kind = state.sandboxEventRequest == "recovery" ? VisualFeedbackKind::Stabilization : VisualFeedbackKind::PressureInjected,

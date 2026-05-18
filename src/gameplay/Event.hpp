@@ -51,12 +51,14 @@ enum class EventEffectType {
 enum class EventLocationScope {
     Global,
     Region,
-    NodeType
+    NodeType,
+    RandomRegion
 };
 
 struct EventLocation {
     EventLocationScope scope = EventLocationScope::Global;
     std::string region;
+    std::vector<std::string> candidateRegions;
     NodeType nodeType = NodeType::ApiService;
 };
 
@@ -125,7 +127,7 @@ class EventManager {
 public:
     void reset(std::vector<EventDefinition> definitions);
     void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
-    void inject(EventDefinition definition, double scenarioTimeSeconds);
+    void inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation);
     void clear();
 
     [[nodiscard]] const std::vector<ActiveEvent>& activeEvents() const;
@@ -142,7 +144,8 @@ private:
 
     [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
     [[nodiscard]] double metricValue(EventMetric metric, const Simulation& simulation) const;
-    void activate(std::size_t definitionIndex, double scenarioTimeSeconds);
+    void activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation);
+    [[nodiscard]] EventLocation resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const;
 
     std::vector<EventDefinition> definitions_;
     std::vector<ActiveEvent> activeEvents_;

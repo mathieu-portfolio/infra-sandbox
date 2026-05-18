@@ -15,7 +15,7 @@
     "display_name": "Regional traffic spike",
     "description": "Manual lab regional demand pressure injection.",
     "category": "traffic",
-    "location": {"scope": "region", "region": "NorthAmerica"},
+    "location": {"scope": "random_region", "regions": ["Europe", "NorthAmerica"]},
     "trigger": {"type": "time", "time_seconds": 0.0},
     "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.7, "burst_multiplier": 1.35},
     "duration_seconds": 18.0,

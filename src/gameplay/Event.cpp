@@ -3,6 +3,8 @@
 #include "simulation/Simulation.hpp"
 
 #include <algorithm>
+#include <functional>
+#include <set>
 #include <utility>
 
 void EventManager::reset(std::vector<EventDefinition> definitions)
@@ -27,7 +29,7 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
 
     for (auto it = pendingEvents_.begin(); it != pendingEvents_.end();) {
         if (scenarioTimeSeconds >= it->fireAtSeconds) {
-            activate(it->definitionIndex, scenarioTimeSeconds);
+            activate(it->definitionIndex, scenarioTimeSeconds, simulation);
             it = pendingEvents_.erase(it);
         } else {
             ++it;
@@ -43,17 +45,17 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
             if (definitions_[i].trigger.delaySeconds > 0.0) {
                 pendingEvents_.push_back({i, scenarioTimeSeconds + definitions_[i].trigger.delaySeconds});
             } else {
-                activate(i, scenarioTimeSeconds);
+                activate(i, scenarioTimeSeconds, simulation);
             }
         }
     }
 }
 
-void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds)
+void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation)
 {
     definitions_.push_back(std::move(definition));
     fired_.push_back(true);
-    activate(definitions_.size() - 1, scenarioTimeSeconds);
+    activate(definitions_.size() - 1, scenarioTimeSeconds, simulation);
 }
 
 void EventManager::clear()
@@ -155,13 +157,14 @@ double EventManager::metricValue(EventMetric metric, const Simulation& simulatio
     return 0.0;
 }
 
-void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds)
+void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation)
 {
     if (definitionIndex >= definitions_.size()) {
         return;
     }
 
-    const auto& definition = definitions_[definitionIndex];
+    EventDefinition definition = definitions_[definitionIndex];
+    definition.location = resolvedLocation(definition, scenarioTimeSeconds, simulation);
     activeEvents_.push_back({
         .definition = definition,
         .startedAtSeconds = scenarioTimeSeconds,
@@ -179,6 +182,34 @@ void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeco
     }
 }
 
+EventLocation EventManager::resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const
+{
+    if (definition.location.scope != EventLocationScope::RandomRegion) {
+        return definition.location;
+    }
+
+    std::vector<std::string> regions = definition.location.candidateRegions;
+    if (regions.empty()) {
+        std::set<std::string> uniqueRegions;
+        for (const auto& node : simulation.graph().nodes()) {
+            if (node.hasGeoLocation && !node.geoLocation.regionName.empty()) {
+                uniqueRegions.insert(node.geoLocation.regionName);
+            }
+        }
+        regions.assign(uniqueRegions.begin(), uniqueRegions.end());
+    }
+    if (regions.empty()) {
+        return {.scope = EventLocationScope::Global};
+    }
+
+    const std::size_t seed = std::hash<std::string>{}(definition.id)
+        ^ (static_cast<std::size_t>(scenarioTimeSeconds * 1000.0) + 0x9e3779b97f4a7c15ULL);
+    return {
+        .scope = EventLocationScope::Region,
+        .region = regions[seed % regions.size()],
+    };
+}
+
 std::string eventLocationLabel(const EventLocation& location)
 {
     switch (location.scope) {
@@ -188,6 +219,8 @@ std::string eventLocationLabel(const EventLocation& location)
         return location.region.empty() ? "Region" : location.region;
     case EventLocationScope::NodeType:
         return std::string("All ") + std::string(NodeRegistry::definition(location.nodeType).displayName);
+    case EventLocationScope::RandomRegion:
+        return "Random region";
     }
     return "Global";
 }

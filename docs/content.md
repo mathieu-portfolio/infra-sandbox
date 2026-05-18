@@ -85,6 +85,7 @@ Supported scopes are:
 
 - `global`: effect applies through the normal scenario-wide modifier path.
 - `region`: effect applies only to nodes with matching geography region.
+- `random_region`: resolves to one available topology region when the event activates. Optional `regions` can constrain the candidate list.
 - `node_type`: effect applies only to matching node types, for example `{"scope": "node_type", "node_type": "database"}`.
 
 Shared balancing values live in `content/balancing/`. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
