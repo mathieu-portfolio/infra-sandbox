@@ -1,5 +1,7 @@
 #include "gameplay/ScenarioManager.hpp"
 
+#include "content/ContentRegistry.hpp"
+
 #include <algorithm>
 #include <cstdio>
 #include <random>
@@ -30,6 +32,13 @@ const char* focusName(EducationalFocus focus)
 
 MechanicType mechanicFromObjectiveId(const std::string& id)
 {
+    const auto& interventions = content::ContentRegistry::instance().interventions();
+    const auto intervention = std::find_if(interventions.begin(), interventions.end(), [&id](const content::InterventionDefinition& definition) {
+        return definition.id == id;
+    });
+    if (intervention != interventions.end()) {
+        return intervention->mechanic;
+    }
     if (id == "add_cache") return MechanicType::AddCache;
     if (id == "add_queue") return MechanicType::AddQueue;
     if (id == "add_read_replica") return MechanicType::AddReadReplica;
@@ -218,6 +227,17 @@ void ScenarioManager::setSandboxSeed(std::uint32_t seed)
 
 void ScenarioManager::injectSandboxEvent(const std::string& id)
 {
+    const std::string contentId = id.rfind("sandbox_", 0) == 0 ? id : "sandbox_" + id;
+    const auto preset = std::find_if(run_.activeDefinition.sandboxEvents.begin(), run_.activeDefinition.sandboxEvents.end(), [&](const EventDefinition& event) {
+        return event.id == contentId || event.id == id;
+    });
+    if (preset != run_.activeDefinition.sandboxEvents.end()) {
+        EventDefinition event = *preset;
+        event.trigger = {.type = EventTriggerType::TimeBased, .timeSeconds = run_.elapsedSeconds};
+        eventManager_.inject(std::move(event), run_.elapsedSeconds);
+        return;
+    }
+
     EventDefinition event;
     event.id = "sandbox_" + id;
     event.displayName = id;
@@ -545,13 +565,7 @@ void ScenarioManager::applyReward(const ObjectiveReward& reward)
 {
     switch (reward.type) {
     case ObjectiveRewardType::UnlockIntervention:
-        if (reward.id == "scale_up") unlockIntervention(MechanicType::ScaleUp);
-        else if (reward.id == "add_cache") unlockIntervention(MechanicType::AddCache);
-        else if (reward.id == "add_queue") unlockIntervention(MechanicType::AddQueue);
-        else if (reward.id == "add_read_replica") unlockIntervention(MechanicType::AddReadReplica);
-        else if (reward.id == "add_regional_cache") unlockIntervention(MechanicType::AddRegionalCache);
-        else if (reward.id == "toggle_retries") unlockIntervention(MechanicType::ToggleRetries);
-        else if (reward.id == "clear_cache") unlockIntervention(MechanicType::ClearCache);
+        unlockIntervention(mechanicFromObjectiveId(reward.id));
         break;
     case ObjectiveRewardType::UnlockMetric:
         run_.unlockedMetrics.push_back(reward.id);

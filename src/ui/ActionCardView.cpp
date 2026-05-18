@@ -26,6 +26,9 @@ constexpr float kMinHeight = 198.0f;
 
 const char* iconForAction(const ActionCard& card)
 {
+    if (!card.iconId.empty()) {
+        return card.iconId.c_str();
+    }
     if (card.name.find("Scale") != std::string::npos) {
         return "action.scale_up";
     }

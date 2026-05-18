@@ -17,6 +17,7 @@
     "starting_interventions": ["scale_up", "enable_cache", "clear_cache", "add_cache", "add_read_replica", "add_queue", "add_regional_cache", "toggle_retries", "throttle_traffic"],
     "unlockable_interventions": ["scale_up", "enable_cache", "clear_cache", "add_cache", "add_read_replica", "add_queue", "add_regional_cache", "toggle_retries", "throttle_traffic"],
     "recommended_interventions": ["scale_up", "add_cache", "add_queue", "add_regional_cache"],
+    "sandbox_events": ["sandbox_traffic_spike", "sandbox_regional_traffic_spike", "sandbox_retry_storm", "sandbox_db_slowdown", "sandbox_recovery"],
     "objectives": [{"objective_id": "first_request_60s", "starts_active": true}],
     "failure_conditions": ["latency_under_6s", "timeout_under_4s"],
     "request_types": {"lightweight_share": 0.55, "database_heavy_cacheable_share": 0.8, "cache_key_space": 16},

@@ -35,6 +35,7 @@ struct ActionCard {
     std::vector<EngineeringCost> engineeringCosts;
     std::string architecturalPattern;
     std::string technologyExample;
+    std::string iconId;
     std::string unavailableReason;
     std::string stateLabel;
     bool recommended = false;

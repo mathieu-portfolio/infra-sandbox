@@ -12,6 +12,7 @@ Gameplay metadata lives under `content/`. C++ still owns simulation, evaluation,
 - `modifiers/`: reusable scenario modifiers.
 - `interventions/`: UI/action metadata for mechanics and topology mutations.
 - `traffic/`: reusable traffic profile definitions.
+- `balancing/`: shared gameplay tuning such as pressure thresholds, interpretation text, and history windows.
 
 ## Definition Rules
 
@@ -39,6 +40,7 @@ Scenarios reference reusable definitions by ID:
 - `required_completed_scenarios`
 - `engineering_capacity`
 - `turn_duration`
+- `sandbox_events`
 
 Scenario intervention fields are the source of truth for action availability. Runtime `ScenarioRun` starts with `starting_interventions`; objectives and events can unlock entries from `unlockable_interventions`.
 
@@ -70,6 +72,10 @@ Scenario and phase durations define player-facing time progression. Raw simulati
 ```
 
 Phases can override the turn duration with `transition_duration`. Supported units are `seconds`, `minutes`, `days`, `months`, and `years`. `simulation_seconds` controls accelerated playback length; `value`, `unit`, and `label` control gameplay presentation and calendar advancement.
+
+Sandbox scenarios can expose manual lab injections through `sandbox_events`. These reference normal event definitions from `content/events/`; the sandbox only chooses when to inject them.
+
+Shared balancing values live in `content/balancing/`. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
 
 ## Objective Chains And Rewards
 
@@ -155,6 +161,7 @@ Add an entry in `content/interventions/` with:
 - `mutation`: required for topology mutations
 - `expected_benefits`
 - `tradeoffs`
+- `icon_id`
 - `positive_effects`
 - `negative_effects`
 - `pressure_shifts`

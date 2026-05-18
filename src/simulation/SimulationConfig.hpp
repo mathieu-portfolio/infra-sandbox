@@ -1,6 +1,7 @@
 #pragma once
 
 #include "simulation/SimulationLayer.hpp"
+#include "simulation/PressureAnalysis.hpp"
 
 #include <array>
 
@@ -13,6 +14,7 @@ struct SimulationConfig {
     std::array<LayerConfig, LayerRegistry::layerCount()> layers{};
     double fixedStepSeconds = 1.0 / 60.0;
     bool deterministic = true;
+    PressureAnalysisConfig pressureAnalysis;
 
     SimulationConfig();
 

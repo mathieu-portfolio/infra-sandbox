@@ -1,0 +1,67 @@
+{
+  "id": "starter_gameplay_tuning",
+  "display_name": "Starter Gameplay Tuning",
+  "description": "Shared pressure-analysis thresholds, history windows, and educational text.",
+  "pressure_analysis": {
+    "thresholds": {
+      "retry_dominant": 0.45,
+      "failure_dominant": 0.45,
+      "persistence_queue": 0.35,
+      "latency_contribution": 2.0,
+      "average_latency": 3.0,
+      "queue_pressure": 0.35,
+      "queue_growth_per_second": 0.5,
+      "compute_pressure": 0.75,
+      "traffic_backlog": 2.0,
+      "dependency_pressure": 0.45,
+      "database_queue_hint": 3.0,
+      "database_utilization_hint": 0.75,
+      "api_queue_hint": 4.0,
+      "retry_rate_hint": 0.5,
+      "timeout_rate_hint": 0.2,
+      "failure_timeout_rate": 1.0,
+      "cache_hit_surge": 0.45
+    },
+    "weights": {
+      "queue_capacity_window": 2.0,
+      "timeout_rate_scale": 4.0,
+      "retry_rate_scale": 3.0,
+      "database_retry_floor": 0.45,
+      "processor_retry_floor": 0.25
+    },
+    "history": {
+      "event_cooldown_seconds": 6.0,
+      "pressure_history_limit": 24,
+      "recent_event_limit": 8,
+      "recurring_sample_count": 4,
+      "recurring_minimum": 3
+    },
+    "text": {
+      "persistence_node_explanation": "Requests are mostly waiting on downstream persistence operations.",
+      "retry_node_explanation": "Traffic bursts appear to be amplifying retries near this path.",
+      "geo_latency_explanation": "Latency is likely influenced by queueing and cross-region communication.",
+      "local_latency_explanation": "Latency is rising as local work waits longer in the system.",
+      "queue_node_explanation": "Queue growth is outpacing the service's current processing rate.",
+      "compute_node_explanation": "The node is spending most of its available processing capacity.",
+      "failure_node_explanation": "Timeouts indicate requests are exceeding the current recovery window.",
+      "traffic_node_explanation": "Incoming demand is higher than completed throughput.",
+      "processor_no_pressure_explanation": "No dominant local pressure detected; inspect dependencies for shifted pressure.",
+      "traffic_source_explanation": "Traffic source is contributing demand into the dependency path.",
+      "dependency_pressure_summary": "Downstream dependencies show visible queue pressure.",
+      "dependency_stable_summary": "Downstream dependencies are not currently dominant.",
+      "no_dependency_summary": "No downstream dependencies from this node.",
+      "database_queue_hint": "Queue pressure is accumulating near Database.",
+      "database_latency_hint": "Downstream persistence pressure can feed API latency.",
+      "database_explanation": "Repeated reads are heavily stressing persistence.",
+      "database_pattern": "Persistence queue and utilization are high together.",
+      "api_queue_hint": "API queue growth is outpacing processing capacity.",
+      "api_explanation": "API work is arriving faster than local compute can drain it.",
+      "api_pattern": "API queue growth may be local compute pressure or downstream wait.",
+      "retry_hint": "Retry traffic appears to amplify overload.",
+      "retry_pattern": "Retries and timeouts are rising together.",
+      "latency_hint": "Latency pressure is dominated by queued work.",
+      "latency_explanation": "Most latency currently comes from queueing or long dependency paths.",
+      "cache_hint": "Repeated expensive requests are being absorbed by cache."
+    }
+  }
+}

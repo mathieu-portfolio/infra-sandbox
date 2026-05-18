@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace {
 double clamp01(double value)
@@ -9,58 +10,58 @@ double clamp01(double value)
     return std::clamp(value, 0.0, 1.0);
 }
 
-PressureCategory dominantFor(const Node& node, const MetricsSnapshot& metrics, const NodePressure& pressure)
+PressureCategory dominantFor(const Node& node, const MetricsSnapshot& metrics, const NodePressure& pressure, const PressureAnalysisConfig& config)
 {
-    if (pressure.retryContribution > 0.45) {
+    if (pressure.retryContribution > config.retryDominantThreshold) {
         return PressureCategory::RetryPressure;
     }
-    if (pressure.timeoutContribution > 0.45) {
+    if (pressure.timeoutContribution > config.failureDominantThreshold) {
         return PressureCategory::FailurePressure;
     }
-    if (node.type == NodeType::Database && pressure.queuePressure > 0.35) {
+    if (node.type == NodeType::Database && pressure.queuePressure > config.persistenceQueueThreshold) {
         return PressureCategory::PersistencePressure;
     }
-    if (pressure.latencyContribution > 2.0 || metrics.averageLatencySeconds > 3.0) {
+    if (pressure.latencyContribution > config.latencyContributionThreshold || metrics.averageLatencySeconds > config.averageLatencyThreshold) {
         return PressureCategory::LatencyPressure;
     }
-    if (pressure.queuePressure > 0.35 || pressure.queueGrowthPerSecond > 0.5) {
+    if (pressure.queuePressure > config.queuePressureThreshold || pressure.queueGrowthPerSecond > config.queueGrowthThreshold) {
         return PressureCategory::QueuePressure;
     }
-    if (pressure.computePressure > 0.75) {
+    if (pressure.computePressure > config.computePressureThreshold) {
         return PressureCategory::ComputePressure;
     }
-    if (metrics.inputRatePerSecond > metrics.processedPerSecond + 2.0) {
+    if (metrics.inputRatePerSecond > metrics.processedPerSecond + config.trafficBacklogThreshold) {
         return PressureCategory::TrafficPressure;
     }
     return PressureCategory::None;
 }
 
-std::string explanationFor(const Node& node, const MetricsSnapshot& metrics, const NodePressure& pressure)
+std::string explanationFor(const Node& node, const MetricsSnapshot& metrics, const NodePressure& pressure, const PressureAnalysisConfig& config)
 {
     switch (pressure.dominant) {
     case PressureCategory::PersistencePressure:
-        return "Requests are mostly waiting on downstream persistence operations.";
+        return config.persistenceNodeExplanation;
     case PressureCategory::RetryPressure:
-        return "Traffic bursts appear to be amplifying retries near this path.";
+        return config.retryNodeExplanation;
     case PressureCategory::LatencyPressure:
         return node.hasGeoLocation && metrics.averageLatencySeconds > 1.5
-            ? "Latency is likely influenced by queueing and cross-region communication."
-            : "Latency is rising as local work waits longer in the system.";
+            ? config.geoLatencyExplanation
+            : config.localLatencyExplanation;
     case PressureCategory::QueuePressure:
-        return "Queue growth is outpacing the service's current processing rate.";
+        return config.queueNodeExplanation;
     case PressureCategory::ComputePressure:
-        return "The node is spending most of its available processing capacity.";
+        return config.computeNodeExplanation;
     case PressureCategory::FailurePressure:
-        return "Timeouts indicate requests are exceeding the current recovery window.";
+        return config.failureNodeExplanation;
     case PressureCategory::TrafficPressure:
-        return "Incoming demand is higher than completed throughput.";
+        return config.trafficNodeExplanation;
     case PressureCategory::None:
         break;
     }
     if (node.isProcessor()) {
-        return "No dominant local pressure detected; inspect dependencies for shifted pressure.";
+        return config.processorNoPressureExplanation;
     }
-    return "Traffic source is contributing demand into the dependency path.";
+    return config.trafficSourceExplanation;
 }
 }
 
@@ -69,6 +70,11 @@ void PressureAnalysisSystem::reset()
     snapshot_ = {};
     previousQueueDepths_.clear();
     lastEventTimes_.clear();
+}
+
+void PressureAnalysisSystem::setConfig(PressureAnalysisConfig config)
+{
+    config_ = std::move(config);
 }
 
 void PressureAnalysisSystem::update(double timeSeconds, double dt, const InfrastructureGraph& graph, const MetricsSnapshot& metrics)
@@ -95,11 +101,11 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
         pressure.queueGrowthPerSecond = dt > 0.0
             ? (static_cast<double>(node.queue.size()) - previousDepth) / dt
             : 0.0;
-        pressure.queuePressure = clamp01(static_cast<double>(node.queue.size()) / std::max(1.0, node.processingCapacityPerSecond * 2.0));
+        pressure.queuePressure = clamp01(static_cast<double>(node.queue.size()) / std::max(1.0, node.processingCapacityPerSecond * config_.queueCapacityWindow));
         pressure.computePressure = node.currentUtilization;
         pressure.latencyContribution = node.averageQueueWaitSeconds + node.currentUtilization * 0.35;
-        pressure.timeoutContribution = clamp01(metrics.timeoutRatePerSecond / 4.0) * pressure.queuePressure;
-        pressure.retryContribution = clamp01(metrics.retryRatePerSecond / 3.0) * std::max(pressure.queuePressure, node.type == NodeType::Database ? 0.45 : 0.25);
+        pressure.timeoutContribution = clamp01(metrics.timeoutRatePerSecond / config_.timeoutRateScale) * pressure.queuePressure;
+        pressure.retryContribution = clamp01(metrics.retryRatePerSecond / config_.retryRateScale) * std::max(pressure.queuePressure, node.type == NodeType::Database ? config_.databaseRetryFloor : config_.processorRetryFloor);
         double downstreamPressure = 0.0;
         int downstreamCount = 0;
         for (const auto& link : graph.links()) {
@@ -107,20 +113,20 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
                 continue;
             }
             if (const Node* target = graph.node(link.targetNodeId)) {
-                downstreamPressure += clamp01(static_cast<double>(target->queue.size()) / std::max(1.0, target->processingCapacityPerSecond * 2.0));
+                downstreamPressure += clamp01(static_cast<double>(target->queue.size()) / std::max(1.0, target->processingCapacityPerSecond * config_.queueCapacityWindow));
                 ++downstreamCount;
             }
         }
         pressure.dependencyPressure = downstreamCount > 0 ? downstreamPressure / downstreamCount : 0.0;
         pressure.instability = std::max({pressure.queuePressure, pressure.computePressure, pressure.timeoutContribution, pressure.retryContribution});
-        pressure.dominant = dominantFor(node, metrics, pressure);
-        pressure.explanation = explanationFor(node, metrics, pressure);
-        if (pressure.dependencyPressure > 0.45) {
-            pressure.dependencySummary = "Downstream dependencies show visible queue pressure.";
+        pressure.dominant = dominantFor(node, metrics, pressure, config_);
+        pressure.explanation = explanationFor(node, metrics, pressure, config_);
+        if (pressure.dependencyPressure > config_.dependencyPressureThreshold) {
+            pressure.dependencySummary = config_.dependencyPressureSummary;
         } else if (downstreamCount > 0) {
-            pressure.dependencySummary = "Downstream dependencies are not currently dominant.";
+            pressure.dependencySummary = config_.dependencyStableSummary;
         } else {
-            pressure.dependencySummary = "No downstream dependencies from this node.";
+            pressure.dependencySummary = config_.noDependencySummary;
         }
         snapshot_.nodes.push_back(pressure);
 
@@ -163,68 +169,68 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
         }
     }
 
-    if (database != nullptr && database->queue.size() > 3 && database->currentUtilization > 0.75) {
-        snapshot_.hints.push_back("Queue pressure is accumulating near Database.");
-        snapshot_.hints.push_back("Downstream persistence pressure can feed API latency.");
-        snapshot_.explanations.push_back("Repeated reads are heavily stressing persistence.");
-        snapshot_.suspiciousPatterns.push_back("Persistence queue and utilization are high together.");
+    if (database != nullptr && database->queue.size() > config_.databaseQueueHintThreshold && database->currentUtilization > config_.databaseUtilizationHintThreshold) {
+        snapshot_.hints.push_back(config_.databaseQueueHint);
+        snapshot_.hints.push_back(config_.databaseLatencyHint);
+        snapshot_.explanations.push_back(config_.databaseExplanation);
+        snapshot_.suspiciousPatterns.push_back(config_.databasePattern);
         if (eventCooldownElapsed(PressureCategory::PersistencePressure, timeSeconds)) {
             addEvent(timeSeconds, PressureCategory::PersistencePressure, database->id, "Database pressure detected");
         }
     }
 
-    if (api != nullptr && api->queue.size() > 4 && (database == nullptr || database->queue.size() <= api->queue.size())) {
-        snapshot_.hints.push_back("API queue growth is outpacing processing capacity.");
-        snapshot_.explanations.push_back("API work is arriving faster than local compute can drain it.");
-        snapshot_.suspiciousPatterns.push_back("API queue growth may be local compute pressure or downstream wait.");
+    if (api != nullptr && api->queue.size() > config_.apiQueueHintThreshold && (database == nullptr || database->queue.size() <= api->queue.size())) {
+        snapshot_.hints.push_back(config_.apiQueueHint);
+        snapshot_.explanations.push_back(config_.apiExplanation);
+        snapshot_.suspiciousPatterns.push_back(config_.apiPattern);
         if (eventCooldownElapsed(PressureCategory::QueuePressure, timeSeconds)) {
             addEvent(timeSeconds, PressureCategory::QueuePressure, api->id, "API queue spike");
         }
     }
 
-    if (metrics.retryRatePerSecond > 0.5 && metrics.timeoutRatePerSecond > 0.2) {
-        snapshot_.hints.push_back("Retry traffic appears to amplify overload.");
-        snapshot_.suspiciousPatterns.push_back("Retries and timeouts are rising together.");
+    if (metrics.retryRatePerSecond > config_.retryRateHintThreshold && metrics.timeoutRatePerSecond > config_.timeoutRateHintThreshold) {
+        snapshot_.hints.push_back(config_.retryHint);
+        snapshot_.suspiciousPatterns.push_back(config_.retryPattern);
         if (eventCooldownElapsed(PressureCategory::RetryPressure, timeSeconds)) {
             addEvent(timeSeconds, PressureCategory::RetryPressure, snapshot_.retryAmplificationNodeId, "Retry amplification");
         }
     }
 
-    if (metrics.averageLatencySeconds > 3.0) {
-        snapshot_.hints.push_back("Latency pressure is dominated by queued work.");
-        snapshot_.explanations.push_back("Most latency currently comes from queueing or long dependency paths.");
+    if (metrics.averageLatencySeconds > config_.averageLatencyThreshold) {
+        snapshot_.hints.push_back(config_.latencyHint);
+        snapshot_.explanations.push_back(config_.latencyExplanation);
         if (eventCooldownElapsed(PressureCategory::LatencyPressure, timeSeconds)) {
             addEvent(timeSeconds, PressureCategory::LatencyPressure, snapshot_.dominantLatencyNodeId, "Latency wave");
         }
     }
 
-    if (metrics.timeoutRatePerSecond > 1.0 && eventCooldownElapsed(PressureCategory::FailurePressure, timeSeconds)) {
+    if (metrics.timeoutRatePerSecond > config_.failureTimeoutRateThreshold && eventCooldownElapsed(PressureCategory::FailurePressure, timeSeconds)) {
         addEvent(timeSeconds, PressureCategory::FailurePressure, snapshot_.mostUnstableNodeId, "Timeout wave");
     }
 
-    if (metrics.cacheHitRate > 0.45 && eventCooldownElapsed(PressureCategory::PersistencePressure, timeSeconds)) {
+    if (metrics.cacheHitRate > config_.cacheHitSurgeThreshold && eventCooldownElapsed(PressureCategory::PersistencePressure, timeSeconds)) {
         addEvent(timeSeconds, PressureCategory::PersistencePressure, -1, "Cache hit surge");
-        snapshot_.hints.push_back("Repeated expensive requests are being absorbed by cache.");
+        snapshot_.hints.push_back(config_.cacheHint);
     }
 
     if (snapshot_.dominantPressure != PressureCategory::None) {
         snapshot_.pressureHistory.push_back({timeSeconds, snapshot_.dominantPressure, snapshot_.mostUnstableNodeId, pressureCategoryName(snapshot_.dominantPressure)});
     }
-    while (snapshot_.pressureHistory.size() > 24) {
+    while (snapshot_.pressureHistory.size() > config_.pressureHistoryLimit) {
         snapshot_.pressureHistory.pop_front();
     }
 
-    if (snapshot_.pressureHistory.size() >= 4) {
+    if (snapshot_.pressureHistory.size() >= static_cast<std::size_t>(config_.recurringPressureSampleCount)) {
         const auto latest = snapshot_.pressureHistory.back().category;
         const int repeated = static_cast<int>(std::count_if(snapshot_.pressureHistory.begin(), snapshot_.pressureHistory.end(), [latest](const PressureEvent& event) {
             return event.category == latest;
         }));
-        if (repeated >= 3) {
+        if (repeated >= config_.recurringPressureMinimum) {
             snapshot_.suspiciousPatterns.push_back(std::string(pressureCategoryName(latest)) + " pressure is recurring over the short-term window.");
         }
     }
 
-    while (snapshot_.recentEvents.size() > 8) {
+    while (snapshot_.recentEvents.size() > config_.recentEventLimit) {
         snapshot_.recentEvents.pop_front();
     }
 }
@@ -258,7 +264,7 @@ void PressureAnalysisSystem::addEvent(double timeSeconds, PressureCategory categ
 bool PressureAnalysisSystem::eventCooldownElapsed(PressureCategory category, double timeSeconds) const
 {
     const auto it = lastEventTimes_.find(category);
-    return it == lastEventTimes_.end() || timeSeconds - it->second > 6.0;
+    return it == lastEventTimes_.end() || timeSeconds - it->second > config_.eventCooldownSeconds;
 }
 
 const char* pressureCategoryName(PressureCategory category)

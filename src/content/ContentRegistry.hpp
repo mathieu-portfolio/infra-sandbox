@@ -2,6 +2,7 @@
 
 #include "gameplay/Scenario.hpp"
 #include "simulation/Mechanics.hpp"
+#include "simulation/SimulationConfig.hpp"
 #include "simulation/TopologyMutation.hpp"
 
 #include <filesystem>
@@ -26,6 +27,7 @@ struct InterventionDefinition {
     std::vector<std::string> pressureShifts;
     std::vector<std::string> categories;
     std::vector<std::string> usefulWhen;
+    std::string iconId;
     std::vector<PressureCategory> affectedPressures;
     std::vector<NodeType> targetNodeTypes;
     std::vector<EngineeringCost> engineeringCosts;
@@ -59,6 +61,7 @@ public:
     [[nodiscard]] const std::vector<ScenarioDefinition>& scenarios() const;
     [[nodiscard]] const ScenarioDefinition& defaultScenario() const;
     [[nodiscard]] const std::vector<InterventionDefinition>& interventions() const;
+    [[nodiscard]] const SimulationConfig& simulationConfig() const;
     [[nodiscard]] const std::vector<std::string>& loadErrors() const;
     [[nodiscard]] bool loadedFromContent() const;
 
@@ -69,6 +72,7 @@ private:
     std::vector<ProgressionTierDefinition> progressionTiers_;
     std::vector<ScenarioDefinition> scenarios_;
     std::vector<InterventionDefinition> interventions_;
+    SimulationConfig simulationConfig_;
     std::vector<std::string> loadErrors_;
     bool loadedFromContent_ = false;
 };

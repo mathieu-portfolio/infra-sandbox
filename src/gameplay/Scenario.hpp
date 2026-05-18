@@ -282,6 +282,7 @@ struct ScenarioDefinition {
     std::vector<ScenarioObjective> failureConditions;
     std::vector<ScenarioPhase> phases;
     std::vector<EventDefinition> events;
+    std::vector<EventDefinition> sandboxEvents;
     GameplayDuration turnDuration;
     double requestTimeoutSeconds = 5.5;
 };

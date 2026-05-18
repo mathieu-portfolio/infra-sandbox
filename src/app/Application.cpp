@@ -16,6 +16,11 @@ constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
 constexpr double kFixedStepSeconds = 1.0 / 60.0;
 
+Simulation makeSimulation(const ScenarioDefinition& scenario)
+{
+    return Simulation(scenario, content::ContentRegistry::instance().simulationConfig());
+}
+
 std::string capacityUsageSummary(const UiState& state)
 {
     std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> domainUsage{};
@@ -48,7 +53,7 @@ std::string capacityUsageSummary(const UiState& state)
 Application::Application()
     : scenarioDefinition_(Scenario::createDefault()),
       scenarioManager_(scenarioDefinition_),
-      simulation_(scenarioManager_.definition()),
+      simulation_(makeSimulation(scenarioManager_.definition())),
       renderer_(scenarioManager_.definition())
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
@@ -108,7 +113,7 @@ void Application::handleInput()
 void Application::resetScenario()
 {
     scenarioManager_.reset();
-    simulation_ = Simulation(scenarioManager_.definition());
+    simulation_ = makeSimulation(scenarioManager_.definition());
     UiState& state = renderer_.uiManager().state();
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
@@ -129,7 +134,7 @@ void Application::loadScenario(std::size_t scenarioIndex)
 
     scenarioDefinition_ = scenarios[scenarioIndex];
     scenarioManager_.load(scenarioDefinition_);
-    simulation_ = Simulation(scenarioManager_.definition());
+    simulation_ = makeSimulation(scenarioManager_.definition());
 
     UiState& state = renderer_.uiManager().state();
     state.selection = {};
@@ -198,7 +203,7 @@ void Application::applySandboxRequests()
     }
     if (state.sandboxRegenerateRequested) {
         scenarioManager_.setSandboxSeed(static_cast<std::uint32_t>(state.sandboxSeed));
-        simulation_ = Simulation(scenarioManager_.definition());
+        simulation_ = makeSimulation(scenarioManager_.definition());
         fixedStepAccumulator_ = 0.0;
         state.sandboxRegenerateRequested = false;
     }

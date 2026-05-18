@@ -1,5 +1,55 @@
 [
   {
+    "id": "sandbox_traffic_spike",
+    "display_name": "Traffic spike",
+    "description": "Manual lab traffic pressure injection.",
+    "category": "traffic",
+    "trigger": {"type": "time", "time_seconds": 0.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.45, "burst_multiplier": 1.35},
+    "duration_seconds": 18.0,
+    "tags": ["sandbox", "traffic"]
+  },
+  {
+    "id": "sandbox_regional_traffic_spike",
+    "display_name": "Regional traffic spike",
+    "description": "Manual lab regional demand pressure injection.",
+    "category": "traffic",
+    "trigger": {"type": "time", "time_seconds": 0.0},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.7, "burst_multiplier": 1.35},
+    "duration_seconds": 18.0,
+    "tags": ["sandbox", "traffic", "geography"]
+  },
+  {
+    "id": "sandbox_retry_storm",
+    "display_name": "Retry storm",
+    "description": "Manual lab retry amplification injection.",
+    "category": "reliability",
+    "trigger": {"type": "time", "time_seconds": 0.0},
+    "effect": {"type": "modify_burst_intensity", "traffic_multiplier": 1.22, "retry_delay_multiplier": 0.65},
+    "duration_seconds": 18.0,
+    "tags": ["sandbox", "reliability"]
+  },
+  {
+    "id": "sandbox_db_slowdown",
+    "display_name": "DB slowdown",
+    "description": "Manual lab persistence slowdown injection.",
+    "category": "infrastructure",
+    "trigger": {"type": "time", "time_seconds": 0.0},
+    "effect": {"type": "degrade_node_capacity", "database_capacity_multiplier": 0.55},
+    "duration_seconds": 18.0,
+    "tags": ["sandbox", "database"]
+  },
+  {
+    "id": "sandbox_recovery",
+    "display_name": "Recovery wave",
+    "description": "Manual lab recovery injection.",
+    "category": "recovery",
+    "trigger": {"type": "time", "time_seconds": 0.0},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.75, "database_capacity_multiplier": 1.2, "retry_delay_multiplier": 1.1},
+    "duration_seconds": 18.0,
+    "tags": ["sandbox", "recovery"]
+  },
+  {
     "id": "traffic_spike_26",
     "display_name": "Traffic spike",
     "description": "A short-lived traffic surge increases request pressure.",

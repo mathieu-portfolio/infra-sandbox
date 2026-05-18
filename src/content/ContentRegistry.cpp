@@ -62,6 +62,14 @@ bool boolAt(const Json& object, const std::string& key, bool fallback = false)
     return fallback;
 }
 
+std::size_t sizeAt(const Json& object, const std::string& key, std::size_t fallback)
+{
+    if (const Json* value = object.find(key); value != nullptr && value->isNumber()) {
+        return static_cast<std::size_t>(std::max(0.0, value->asNumber()));
+    }
+    return fallback;
+}
+
 std::vector<std::string> stringsAt(const Json& object, const std::string& key)
 {
     std::vector<std::string> values;
@@ -660,6 +668,7 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.pressureShifts = stringsAt(object, "pressure_shifts");
     intervention.categories = stringsAt(object, "categories");
     intervention.usefulWhen = stringsAt(object, "useful_when");
+    intervention.iconId = stringAt(object, "icon_id");
     intervention.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
     intervention.targetNodeTypes = mappedStrings<NodeType>(object, "node_types", nodeTypeFromId);
     intervention.engineeringCosts = parseEngineeringCosts(object);
@@ -698,6 +707,83 @@ std::vector<Json> loadDirectoryObjects(const std::filesystem::path& directory, C
         }
     }
     return objects;
+}
+
+std::vector<Json> loadOptionalDirectoryObjects(const std::filesystem::path& directory, ContentLoadResult& result)
+{
+    if (!std::filesystem::exists(directory)) {
+        return {};
+    }
+    return loadDirectoryObjects(directory, result);
+}
+
+void applyPressureAnalysisConfig(SimulationConfig& config, const Json& object)
+{
+    const Json* root = object.find("pressure_analysis");
+    if (root == nullptr || !root->isObject()) {
+        return;
+    }
+    auto& pressure = config.pressureAnalysis;
+    if (const Json* thresholds = root->find("thresholds"); thresholds != nullptr && thresholds->isObject()) {
+        pressure.retryDominantThreshold = numberAt(*thresholds, "retry_dominant", pressure.retryDominantThreshold);
+        pressure.failureDominantThreshold = numberAt(*thresholds, "failure_dominant", pressure.failureDominantThreshold);
+        pressure.persistenceQueueThreshold = numberAt(*thresholds, "persistence_queue", pressure.persistenceQueueThreshold);
+        pressure.latencyContributionThreshold = numberAt(*thresholds, "latency_contribution", pressure.latencyContributionThreshold);
+        pressure.averageLatencyThreshold = numberAt(*thresholds, "average_latency", pressure.averageLatencyThreshold);
+        pressure.queuePressureThreshold = numberAt(*thresholds, "queue_pressure", pressure.queuePressureThreshold);
+        pressure.queueGrowthThreshold = numberAt(*thresholds, "queue_growth_per_second", pressure.queueGrowthThreshold);
+        pressure.computePressureThreshold = numberAt(*thresholds, "compute_pressure", pressure.computePressureThreshold);
+        pressure.trafficBacklogThreshold = numberAt(*thresholds, "traffic_backlog", pressure.trafficBacklogThreshold);
+        pressure.dependencyPressureThreshold = numberAt(*thresholds, "dependency_pressure", pressure.dependencyPressureThreshold);
+        pressure.databaseQueueHintThreshold = numberAt(*thresholds, "database_queue_hint", pressure.databaseQueueHintThreshold);
+        pressure.databaseUtilizationHintThreshold = numberAt(*thresholds, "database_utilization_hint", pressure.databaseUtilizationHintThreshold);
+        pressure.apiQueueHintThreshold = numberAt(*thresholds, "api_queue_hint", pressure.apiQueueHintThreshold);
+        pressure.retryRateHintThreshold = numberAt(*thresholds, "retry_rate_hint", pressure.retryRateHintThreshold);
+        pressure.timeoutRateHintThreshold = numberAt(*thresholds, "timeout_rate_hint", pressure.timeoutRateHintThreshold);
+        pressure.failureTimeoutRateThreshold = numberAt(*thresholds, "failure_timeout_rate", pressure.failureTimeoutRateThreshold);
+        pressure.cacheHitSurgeThreshold = numberAt(*thresholds, "cache_hit_surge", pressure.cacheHitSurgeThreshold);
+    }
+    if (const Json* weights = root->find("weights"); weights != nullptr && weights->isObject()) {
+        pressure.queueCapacityWindow = numberAt(*weights, "queue_capacity_window", pressure.queueCapacityWindow);
+        pressure.timeoutRateScale = numberAt(*weights, "timeout_rate_scale", pressure.timeoutRateScale);
+        pressure.retryRateScale = numberAt(*weights, "retry_rate_scale", pressure.retryRateScale);
+        pressure.databaseRetryFloor = numberAt(*weights, "database_retry_floor", pressure.databaseRetryFloor);
+        pressure.processorRetryFloor = numberAt(*weights, "processor_retry_floor", pressure.processorRetryFloor);
+    }
+    if (const Json* history = root->find("history"); history != nullptr && history->isObject()) {
+        pressure.eventCooldownSeconds = numberAt(*history, "event_cooldown_seconds", pressure.eventCooldownSeconds);
+        pressure.pressureHistoryLimit = sizeAt(*history, "pressure_history_limit", pressure.pressureHistoryLimit);
+        pressure.recentEventLimit = sizeAt(*history, "recent_event_limit", pressure.recentEventLimit);
+        pressure.recurringPressureSampleCount = static_cast<int>(numberAt(*history, "recurring_sample_count", pressure.recurringPressureSampleCount));
+        pressure.recurringPressureMinimum = static_cast<int>(numberAt(*history, "recurring_minimum", pressure.recurringPressureMinimum));
+    }
+    if (const Json* text = root->find("text"); text != nullptr && text->isObject()) {
+        pressure.persistenceNodeExplanation = stringAt(*text, "persistence_node_explanation", pressure.persistenceNodeExplanation);
+        pressure.retryNodeExplanation = stringAt(*text, "retry_node_explanation", pressure.retryNodeExplanation);
+        pressure.geoLatencyExplanation = stringAt(*text, "geo_latency_explanation", pressure.geoLatencyExplanation);
+        pressure.localLatencyExplanation = stringAt(*text, "local_latency_explanation", pressure.localLatencyExplanation);
+        pressure.queueNodeExplanation = stringAt(*text, "queue_node_explanation", pressure.queueNodeExplanation);
+        pressure.computeNodeExplanation = stringAt(*text, "compute_node_explanation", pressure.computeNodeExplanation);
+        pressure.failureNodeExplanation = stringAt(*text, "failure_node_explanation", pressure.failureNodeExplanation);
+        pressure.trafficNodeExplanation = stringAt(*text, "traffic_node_explanation", pressure.trafficNodeExplanation);
+        pressure.processorNoPressureExplanation = stringAt(*text, "processor_no_pressure_explanation", pressure.processorNoPressureExplanation);
+        pressure.trafficSourceExplanation = stringAt(*text, "traffic_source_explanation", pressure.trafficSourceExplanation);
+        pressure.dependencyPressureSummary = stringAt(*text, "dependency_pressure_summary", pressure.dependencyPressureSummary);
+        pressure.dependencyStableSummary = stringAt(*text, "dependency_stable_summary", pressure.dependencyStableSummary);
+        pressure.noDependencySummary = stringAt(*text, "no_dependency_summary", pressure.noDependencySummary);
+        pressure.databaseQueueHint = stringAt(*text, "database_queue_hint", pressure.databaseQueueHint);
+        pressure.databaseLatencyHint = stringAt(*text, "database_latency_hint", pressure.databaseLatencyHint);
+        pressure.databaseExplanation = stringAt(*text, "database_explanation", pressure.databaseExplanation);
+        pressure.databasePattern = stringAt(*text, "database_pattern", pressure.databasePattern);
+        pressure.apiQueueHint = stringAt(*text, "api_queue_hint", pressure.apiQueueHint);
+        pressure.apiExplanation = stringAt(*text, "api_explanation", pressure.apiExplanation);
+        pressure.apiPattern = stringAt(*text, "api_pattern", pressure.apiPattern);
+        pressure.retryHint = stringAt(*text, "retry_hint", pressure.retryHint);
+        pressure.retryPattern = stringAt(*text, "retry_pattern", pressure.retryPattern);
+        pressure.latencyHint = stringAt(*text, "latency_hint", pressure.latencyHint);
+        pressure.latencyExplanation = stringAt(*text, "latency_explanation", pressure.latencyExplanation);
+        pressure.cacheHint = stringAt(*text, "cache_hint", pressure.cacheHint);
+    }
 }
 
 void requireIdSet(const std::string& domain, const std::vector<std::string>& ids, ContentLoadResult& result)
@@ -749,6 +835,11 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     progressionTiers_.clear();
     scenarios_.clear();
     interventions_.clear();
+    simulationConfig_ = SimulationConfig{};
+
+    for (const auto& object : loadOptionalDirectoryObjects(root / "balancing", result)) {
+        applyPressureAnalysisConfig(simulationConfig_, object);
+    }
 
     std::unordered_map<std::string, Json> topologies;
     for (const auto& object : loadDirectoryObjects(root / "topology", result)) {
@@ -942,6 +1033,10 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
             if (const auto it = events.find(id); it != events.end()) scenario.events.push_back(it->second);
             else result.errors.push_back("Scenario " + scenario.id + " references missing event: " + id);
         }
+        for (const auto& id : stringsAt(object, "sandbox_events")) {
+            if (const auto it = events.find(id); it != events.end()) scenario.sandboxEvents.push_back(it->second);
+            else result.errors.push_back("Scenario " + scenario.id + " references missing sandbox event: " + id);
+        }
         for (const auto& id : stringsAt(object, "modifiers")) {
             if (const auto it = modifiers.find(id); it != modifiers.end()) scenario.optionalModifiers.push_back(it->second);
             else result.errors.push_back("Scenario " + scenario.id + " references missing modifier: " + id);
@@ -956,6 +1051,17 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
 
 void ContentRegistry::validate(ContentLoadResult& result) const
 {
+    const auto& pressure = simulationConfig_.pressureAnalysis;
+    if (pressure.queueCapacityWindow <= 0.0 || pressure.timeoutRateScale <= 0.0 || pressure.retryRateScale <= 0.0) {
+        result.errors.push_back("Pressure analysis tuning has invalid non-positive scale values.");
+    }
+    if (pressure.pressureHistoryLimit == 0 || pressure.recentEventLimit == 0) {
+        result.errors.push_back("Pressure analysis tuning has invalid history limits.");
+    }
+    if (pressure.recurringPressureSampleCount <= 0 || pressure.recurringPressureMinimum <= 0) {
+        result.errors.push_back("Pressure analysis tuning has invalid recurring pressure settings.");
+    }
+
     std::vector<std::string> scenarioIds;
     for (const auto& scenario : scenarios_) {
         scenarioIds.push_back(scenario.id);
@@ -999,6 +1105,7 @@ void ContentRegistry::validate(ContentLoadResult& result) const
 void ContentRegistry::loadFallbackContent()
 {
     loadedFromContent_ = false;
+    simulationConfig_ = SimulationConfig{};
     progressionTiers_ = {{
         .id = "fallback",
         .displayName = "Fallback",
@@ -1063,6 +1170,7 @@ const ScenarioDefinition& ContentRegistry::defaultScenario() const
     return it != scenarios_.end() ? *it : scenarios_.front();
 }
 const std::vector<InterventionDefinition>& ContentRegistry::interventions() const { return interventions_; }
+const SimulationConfig& ContentRegistry::simulationConfig() const { return simulationConfig_; }
 const std::vector<std::string>& ContentRegistry::loadErrors() const { return loadErrors_; }
 bool ContentRegistry::loadedFromContent() const { return loadedFromContent_; }
 

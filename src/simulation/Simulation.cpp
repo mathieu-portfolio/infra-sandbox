@@ -10,6 +10,7 @@
 Simulation::Simulation(const ScenarioDefinition& scenario, SimulationConfig config)
     : config_(config)
 {
+    pressureAnalysis_.setConfig(config_.pressureAnalysis);
     buildFromScenario(scenario);
 }
 
@@ -406,6 +407,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     cacheEntries_.clear();
     metrics_.reset();
     pressureAnalysis_.reset();
+    pressureAnalysis_.setConfig(config_.pressureAnalysis);
     nextRequestId_ = 1;
     timeSeconds_ = 0.0;
     simulationSpeed_ = 1.0;

@@ -2,6 +2,7 @@
   {
     "id": "enable_cache",
     "display_name": "Keep Recent Responses",
+    "icon_id": "action.add_cache",
     "description": "Let the selected service reuse recent cacheable responses.",
     "kind": "mechanic",
     "mechanic": "enable_cache",
@@ -26,6 +27,7 @@
   {
     "id": "throttle_traffic",
     "display_name": "Throttle Traffic",
+    "icon_id": "action.generic",
     "description": "Limit incoming traffic to prevent overload.",
     "kind": "mechanic",
     "mechanic": "throttle_traffic",
@@ -50,6 +52,7 @@
   {
     "id": "scale_up",
     "display_name": "Upgrade API Server Hardware",
+    "icon_id": "action.scale_up",
     "description": "Increase local processing capacity for the selected API service.",
     "kind": "mechanic",
     "mechanic": "scale_up",
@@ -76,6 +79,7 @@
   {
     "id": "add_cache",
     "display_name": "Keep Recent Responses",
+    "icon_id": "action.add_cache",
     "description": "Insert a cache near the selected dependency path.",
     "kind": "topology_mutation",
     "mechanic": "add_cache",
@@ -103,6 +107,7 @@
   {
     "id": "add_read_replica",
     "display_name": "Add Replica",
+    "icon_id": "action.replica",
     "description": "Add read capacity near a chosen region.",
     "kind": "topology_mutation",
     "mechanic": "add_read_replica",
@@ -130,6 +135,7 @@
   {
     "id": "add_queue",
     "display_name": "Queue Requests",
+    "icon_id": "action.queue",
     "description": "Insert buffering between the selected service and its dependency.",
     "kind": "topology_mutation",
     "mechanic": "add_queue",
@@ -157,6 +163,7 @@
   {
     "id": "add_regional_cache",
     "display_name": "Regional Cache",
+    "icon_id": "action.add_cache",
     "description": "Deploy cache capacity near regional demand.",
     "kind": "topology_mutation",
     "mechanic": "add_regional_cache",
@@ -184,6 +191,7 @@
   {
     "id": "toggle_retries",
     "display_name": "Toggle Retries",
+    "icon_id": "action.generic",
     "description": "Enable or disable request retries.",
     "kind": "mechanic",
     "mechanic": "toggle_retries",
@@ -208,6 +216,7 @@
   {
     "id": "clear_cache",
     "display_name": "Clear Cache",
+    "icon_id": "action.add_cache",
     "description": "Evict current cache contents.",
     "kind": "mechanic",
     "mechanic": "clear_cache",
