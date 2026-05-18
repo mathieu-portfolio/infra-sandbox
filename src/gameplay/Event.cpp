@@ -77,10 +77,10 @@ EventModifiers EventManager::modifiers() const
 {
     EventModifiers modifiers;
     for (const auto& active : activeEvents_) {
-        if (active.definition == nullptr) {
+        if (active.definition.location.scope != EventLocationScope::Global) {
             continue;
         }
-        const auto& effect = active.definition->effect;
+        const auto& effect = active.definition.effect;
         modifiers.trafficMultiplier *= effect.trafficMultiplier;
         modifiers.burstMultiplier *= effect.burstMultiplier;
         modifiers.databaseCapacityMultiplier *= effect.databaseCapacityMultiplier;
@@ -92,6 +92,21 @@ EventModifiers EventManager::modifiers() const
             modifiers.unlockedMechanics.end(),
             effect.unlockMechanics.begin(),
             effect.unlockMechanics.end());
+    }
+    return modifiers;
+}
+
+std::vector<LocalizedEventModifier> EventManager::localizedModifiers() const
+{
+    std::vector<LocalizedEventModifier> modifiers;
+    for (const auto& active : activeEvents_) {
+        if (active.definition.location.scope == EventLocationScope::Global) {
+            continue;
+        }
+        modifiers.push_back({
+            .location = active.definition.location,
+            .effect = active.definition.effect,
+        });
     }
     return modifiers;
 }
@@ -148,7 +163,7 @@ void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeco
 
     const auto& definition = definitions_[definitionIndex];
     activeEvents_.push_back({
-        .definition = &definition,
+        .definition = definition,
         .startedAtSeconds = scenarioTimeSeconds,
         .remainingSeconds = definition.durationSeconds,
     });
@@ -156,11 +171,25 @@ void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeco
         .timeSeconds = scenarioTimeSeconds,
         .category = definition.category,
         .name = definition.name,
+        .locationLabel = eventLocationLabel(definition.location),
     });
 
     while (recentEvents_.size() > 10) {
         recentEvents_.pop_front();
     }
+}
+
+std::string eventLocationLabel(const EventLocation& location)
+{
+    switch (location.scope) {
+    case EventLocationScope::Global:
+        return "Global";
+    case EventLocationScope::Region:
+        return location.region.empty() ? "Region" : location.region;
+    case EventLocationScope::NodeType:
+        return std::string("All ") + std::string(NodeRegistry::definition(location.nodeType).displayName);
+    }
+    return "Global";
 }
 
 const char* eventCategoryName(EventCategory category)

@@ -461,6 +461,7 @@ void ScenarioManager::applyPhaseToSimulation(Simulation& simulation) const
     simulation.setScenarioLatencyMultiplier(run_.activeDefinition.sandboxLab ? sandboxControls_.latencyMultiplier : 1.0);
     simulation.setScenarioDatabaseHeavyShareOverride(eventModifiers.databaseHeavyShare);
     simulation.setScenarioRetryDelayMultiplier(eventModifiers.retryDelayMultiplier);
+    simulation.setLocalizedEventModifiers(eventManager_.localizedModifiers());
 
     auto allowedMechanics = run_.unlockedInterventions;
     allowedMechanics.insert(

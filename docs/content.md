@@ -75,6 +75,18 @@ Phases can override the turn duration with `transition_duration`. Supported unit
 
 Sandbox scenarios can expose manual lab injections through `sandbox_events`. These reference normal event definitions from `content/events/`; the sandbox only chooses when to inject them.
 
+Events may include a `location` block. Omitted location defaults to global:
+
+```json
+"location": {"scope": "region", "region": "NorthAmerica"}
+```
+
+Supported scopes are:
+
+- `global`: effect applies through the normal scenario-wide modifier path.
+- `region`: effect applies only to nodes with matching geography region.
+- `node_type`: effect applies only to matching node types, for example `{"scope": "node_type", "node_type": "database"}`.
+
 Shared balancing values live in `content/balancing/`. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
 
 ## Objective Chains And Rewards

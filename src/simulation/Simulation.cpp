@@ -157,6 +157,12 @@ void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
     scenarioRetryDelayMultiplier_ = std::max(0.1, multiplier);
 }
 
+void Simulation::setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers)
+{
+    localizedEventModifiers_ = std::move(modifiers);
+    refreshEffectiveCapacities();
+}
+
 void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays)
 {
     timeSystem_.setScenarioElapsed(elapsedSeconds);
@@ -422,6 +428,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     burstModeEnabled_ = scenario.bursts.enabled;
     scenarioBurstOverride_.reset();
     scenarioDatabaseHeavyShareOverride_.reset();
+    localizedEventModifiers_.clear();
     setAllowedMechanics(scenario.allowedMechanics);
     runtimeSystems_.initialize(config_);
 
@@ -490,7 +497,7 @@ void Simulation::generateClientRequests(double dt)
             continue;
         }
 
-        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * burstMultiplier * dt;
+        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * localizedTrafficMultiplierFor(node) * burstMultiplier * dt;
         while (node.generationAccumulator >= 1.0) {
             createRequest(node, *link);
             node.generationAccumulator -= 1.0;
@@ -733,7 +740,9 @@ void Simulation::timeOutRequest(Request& request)
         request.state = RequestState::RetryWaiting;
         request.currentLinkId = -1;
         request.completedTime = timeSeconds_;
-        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_;
+        const Node* source = graph_.node(request.sourceNodeId);
+        const double localizedRetryDelayMultiplier = source != nullptr ? localizedRetryDelayMultiplierFor(*source) : 1.0;
+        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier;
         request.stateEnteredTime = timeSeconds_;
         metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
         return;
@@ -869,6 +878,52 @@ double Simulation::processingCost(const Request& request, const Node& node) cons
         : scenario_.requestTypes.apiCostDatabaseHeavy;
 }
 
+bool Simulation::eventLocationMatches(const EventLocation& location, const Node& node) const
+{
+    switch (location.scope) {
+    case EventLocationScope::Global:
+        return true;
+    case EventLocationScope::Region:
+        return node.hasGeoLocation && node.geoLocation.regionName == location.region;
+    case EventLocationScope::NodeType:
+        return node.type == location.nodeType;
+    }
+    return false;
+}
+
+double Simulation::localizedTrafficMultiplierFor(const Node& node) const
+{
+    double multiplier = 1.0;
+    for (const auto& modifier : localizedEventModifiers_) {
+        if (eventLocationMatches(modifier.location, node)) {
+            multiplier *= modifier.effect.trafficMultiplier;
+        }
+    }
+    return multiplier;
+}
+
+double Simulation::localizedCapacityMultiplierFor(const Node& node) const
+{
+    double multiplier = 1.0;
+    for (const auto& modifier : localizedEventModifiers_) {
+        if (eventLocationMatches(modifier.location, node)) {
+            multiplier *= modifier.effect.databaseCapacityMultiplier;
+        }
+    }
+    return multiplier;
+}
+
+double Simulation::localizedRetryDelayMultiplierFor(const Node& node) const
+{
+    double multiplier = 1.0;
+    for (const auto& modifier : localizedEventModifiers_) {
+        if (eventLocationMatches(modifier.location, node)) {
+            multiplier *= modifier.effect.retryDelayMultiplier;
+        }
+    }
+    return multiplier;
+}
+
 bool Simulation::requestTimedOut(const Request& request) const
 {
     return timeSeconds_ - request.creationTime > scenario_.requestTimeoutSeconds;
@@ -960,7 +1015,7 @@ void Simulation::refreshEffectiveCapacities()
         }
         node.processingCapacityPerSecond = std::max(
             0.1,
-            node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier);
+            node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier * localizedCapacityMultiplierFor(node));
     }
 }
 

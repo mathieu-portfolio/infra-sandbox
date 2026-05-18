@@ -1,6 +1,7 @@
 #pragma once
 
 #include "simulation/Mechanics.hpp"
+#include "simulation/NodeDefinition.hpp"
 #include "simulation/PressureAnalysis.hpp"
 
 #include <deque>
@@ -47,6 +48,18 @@ enum class EventEffectType {
     MechanicUnlock
 };
 
+enum class EventLocationScope {
+    Global,
+    Region,
+    NodeType
+};
+
+struct EventLocation {
+    EventLocationScope scope = EventLocationScope::Global;
+    std::string region;
+    NodeType nodeType = NodeType::ApiService;
+};
+
 struct EventTrigger {
     EventTriggerType type = EventTriggerType::TimeBased;
     double timeSeconds = 0.0;
@@ -74,6 +87,7 @@ struct EventDefinition {
     std::string name;
     std::string description;
     EventCategory category = EventCategory::TrafficEvent;
+    EventLocation location;
     EventTrigger trigger;
     EventEffect effect;
     double durationSeconds = 10.0;
@@ -81,7 +95,7 @@ struct EventDefinition {
 };
 
 struct ActiveEvent {
-    const EventDefinition* definition = nullptr;
+    EventDefinition definition;
     double startedAtSeconds = 0.0;
     double remainingSeconds = 0.0;
 };
@@ -95,10 +109,16 @@ struct EventModifiers {
     std::vector<MechanicType> unlockedMechanics;
 };
 
+struct LocalizedEventModifier {
+    EventLocation location;
+    EventEffect effect;
+};
+
 struct EventLogEntry {
     double timeSeconds = 0.0;
     EventCategory category = EventCategory::TrafficEvent;
     std::string name;
+    std::string locationLabel;
 };
 
 class EventManager {
@@ -111,6 +131,7 @@ public:
     [[nodiscard]] const std::vector<ActiveEvent>& activeEvents() const;
     [[nodiscard]] const std::deque<EventLogEntry>& recentEvents() const;
     [[nodiscard]] EventModifiers modifiers() const;
+    [[nodiscard]] std::vector<LocalizedEventModifier> localizedModifiers() const;
     [[nodiscard]] std::string latestEventName() const;
 
 private:
@@ -131,3 +152,4 @@ private:
 };
 
 const char* eventCategoryName(EventCategory category);
+std::string eventLocationLabel(const EventLocation& location);

@@ -243,7 +243,10 @@ std::vector<ActivityRow> buildActivityRows(const UiState& state, const Simulatio
     }
 
     for (const auto& event : scenarioManager.eventManager().recentEvents()) {
-        rows.push_back({event.timeSeconds, categoryForEvent(event.category), event.name, eventCategoryName(event.category), true});
+        const std::string detail = event.locationLabel.empty()
+            ? eventCategoryName(event.category)
+            : std::string(eventCategoryName(event.category)) + " • " + event.locationLabel;
+        rows.push_back({event.timeSeconds, categoryForEvent(event.category), event.name, detail, true});
     }
 
     std::sort(rows.begin(), rows.end(), [&state](const ActivityRow& lhs, const ActivityRow& rhs) {

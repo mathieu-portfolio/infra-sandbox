@@ -38,6 +38,7 @@ public:
     void setScenarioLatencyMultiplier(double multiplier);
     void setScenarioDatabaseHeavyShareOverride(std::optional<double> share);
     void setScenarioRetryDelayMultiplier(double multiplier);
+    void setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers);
     void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays = 0.0);
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);
@@ -92,6 +93,10 @@ private:
     [[nodiscard]] Link* linkBetween(int sourceNodeId, int targetNodeId);
     [[nodiscard]] std::optional<int> firstNodeOfType(NodeType type) const;
     [[nodiscard]] double processingCost(const Request& request, const Node& node) const;
+    [[nodiscard]] bool eventLocationMatches(const EventLocation& location, const Node& node) const;
+    [[nodiscard]] double localizedTrafficMultiplierFor(const Node& node) const;
+    [[nodiscard]] double localizedCapacityMultiplierFor(const Node& node) const;
+    [[nodiscard]] double localizedRetryDelayMultiplierFor(const Node& node) const;
     [[nodiscard]] bool requestTimedOut(const Request& request) const;
     [[nodiscard]] bool cacheHit(int key);
     void storeCache(int key);
@@ -124,6 +129,7 @@ private:
     bool burstModeEnabled_ = false;
     std::optional<BurstScenario> scenarioBurstOverride_;
     std::optional<double> scenarioDatabaseHeavyShareOverride_;
+    std::vector<LocalizedEventModifier> localizedEventModifiers_;
     std::array<bool, static_cast<std::size_t>(MechanicType::Count)> allowedMechanics_{};
     std::unordered_map<std::string, int> regionSlotsUsed_;
     std::unordered_map<std::string, int> regionSlotLimits_;

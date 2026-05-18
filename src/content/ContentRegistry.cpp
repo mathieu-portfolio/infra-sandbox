@@ -307,6 +307,13 @@ EventEffectType effectTypeFromId(const std::string& id)
     return EventEffectType::TrafficSpike;
 }
 
+EventLocationScope eventLocationScopeFromId(const std::string& id)
+{
+    if (id == "region") return EventLocationScope::Region;
+    if (id == "node_type") return EventLocationScope::NodeType;
+    return EventLocationScope::Global;
+}
+
 ScenarioModifierType modifierTypeFromId(const std::string& id)
 {
     if (id == "read_heavy_behavior") return ScenarioModifierType::ReadHeavyBehavior;
@@ -425,6 +432,11 @@ EventDefinition parseEvent(const Json& object)
     event.description = stringAt(object, "description");
     event.tags = stringsAt(object, "tags");
     event.category = eventCategoryFromId(stringAt(object, "category"));
+    if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
+        event.location.scope = eventLocationScopeFromId(stringAt(*location, "scope", "global"));
+        event.location.region = stringAt(*location, "region");
+        event.location.nodeType = nodeTypeFromId(stringAt(*location, "node_type"));
+    }
     if (const Json* trigger = object.find("trigger")) {
         event.trigger.type = triggerTypeFromId(stringAt(*trigger, "type"));
         event.trigger.timeSeconds = numberAt(*trigger, "time_seconds");
@@ -862,6 +874,18 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
 
     std::unordered_map<std::string, EventDefinition> events;
     for (const auto& object : loadDirectoryObjects(root / "events", result)) {
+        if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
+            const std::string scope = stringAt(*location, "scope", "global");
+            if (scope != "global" && scope != "region" && scope != "node_type") {
+                result.errors.push_back("Event " + stringAt(object, "id") + " has invalid location scope: " + scope);
+            }
+            if (scope == "region" && stringAt(*location, "region").empty()) {
+                result.errors.push_back("Event " + stringAt(object, "id") + " has region scope without region.");
+            }
+            if (scope == "node_type" && !knownNodeTypeId(stringAt(*location, "node_type"))) {
+                result.errors.push_back("Event " + stringAt(object, "id") + " has invalid location node type: " + stringAt(*location, "node_type"));
+            }
+        }
         if (const Json* trigger = object.find("trigger"); trigger != nullptr && trigger->isObject()) {
             const std::string metric = stringAt(*trigger, "metric");
             if (!metric.empty() && !knownMetricId(metric)) {
