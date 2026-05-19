@@ -1,19 +1,19 @@
 #pragma once
 
+#include "gameplay/GameplayPhaseController.hpp"
+#include "gameplay/SandboxController.hpp"
+#include "app/ScenarioSession.hpp"
+#include "gameplay/WorldActionController.hpp"
 #include "control/InterventionController.hpp"
 #include "control/OverlayController.hpp"
 #include "control/SelectionController.hpp"
 #include "control/SimulationController.hpp"
 #include "control/UiController.hpp"
-#include "gameplay/Scenario.hpp"
-#include "gameplay/ScenarioManager.hpp"
 #include "input/InputManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/Renderer.hpp"
-#include "simulation/Simulation.hpp"
 
 #include <cstddef>
-#include <string>
 
 class Application {
 public:
@@ -26,24 +26,14 @@ private:
     void handleInput();
     void resetScenario();
     void loadScenario(std::size_t scenarioIndex);
-    void resetUiStateForScenario(const std::string& feedback);
-    void beginScenarioGroundingSimulation();
     void applyPendingScenarioSelection();
     void applySandboxRequests();
     void applyUiRequests();
-    void generateWorldActionDraft();
-    void clearWorldActionPlan();
-    void applyWorldActionPlan();
-    void updatePhaseSimulation(float frameTime);
-    void beginTransition();
-    void applyPlannedInterventions();
-    void finishTransition(const MetricsSnapshot& beforeMetrics);
-    void appendResolutionSummary(std::string summary);
+    void applyWindowRequests();
+    bool shouldBlockCameraInput() const;
 
     InputManager inputManager_;
-    ScenarioDefinition scenarioDefinition_;
-    ScenarioManager scenarioManager_;
-    Simulation simulation_;
+    ScenarioSession session_;
     Renderer renderer_;
     CameraController cameraController_;
     SimulationController simulationController_;
@@ -51,9 +41,8 @@ private:
     SelectionController selectionController_;
     OverlayInputController overlayController_;
     UiController uiController_;
+    WorldActionController worldActionController_;
+    GameplayPhaseController gameplayPhaseController_;
+    SandboxController sandboxController_;
     bool paused_ = false;
-    double fixedStepAccumulator_ = 0.0;
-    MetricsSnapshot transitionBaseline_{};
-    std::size_t transitionEventLogStart_ = 0;
-    bool transitionReturnsToObservation_ = false;
 };

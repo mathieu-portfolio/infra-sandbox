@@ -1,0 +1,41 @@
+#include "app/UiStateReset.hpp"
+
+#include "ui/core/UiTypes.hpp"
+
+void resetUiStateForScenario(UiState& state, const std::string& feedback)
+{
+    state.gameplayPhase = GameplayPhase::Observation;
+    state.phaseAdvanceRequested = false;
+    state.transitionActionsApplied = false;
+    state.transitionVisualElapsedSeconds = 0.0;
+    state.transitionSimulatedSeconds = 0.0;
+    state.transitionTargetSimulatedSeconds = 0.0;
+    state.transitionPlaybackScale = 24.0;
+    state.transitionDurationLabel = "platform evolution";
+    state.plannedInterventions.clear();
+    state.eventPopupMode = EventPopupMode::None;
+    state.eventPopupEvents.clear();
+    state.eventPanelVisible = false;
+    state.eventPanelAcknowledged = false;
+    state.worldActionDraft.clear();
+    state.worldActionDraftVisible = false;
+    state.selectedWorldActionIndex = -1;
+    state.hoveredWorldActionIndex = -1;
+    state.suppressMapSelectionOnce = false;
+    state.worldActionCapacityBonus = {};
+    state.resolutionSummaries.clear();
+    state.lastCapacityUsageSummary.clear();
+    state.selection = {};
+    state.scenarioDroplistOpen = false;
+    state.objectivesDroplistOpen = false;
+    state.timelineCategoryDroplistOpen = false;
+    state.timelineFilterDroplistOpen = false;
+    state.placementActive = false;
+    state.hoveredActionIndex = -1;
+    state.selectedActionIndex = -1;
+    state.latestFeedback = feedback;
+    state.pendingVisualFeedbackEvents.clear();
+    state.actionHistory.clear();
+    state.metricsHistory.clear();
+    state.lastMetricSampleTime = -1.0;
+}
