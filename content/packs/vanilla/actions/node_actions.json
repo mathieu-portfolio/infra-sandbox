@@ -1,241 +1,495 @@
 [
   {
     "id": "enable_cache",
-    "display_name": "Keep Recent Responses",
+    "display_name": "Enable Response Cache",
     "icon_id": "action.add_cache",
-    "description": "Let the selected service reuse recent cacheable responses.",
+    "description": "Let the selected service reuse recent cacheable responses instead of asking downstream systems every time.",
     "kind": "mechanic",
     "mechanic": "enable_cache",
-    "target_types": ["global"],
-    "affected_layers": ["flow", "persistence"],
-    "node_types": ["api_service", "cache", "cdn_edge"],
-    "categories": ["Optimization", "Reliability"],
-    "affected_pressures": ["persistence", "latency"],
-    "useful_when": ["repeated reads are pushing work downstream"],
+    "target_types": [
+      "global"
+    ],
+    "affected_layers": [
+      "flow",
+      "persistence"
+    ],
+    "node_types": [
+      "api_service",
+      "cache",
+      "cdn_edge"
+    ],
+    "categories": [
+      "Optimization",
+      "Reliability"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "useful_when": "Use when repeated reads are pushing unnecessary work into the database path.",
     "architectural_pattern": "Shared Response Memory",
     "technology_example": "Redis",
-    "expected_benefits": "Repeated reads, database pressure",
-    "tradeoffs": "Cache behavior can hide fresh database pressure.",
-    "positive_effects": ["Repeated reads avoid database work", "Cache hits reduce latency"],
-    "negative_effects": ["Freshness and invalidation complexity increase"],
-    "pressure_shifts": ["Persistence pressure can shift into cache memory pressure"],
+    "expected_benefits": "Improves read latency and reduces persistence pressure when requests repeat.",
+    "tradeoffs": "Cache behavior can hide downstream pressure and stale entries may require explicit clearing.",
+    "positive_effects": [
+      "Repeated reads avoid database work",
+      "Cache hits reduce latency"
+    ],
+    "negative_effects": [
+      "Freshness and invalidation complexity increase"
+    ],
+    "pressure_shifts": [
+      "Persistence pressure can shift into cache memory pressure"
+    ],
     "complexity_cost": 0.5,
-    "engineering_costs": {"backend": 1, "data": 1},
-    "availability": {"requires_mechanic": "enable_cache"},
-    "tags": ["cache"]
+    "engineering_costs": {
+      "backend": 1,
+      "data": 1
+    },
+    "availability": {
+      "requires_mechanic": "enable_cache"
+    },
+    "tags": [
+      "cache"
+    ]
   },
   {
     "id": "throttle_traffic",
-    "display_name": "Throttle Traffic",
+    "display_name": "Apply Backpressure",
     "icon_id": "action.generic",
-    "description": "Limit incoming traffic to prevent overload.",
+    "description": "Limit incoming traffic so the system can drain queues instead of accepting more work than it can process.",
     "kind": "mechanic",
     "mechanic": "throttle_traffic",
-    "target_types": ["global"],
-    "affected_layers": ["flow", "reliability"],
-    "node_types": ["client_cluster", "api_service"],
-    "categories": ["Reliability"],
-    "affected_pressures": ["traffic", "queue", "failure"],
-    "useful_when": ["incoming demand is overwhelming the entry path"],
+    "target_types": [
+      "global"
+    ],
+    "affected_layers": [
+      "flow",
+      "reliability"
+    ],
+    "node_types": [
+      "client_cluster",
+      "api_service"
+    ],
+    "categories": [
+      "Reliability",
+      "reactive"
+    ],
+    "affected_pressures": [
+      "traffic",
+      "queue",
+      "failure"
+    ],
+    "useful_when": "Use when overload is spreading faster than capacity can be added.",
     "architectural_pattern": "Backpressure",
     "technology_example": "Rate limiting",
-    "expected_benefits": "Queue pressure, timeout control",
-    "tradeoffs": "Slower responses and reduced throughput.",
-    "positive_effects": ["Queue growth slows", "Timeout pressure can stabilize"],
-    "negative_effects": ["Throughput is intentionally reduced"],
-    "pressure_shifts": ["Traffic pressure shifts toward user-facing latency"],
+    "expected_benefits": "Protects core systems and reduces cascading failure risk.",
+    "tradeoffs": "Sacrifices some throughput or user access to preserve stability.",
+    "positive_effects": [
+      "Queue growth slows",
+      "Timeout pressure can stabilize"
+    ],
+    "negative_effects": [
+      "Throughput is intentionally reduced"
+    ],
+    "pressure_shifts": [
+      "Traffic pressure shifts toward user-facing latency"
+    ],
     "complexity_cost": 0.25,
-    "engineering_costs": {"operations": 1},
-    "availability": {"requires_mechanic": "throttle_traffic"},
-    "tags": ["traffic"]
+    "engineering_costs": {
+      "operations": 1
+    },
+    "availability": {
+      "requires_mechanic": "throttle_traffic"
+    },
+    "tags": [
+      "traffic"
+    ]
   },
   {
     "id": "scale_up",
-    "display_name": "Upgrade API Server Hardware",
+    "display_name": "Scale API Capacity",
     "icon_id": "action.scale_up",
     "description": "Increase local processing capacity for the selected API service.",
     "kind": "mechanic",
     "mechanic": "scale_up",
-    "target_types": ["node"],
-    "affected_layers": ["resources", "reliability"],
-    "node_types": ["api_service"],
-    "categories": ["Scaling"],
-    "affected_pressures": ["compute", "queue"],
-    "useful_when": ["requests pile up locally or compute saturation is high"],
+    "target_types": [
+      "node"
+    ],
+    "affected_layers": [
+      "resources",
+      "reliability"
+    ],
+    "node_types": [
+      "api_service"
+    ],
+    "categories": [
+      "Scaling"
+    ],
+    "affected_pressures": [
+      "compute",
+      "queue"
+    ],
+    "useful_when": "Use when API utilization and API queue pressure are the dominant bottleneck.",
     "architectural_pattern": "Vertical Scaling",
     "technology_example": "Larger instance",
-    "expected_benefits": "Processing capacity, API queue pressure",
-    "tradeoffs": "May not help downstream DB bottlenecks.",
-    "positive_effects": ["API queue pressure decreases", "Compute headroom increases"],
-    "negative_effects": ["Downstream database pressure can become more visible", "Operational complexity increases"],
-    "pressure_shifts": ["Compute relief can shift bottlenecks toward persistence"],
+    "expected_benefits": "Raises request processing throughput at the selected service.",
+    "tradeoffs": "Does not fix downstream database, cache, or network bottlenecks.",
+    "positive_effects": [
+      "API queue pressure decreases",
+      "Compute headroom increases"
+    ],
+    "negative_effects": [
+      "Downstream database pressure can become more visible",
+      "Operational complexity increases"
+    ],
+    "pressure_shifts": [
+      "Compute relief can shift bottlenecks toward persistence"
+    ],
     "complexity_cost": 1.0,
-    "engineering_costs": {"infrastructure": 1},
+    "engineering_costs": {
+      "infrastructure": 1
+    },
     "max_scale_level": 3,
     "diminishing_return": 0.72,
-    "availability": {"requires_mechanic": "scale_up"},
-    "tags": ["compute"]
+    "availability": {
+      "requires_mechanic": "scale_up"
+    },
+    "tags": [
+      "compute"
+    ]
   },
   {
     "id": "add_cache",
-    "display_name": "Keep Recent Responses",
+    "display_name": "Insert Cache Node",
     "icon_id": "action.add_cache",
-    "description": "Insert a cache near the selected dependency path.",
+    "description": "Add a cache into the selected dependency path so repeated reads can be absorbed before reaching storage.",
     "kind": "topology_mutation",
     "mechanic": "add_cache",
     "mutation": "add_cache",
     "requires_confirmation": true,
-    "target_types": ["link", "region"],
-    "affected_layers": ["resources", "persistence"],
-    "node_types": ["api_service", "database"],
-    "categories": ["Optimization"],
-    "affected_pressures": ["persistence", "latency"],
-    "useful_when": ["database-heavy requests repeat frequently"],
+    "target_types": [
+      "link",
+      "region"
+    ],
+    "affected_layers": [
+      "resources",
+      "persistence"
+    ],
+    "node_types": [
+      "api_service",
+      "database"
+    ],
+    "categories": [
+      "Optimization",
+      "structural"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "useful_when": "Use when database pressure comes from repeated read-heavy traffic.",
     "architectural_pattern": "Distributed Cache Layer",
     "technology_example": "Redis",
-    "expected_benefits": "Repeated reads, DB pressure, latency",
-    "tradeoffs": "Adds state and invalidation complexity.",
-    "positive_effects": ["Database pressure decreases", "Repeated-read latency improves"],
-    "negative_effects": ["Memory usage and invalidation complexity increase"],
-    "pressure_shifts": ["Persistence pressure can shift into cache state management"],
+    "expected_benefits": "Moves repeated read work away from persistence and can improve regional latency.",
+    "tradeoffs": "Adds topology complexity and may require cache placement decisions.",
+    "positive_effects": [
+      "Database pressure decreases",
+      "Repeated-read latency improves"
+    ],
+    "negative_effects": [
+      "Memory usage and invalidation complexity increase"
+    ],
+    "pressure_shifts": [
+      "Persistence pressure can shift into cache state management"
+    ],
     "complexity_cost": 1.5,
-    "engineering_costs": {"backend": 1, "data": 1},
+    "engineering_costs": {
+      "backend": 1,
+      "data": 1
+    },
     "region_slot_usage": 1,
-    "availability": {"requires_mechanic": "add_cache"},
-    "tags": ["cache", "topology"]
+    "availability": {
+      "requires_mechanic": "add_cache"
+    },
+    "tags": [
+      "cache",
+      "topology"
+    ]
   },
   {
     "id": "add_read_replica",
-    "display_name": "Add Replica",
+    "display_name": "Add Read Replica",
     "icon_id": "action.replica",
-    "description": "Add read capacity near a chosen region.",
+    "description": "Add read capacity near a chosen region to reduce pressure on the primary database.",
     "kind": "topology_mutation",
     "mechanic": "add_read_replica",
     "mutation": "add_read_replica",
     "requires_confirmation": true,
-    "target_types": ["region"],
-    "affected_layers": ["persistence"],
-    "node_types": ["database"],
-    "categories": ["Scaling", "Reliability"],
-    "affected_pressures": ["persistence", "latency"],
-    "useful_when": ["read pressure concentrates on the primary database"],
+    "target_types": [
+      "region"
+    ],
+    "affected_layers": [
+      "persistence"
+    ],
+    "node_types": [
+      "database"
+    ],
+    "categories": [
+      "Scaling",
+      "Reliability",
+      "structural"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "useful_when": "Use when read-heavy traffic saturates persistence but writes are not the main issue.",
     "architectural_pattern": "Read Replication",
     "technology_example": "Read replica",
-    "expected_benefits": "Read throughput, persistence pressure",
-    "tradeoffs": "Replication lag and operational complexity.",
-    "positive_effects": ["Read pressure spreads across persistence nodes", "Availability improves"],
-    "negative_effects": ["Replication overhead and stale-read risk increase"],
-    "pressure_shifts": ["Write/replication pressure can become the next bottleneck"],
+    "expected_benefits": "Improves read throughput and reduces primary database pressure.",
+    "tradeoffs": "Adds replication complexity and may introduce stale reads.",
+    "positive_effects": [
+      "Read pressure spreads across persistence nodes",
+      "Availability improves"
+    ],
+    "negative_effects": [
+      "Replication overhead and stale-read risk increase"
+    ],
+    "pressure_shifts": [
+      "Write/replication pressure can become the next bottleneck"
+    ],
     "complexity_cost": 2.0,
-    "engineering_costs": {"infrastructure": 1, "data": 1},
+    "engineering_costs": {
+      "infrastructure": 1,
+      "data": 1
+    },
     "region_slot_usage": 1,
-    "availability": {"requires_mechanic": "add_read_replica"},
-    "tags": ["database", "topology"]
+    "availability": {
+      "requires_mechanic": "add_read_replica"
+    },
+    "tags": [
+      "database",
+      "topology"
+    ]
   },
   {
     "id": "add_queue",
-    "display_name": "Queue Requests",
+    "display_name": "Insert Request Queue",
     "icon_id": "action.queue",
-    "description": "Insert buffering between the selected service and its dependency.",
+    "description": "Add buffering between the selected service and its dependency so bursts do not immediately overload downstream systems.",
     "kind": "topology_mutation",
     "mechanic": "add_queue",
     "mutation": "add_queue",
     "requires_confirmation": true,
-    "target_types": ["link"],
-    "affected_layers": ["flow", "reliability"],
-    "node_types": ["api_service", "database"],
-    "categories": ["Reliability"],
-    "affected_pressures": ["queue", "retry", "failure"],
-    "useful_when": ["bursts arrive faster than downstream services can drain"],
+    "target_types": [
+      "link"
+    ],
+    "affected_layers": [
+      "flow",
+      "reliability"
+    ],
+    "node_types": [
+      "api_service",
+      "database"
+    ],
+    "categories": [
+      "Reliability",
+      "structural"
+    ],
+    "affected_pressures": [
+      "queue",
+      "retry",
+      "failure"
+    ],
+    "useful_when": "Use when short spikes create instability but downstream work can be smoothed over time.",
     "architectural_pattern": "Work Queue",
     "technology_example": "Message broker",
-    "expected_benefits": "Burst absorption, retry amplification",
-    "tradeoffs": "Adds delay and async complexity.",
-    "positive_effects": ["Burst traffic is smoothed", "Downstream stability improves"],
-    "negative_effects": ["End-to-end latency and consistency complexity increase"],
-    "pressure_shifts": ["Queue pressure moves from database saturation into buffering"],
+    "expected_benefits": "Absorbs bursts and turns immediate overload into a backlog that can drain.",
+    "tradeoffs": "Improves stability but can increase waiting time if workers cannot catch up.",
+    "positive_effects": [
+      "Burst traffic is smoothed",
+      "Downstream stability improves"
+    ],
+    "negative_effects": [
+      "End-to-end latency and consistency complexity increase"
+    ],
+    "pressure_shifts": [
+      "Queue pressure moves from database saturation into buffering"
+    ],
     "complexity_cost": 1.25,
-    "engineering_costs": {"backend": 1, "operations": 1},
+    "engineering_costs": {
+      "backend": 1,
+      "operations": 1
+    },
     "region_slot_usage": 1,
-    "availability": {"requires_mechanic": "add_queue"},
-    "tags": ["queue", "topology"]
+    "availability": {
+      "requires_mechanic": "add_queue"
+    },
+    "tags": [
+      "queue",
+      "topology"
+    ]
   },
   {
     "id": "add_regional_cache",
-    "display_name": "Regional Cache",
+    "display_name": "Deploy Regional Cache",
     "icon_id": "action.add_cache",
-    "description": "Deploy cache capacity near regional demand.",
+    "description": "Place cache capacity near regional demand to reduce repeated long-distance reads.",
     "kind": "topology_mutation",
     "mechanic": "add_regional_cache",
     "mutation": "add_regional_cache",
     "requires_confirmation": true,
-    "target_types": ["region"],
-    "affected_layers": ["geography", "persistence"],
-    "node_types": ["client_cluster", "api_service", "cache"],
-    "categories": ["Optimization", "Reliability"],
-    "affected_pressures": ["latency", "traffic", "persistence"],
-    "useful_when": ["cross-region reads dominate latency"],
+    "target_types": [
+      "region"
+    ],
+    "affected_layers": [
+      "geography",
+      "persistence"
+    ],
+    "node_types": [
+      "client_cluster",
+      "api_service",
+      "cache"
+    ],
+    "categories": [
+      "Optimization",
+      "Reliability",
+      "structural"
+    ],
+    "affected_pressures": [
+      "latency",
+      "traffic",
+      "persistence"
+    ],
+    "useful_when": "Use when distant users repeatedly request the same data.",
     "architectural_pattern": "Edge Cache",
     "technology_example": "CDN",
-    "expected_benefits": "Traffic localization, inter-region latency",
-    "tradeoffs": "More distributed state.",
-    "positive_effects": ["Regional traffic stays closer to users", "Transatlantic latency decreases"],
-    "negative_effects": ["Distributed state and cache coordination increase"],
-    "pressure_shifts": ["Central persistence pressure shifts toward regional cache operations"],
+    "expected_benefits": "Cuts cross-region read latency and reduces load on the origin region.",
+    "tradeoffs": "Adds regional consistency and invalidation complexity.",
+    "positive_effects": [
+      "Regional traffic stays closer to users",
+      "Transatlantic latency decreases"
+    ],
+    "negative_effects": [
+      "Distributed state and cache coordination increase"
+    ],
+    "pressure_shifts": [
+      "Central persistence pressure shifts toward regional cache operations"
+    ],
     "complexity_cost": 1.75,
-    "engineering_costs": {"infrastructure": 1, "backend": 1},
+    "engineering_costs": {
+      "infrastructure": 1,
+      "backend": 1
+    },
     "region_slot_usage": 1,
-    "availability": {"requires_mechanic": "add_regional_cache"},
-    "tags": ["cache", "geography", "topology"]
+    "availability": {
+      "requires_mechanic": "add_regional_cache"
+    },
+    "tags": [
+      "cache",
+      "geography",
+      "topology"
+    ]
   },
   {
     "id": "toggle_retries",
-    "display_name": "Toggle Retries",
+    "display_name": "Tune Retries",
     "icon_id": "action.generic",
-    "description": "Enable or disable request retries.",
+    "description": "Enable or disable retries to trade user-visible failures against retry amplification.",
     "kind": "mechanic",
     "mechanic": "toggle_retries",
-    "target_types": ["global"],
-    "affected_layers": ["reliability"],
-    "node_types": ["api_service"],
-    "categories": ["Reliability"],
-    "affected_pressures": ["retry", "failure"],
-    "useful_when": ["timeouts and retries rise together"],
+    "target_types": [
+      "global"
+    ],
+    "affected_layers": [
+      "reliability"
+    ],
+    "node_types": [
+      "api_service"
+    ],
+    "categories": [
+      "Reliability",
+      "reliability"
+    ],
+    "affected_pressures": [
+      "retry",
+      "failure"
+    ],
+    "useful_when": "Use when timeouts either need temporary recovery attempts or retries are making overload worse.",
     "architectural_pattern": "Retry Policy",
     "technology_example": "Circuit breaker policy",
-    "expected_benefits": "Retry amplification control",
-    "tradeoffs": "May increase visible errors when disabled.",
-    "positive_effects": ["Retry amplification can decrease", "Overloaded services receive less repeated work"],
-    "negative_effects": ["Disabling retries can expose more user-visible failures"],
-    "pressure_shifts": ["Reliability pressure shifts between retries and visible errors"],
+    "expected_benefits": "Can improve recovery from transient failures or stop retry storms.",
+    "tradeoffs": "Retries can protect users from brief failures, but they can also multiply load during incidents.",
+    "positive_effects": [
+      "Retry amplification can decrease",
+      "Overloaded services receive less repeated work"
+    ],
+    "negative_effects": [
+      "Disabling retries can expose more user-visible failures"
+    ],
+    "pressure_shifts": [
+      "Reliability pressure shifts between retries and visible errors"
+    ],
     "complexity_cost": 0.25,
-    "engineering_costs": {"operations": 1},
-    "availability": {"requires_mechanic": "toggle_retries"},
-    "tags": ["reliability"]
+    "engineering_costs": {
+      "operations": 1
+    },
+    "availability": {
+      "requires_mechanic": "toggle_retries"
+    },
+    "tags": [
+      "reliability"
+    ]
   },
   {
     "id": "clear_cache",
     "display_name": "Clear Cache",
     "icon_id": "action.add_cache",
-    "description": "Evict current cache contents.",
+    "description": "Evict current cache contents when cached behavior is masking or amplifying a problem.",
     "kind": "mechanic",
     "mechanic": "clear_cache",
-    "target_types": ["global"],
-    "affected_layers": ["persistence"],
-    "node_types": ["cache", "cdn_edge"],
-    "categories": ["Diagnostics"],
-    "affected_pressures": ["persistence", "latency"],
-    "useful_when": ["you need to validate whether cache behavior is masking pressure"],
+    "target_types": [
+      "global"
+    ],
+    "affected_layers": [
+      "persistence"
+    ],
+    "node_types": [
+      "cache",
+      "cdn_edge"
+    ],
+    "categories": [
+      "Diagnostics",
+      "reactive"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "useful_when": "Use when stale or misleading cached data makes pressure hard to interpret.",
     "architectural_pattern": "Cache Invalidation",
     "technology_example": "TTL purge",
-    "expected_benefits": "Tests cache dependency and recovery",
-    "tradeoffs": "Temporarily increases DB pressure.",
-    "positive_effects": ["Reveals cache dependency and recovery behavior"],
-    "negative_effects": ["Database pressure and latency may spike while cache warms"],
-    "pressure_shifts": ["Read pressure shifts from cache back to persistence"],
+    "expected_benefits": "Resets cache state and makes fresh downstream behavior visible.",
+    "tradeoffs": "Temporarily increases database load while the cache warms again.",
+    "positive_effects": [
+      "Reveals cache dependency and recovery behavior"
+    ],
+    "negative_effects": [
+      "Database pressure and latency may spike while cache warms"
+    ],
+    "pressure_shifts": [
+      "Read pressure shifts from cache back to persistence"
+    ],
     "complexity_cost": 0.0,
-    "engineering_costs": {"operations": 1},
-    "availability": {"requires_mechanic": "clear_cache"},
-    "tags": ["cache"]
+    "engineering_costs": {
+      "operations": 1
+    },
+    "availability": {
+      "requires_mechanic": "clear_cache"
+    },
+    "tags": [
+      "cache"
+    ]
   }
 ]

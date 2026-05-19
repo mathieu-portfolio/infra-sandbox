@@ -1,0 +1,92 @@
+[
+  {
+    "id": "mobile_refresh_wave",
+    "display_name": "Client Refresh Wave",
+    "description": "A mild refresh pattern shifts traffic timing without changing the core lesson.",
+    "selection_weight": {
+      "min": 0.25,
+      "max": 0.45
+    },
+    "burst_override": {
+      "enabled": true,
+      "multiplier": {
+        "min": 1.35,
+        "max": 1.55
+      },
+      "period_turns": {
+        "min": 3,
+        "max": 4
+      },
+      "duration_turns": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "tags": [
+      "traffic"
+    ]
+  },
+  {
+    "id": "read_heavy_behavior",
+    "display_name": "Read-Heavy Users",
+    "description": "Repeated read patterns make cache and database behavior easier to compare.",
+    "selection_weight": {
+      "min": 0.35,
+      "max": 0.55
+    },
+    "database_heavy_share": {
+      "min": 0.66,
+      "max": 0.78
+    },
+    "tags": [
+      "database",
+      "cache"
+    ]
+  },
+  {
+    "id": "aggressive_retries",
+    "display_name": "Impatient Clients",
+    "description": "Retry timing varies how quickly failures feed back into more traffic.",
+    "selection_weight": {
+      "min": 0.22,
+      "max": 0.38
+    },
+    "events": [
+      "retry_storm"
+    ],
+    "tags": [
+      "reliability"
+    ]
+  },
+  {
+    "id": "regional_traffic_spike",
+    "display_name": "Regional Demand Skew",
+    "description": "A regional traffic event varies where pressure appears first.",
+    "selection_weight": {
+      "min": 0.3,
+      "max": 0.5
+    },
+    "events": [
+      "traffic_spike_40"
+    ],
+    "tags": [
+      "traffic",
+      "geography"
+    ]
+  },
+  {
+    "id": "slow_database_window",
+    "display_name": "Slow Storage Window",
+    "description": "A temporary storage slowdown varies persistence pressure.",
+    "selection_weight": {
+      "min": 0.25,
+      "max": 0.45
+    },
+    "events": [
+      "database_slowdown"
+    ],
+    "tags": [
+      "database"
+    ]
+  }
+]

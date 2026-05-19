@@ -4,14 +4,14 @@
 
 void resetUiStateForScenario(UiState& state, const std::string& feedback)
 {
-    state.gameplayPhase = GameplayPhase::Observation;
+    state.gameplayPhase = GameplayPhase::Planning;
     state.phaseAdvanceRequested = false;
     state.transitionActionsApplied = false;
     state.transitionVisualElapsedSeconds = 0.0;
     state.transitionSimulatedSeconds = 0.0;
     state.transitionTargetSimulatedSeconds = 0.0;
     state.transitionPlaybackScale = 24.0;
-    state.transitionDurationLabel = "platform evolution";
+    state.transitionDurationLabel = "operational cycle";
     state.plannedInterventions.clear();
     state.eventPopupMode = EventPopupMode::None;
     state.eventPopupEvents.clear();

@@ -292,7 +292,7 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
             .description = "Queue the previewed topology change.",
             .target = selectedTarget(simulation, state),
             .helps = "Adds this architecture change to the plan.",
-            .tradeOff = "Consequences resolve during transition.",
+            .tradeOff = "Consequences resolve during the turn.",
             .available = true,
         });
         cards.push_back({

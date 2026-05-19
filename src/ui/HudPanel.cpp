@@ -15,14 +15,12 @@ namespace {
 const char* phaseName(GameplayPhase phase)
 {
     switch (phase) {
-    case GameplayPhase::Observation:
-        return "Observation";
     case GameplayPhase::Planning:
         return "Planning";
-    case GameplayPhase::Transition:
-        return "Simulating";
-    case GameplayPhase::Resolution:
-        return "Resolution";
+    case GameplayPhase::Resolving:
+        return "Resolving";
+    case GameplayPhase::Analysis:
+        return "Analysis";
     }
     return "Unknown";
 }
@@ -30,14 +28,12 @@ const char* phaseName(GameplayPhase phase)
 const char* phaseActionLabel(GameplayPhase phase)
 {
     switch (phase) {
-    case GameplayPhase::Observation:
-        return "Start Planning";
     case GameplayPhase::Planning:
-        return "Validate Plan";
-    case GameplayPhase::Transition:
-        return "Simulating";
-    case GameplayPhase::Resolution:
-        return "Analyze / Continue";
+        return "Resolve Turn";
+    case GameplayPhase::Resolving:
+        return "Resolving";
+    case GameplayPhase::Analysis:
+        return "Next Planning";
     }
     return "Advance";
 }
@@ -132,20 +128,20 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
         return false;
     }
 
-    if (!CheckCollisionPointRec(mouse, hudPhaseButtonBounds(context.screenWidth)) || context.state->gameplayPhase == GameplayPhase::Transition) {
+    if (!CheckCollisionPointRec(mouse, hudPhaseButtonBounds(context.screenWidth)) || context.state->gameplayPhase == GameplayPhase::Resolving) {
         return false;
     }
 
     if (context.state->eventPopupMode != EventPopupMode::None) {
         context.state->latestFeedback = context.state->eventPopupMode == EventPopupMode::PlanningStart
             ? "Review the event briefing before validating the plan."
-            : "Review the simulation event recap before continuing.";
+            : "Review the event recap before continuing.";
         return true;
     }
 
     if (context.state->gameplayPhase == GameplayPhase::Planning && !context.state->worldActionDraft.empty() && context.state->selectedWorldActionIndex < 0) {
         context.state->worldActionDraftVisible = true;
-        context.state->latestFeedback = "Pick a World Action before validating the plan.";
+        context.state->latestFeedback = "Pick a World Action before resolving the turn.";
         return true;
     }
 

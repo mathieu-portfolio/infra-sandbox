@@ -17,6 +17,7 @@ public:
     void load(ScenarioDefinition scenario);
     void createRun(std::uint32_t seed);
     void reset();
+    void beginTurn();
     void update(double dt, Simulation& simulation);
     [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(const Simulation& simulation);
     [[nodiscard]] std::size_t eventLogSize() const;
@@ -33,6 +34,7 @@ public:
     [[nodiscard]] const EventManager& eventManager() const;
     [[nodiscard]] ScenarioRunState state() const;
     [[nodiscard]] double elapsedSeconds() const;
+    [[nodiscard]] int turnNumber() const;
     [[nodiscard]] const GameplayDuration& currentTransitionDuration() const;
     [[nodiscard]] std::string visibleCalendarLabel(const Simulation& simulation) const;
     [[nodiscard]] std::string archetypeSummary() const;

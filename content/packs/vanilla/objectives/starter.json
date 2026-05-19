@@ -1,0 +1,222 @@
+[
+  {
+    "id": "observe_traffic_latency",
+    "display_name": "Read the Traffic Pattern",
+    "description": "Watch traffic, queue depth, and latency before choosing a fix.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Observe one initialized turn, then stabilize before pressure compounds.",
+    "duration_turns": 1,
+    "starts_active": true,
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "scale_up",
+        "message": "Scale Up action unlocked. Use it when API queue pressure becomes dominant."
+      }
+    ],
+    "next_objectives": [
+      "stabilize_api_queue"
+    ],
+    "tags": [
+      "diagnosis",
+      "traffic",
+      "latency"
+    ]
+  },
+  {
+    "id": "keep_service_4_turns",
+    "display_name": "Keep the API Responsive",
+    "description": "Survive sustained growth while the API becomes the main bottleneck.",
+    "type": "survive_duration",
+    "summary": "Keep the API responsive for 4 turns.",
+    "duration_turns": 4,
+    "tags": [
+      "primary",
+      "api",
+      "scaling"
+    ]
+  },
+  {
+    "id": "stabilize_api_queue",
+    "display_name": "Drain the API Queue",
+    "description": "Reduce queue pressure after API capacity becomes the dominant constraint.",
+    "type": "stabilize_metric",
+    "condition": "pressure_below",
+    "summary": "Reduce queue pressure after API overload appears.",
+    "pressure": "queue",
+    "threshold": 8.0,
+    "rewards": [
+      {
+        "type": "complete_scenario",
+        "message": "Local startup stabilized. Database bottleneck scenario unlocked."
+      }
+    ],
+    "tags": [
+      "side",
+      "queues",
+      "api"
+    ]
+  },
+  {
+    "id": "latency_under_6s",
+    "display_name": "Avoid Runaway Latency",
+    "description": "Failure condition for unstable end-to-end latency.",
+    "type": "metric_threshold",
+    "summary": "Latency above 6s means the system is no longer usable.",
+    "threshold": 6.0,
+    "tags": [
+      "failure",
+      "latency"
+    ]
+  },
+  {
+    "id": "detect_persistence_pressure",
+    "display_name": "Find the Downstream Bottleneck",
+    "description": "Notice when database pressure, not API capacity, is driving instability.",
+    "type": "metric_threshold",
+    "condition": "pressure_detected",
+    "summary": "Detect persistence pressure on the database path.",
+    "pressure": "persistence",
+    "starts_active": true,
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "scale_up",
+        "message": "Scale Up action unlocked. Test whether API capacity fixes the bottleneck."
+      }
+    ],
+    "next_objectives": [
+      "observe_scale_limited"
+    ],
+    "tags": [
+      "diagnosis",
+      "database",
+      "persistence"
+    ]
+  },
+  {
+    "id": "observe_scale_limited",
+    "display_name": "Test the Wrong Fix Safely",
+    "description": "Use API scaling to observe that extra compute does not remove downstream persistence pressure.",
+    "type": "metric_threshold",
+    "condition": "action_used",
+    "metric": "scale_up",
+    "summary": "Scale the API and observe whether database pressure remains.",
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "add_cache",
+        "message": "Add Cache action unlocked. Cache can reduce downstream persistence pressure."
+      }
+    ],
+    "next_objectives": [
+      "reduce_db_pressure"
+    ],
+    "tags": [
+      "diagnosis",
+      "tradeoff",
+      "database"
+    ]
+  },
+  {
+    "id": "reduce_db_pressure",
+    "display_name": "Move Work Away from Storage",
+    "description": "Use caching or read capacity to reduce pressure on persistence.",
+    "type": "stabilize_metric",
+    "condition": "pressure_below",
+    "summary": "Reduce persistence pressure below the unstable range.",
+    "pressure": "persistence",
+    "threshold": 0.45,
+    "rewards": [
+      {
+        "type": "complete_scenario",
+        "message": "Persistence pressure stabilized. Burst Traffic unlocked."
+      }
+    ],
+    "tags": [
+      "database",
+      "stabilization",
+      "caching"
+    ]
+  },
+  {
+    "id": "manage_db_4_turns",
+    "display_name": "Keep Storage Stable",
+    "description": "Survive read-heavy growth without letting the database dominate the system.",
+    "type": "survive_duration",
+    "summary": "Keep storage stable for 4 turns.",
+    "duration_turns": 4,
+    "tags": [
+      "primary",
+      "database",
+      "persistence"
+    ]
+  },
+  {
+    "id": "timeout_under_3s",
+    "display_name": "Limit Database Timeouts",
+    "description": "Failure condition for persistence overload.",
+    "type": "max_error_rate",
+    "summary": "Timeout rate above 3/s means storage is failing under load.",
+    "threshold": 3.0,
+    "tags": [
+      "failure",
+      "database"
+    ]
+  },
+  {
+    "id": "absorb_bursts_4_turns",
+    "display_name": "Absorb Burst Waves",
+    "description": "Survive repeated spikes by smoothing load and preventing retry amplification.",
+    "type": "survive_duration",
+    "summary": "Absorb burst traffic for 4 turns.",
+    "duration_turns": 4,
+    "tags": [
+      "primary",
+      "traffic",
+      "reliability",
+      "queues"
+    ]
+  },
+  {
+    "id": "timeout_under_4s",
+    "display_name": "Prevent Retry Storms",
+    "description": "Failure condition for burst traffic and retry amplification.",
+    "type": "max_error_rate",
+    "summary": "Retry storms above 4 timeouts/s are unstable.",
+    "threshold": 4.0,
+    "tags": [
+      "failure",
+      "reliability",
+      "retries"
+    ]
+  },
+  {
+    "id": "first_request_1_turn",
+    "display_name": "Serve the First Users",
+    "description": "Learn the basic request path with a small, stable workload.",
+    "type": "survive_duration",
+    "summary": "Keep a small service healthy for 2 turns.",
+    "duration_turns": 2,
+    "tags": [
+      "primary",
+      "intro",
+      "request-flow"
+    ]
+  },
+  {
+    "id": "transatlantic_latency",
+    "display_name": "Place Reads Near Users",
+    "description": "Keep regional read latency under control by reducing repeated cross-region work.",
+    "type": "metric_threshold",
+    "summary": "Keep p95 latency below 300ms while traffic crosses regions.",
+    "threshold": 0.3,
+    "tags": [
+      "primary",
+      "geography",
+      "latency",
+      "caching"
+    ]
+  }
+]

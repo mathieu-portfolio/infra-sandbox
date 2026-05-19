@@ -40,6 +40,7 @@ Application::Application()
     for (const auto& error : content::ContentRegistry::instance().loadErrors()) {
         TraceLog(LOG_WARNING, "Content: %s", error.c_str());
     }
+    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
 }
 
 Application::~Application()
@@ -97,30 +98,18 @@ void Application::handleInput()
 void Application::resetScenario()
 {
     session_.reset();
-    UiState& state = renderer_.uiManager().state();
-    resetUiStateForScenario(state, "Scenario reset. Running an initial simulation pass.");
-    gameplayPhaseController_.reset();
-    session_.simulation().setPaused(true);
-    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+    initializeLoadedScenario("Scenario reset. Running an initial operational cycle.");
 }
 
 void Application::loadDefaultPackScenario()
 {
     const content::ContentPackMetadata& metadata = content::ContentRegistry::instance().packMetadata();
     if (!metadata.defaultScenarioId.empty() && session_.loadScenario(metadata.defaultScenarioId)) {
-        UiState& state = renderer_.uiManager().state();
-        resetUiStateForScenario(state, "Content pack loaded. Running the default scenario warm-up.");
-        gameplayPhaseController_.reset();
-        session_.simulation().setPaused(true);
-        gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+        initializeLoadedScenario("Content pack loaded. Running the default scenario's initial operational cycle.");
         return;
     }
     session_.reloadDefaultScenario();
-    UiState& state = renderer_.uiManager().state();
-    resetUiStateForScenario(state, "Content pack loaded. Running the default scenario warm-up.");
-    gameplayPhaseController_.reset();
-    session_.simulation().setPaused(true);
-    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+    initializeLoadedScenario("Content pack loaded. Running the default scenario's initial operational cycle.");
 }
 
 void Application::loadRequestedPack(const std::string& packId)
@@ -143,11 +132,7 @@ void Application::loadScenario(std::size_t scenarioIndex)
         return;
     }
 
-    UiState& state = renderer_.uiManager().state();
-    resetUiStateForScenario(state, "Scenario loaded. Running an initial simulation pass.");
-    gameplayPhaseController_.reset();
-    session_.simulation().setPaused(true);
-    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
 }
 
 void Application::loadScenario(const std::string& scenarioId)
@@ -156,8 +141,13 @@ void Application::loadScenario(const std::string& scenarioId)
         return;
     }
 
+    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
+}
+
+void Application::initializeLoadedScenario(const std::string& feedback)
+{
     UiState& state = renderer_.uiManager().state();
-    resetUiStateForScenario(state, "Scenario loaded. Running an initial simulation pass.");
+    resetUiStateForScenario(state, feedback);
     gameplayPhaseController_.reset();
     session_.simulation().setPaused(true);
     gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);

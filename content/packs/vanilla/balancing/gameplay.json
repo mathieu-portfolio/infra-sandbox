@@ -30,7 +30,7 @@
       "processor_retry_floor": 0.25
     },
     "history": {
-      "event_cooldown_seconds": 6.0,
+      "event_cooldown_turns": 6.0,
       "pressure_history_limit": 24,
       "recent_event_limit": 8,
       "recurring_sample_count": 4,

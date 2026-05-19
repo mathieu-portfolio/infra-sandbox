@@ -102,7 +102,7 @@ EventOverlayLayout buildEventOverlayLayout(int screenWidth, int screenHeight, Ev
 
     auto intro = std::make_unique<ui::TextBlockNode>(
         planning ? "A new event shaped the planning context. Adapt your actions before advancing time."
-                 : "These events occurred while simulation time advanced. You can react during the next planning phase.",
+                 : "These events occurred during the resolved operational cycle. You can react during the next planning phase.",
         13,
         "intro");
     intro->color = {205, 213, 224, 255};
@@ -204,7 +204,7 @@ void EventOverlay::draw(const UiContext& context, const ScenarioManager& scenari
     DrawText(planning ? "EVENT BRIEFING" : "SIMULATION EVENT RECAP", static_cast<int>(layout.title.x + 32.0f), static_cast<int>(layout.title.y + 4.0f), 14, {139, 148, 158, 255});
     drawTextClipped(
         planning ? "A new event shaped the planning context. Adapt your actions before advancing time."
-                 : "These events occurred while simulation time advanced. You can react during the next planning phase.",
+                 : "These events occurred during the resolved operational cycle. You can react during the next planning phase.",
         layout.intro,
         13,
         {205, 213, 224, 255});

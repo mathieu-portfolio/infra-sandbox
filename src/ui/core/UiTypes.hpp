@@ -77,10 +77,9 @@ enum class TimelineFilter {
 };
 
 enum class GameplayPhase {
-    Observation,
     Planning,
-    Transition,
-    Resolution
+    Resolving,
+    Analysis
 };
 
 struct UiSelection {
@@ -150,14 +149,14 @@ struct WorldActionDraft {
 };
 
 struct UiState {
-    GameplayPhase gameplayPhase = GameplayPhase::Observation;
+    GameplayPhase gameplayPhase = GameplayPhase::Planning;
     bool phaseAdvanceRequested = false;
     bool transitionActionsApplied = false;
     double transitionVisualElapsedSeconds = 0.0;
     double transitionSimulatedSeconds = 0.0;
     double transitionTargetSimulatedSeconds = 0.0;
     double transitionPlaybackScale = 24.0;
-    std::string transitionDurationLabel = "platform evolution";
+    std::string transitionDurationLabel = "operational cycle";
     std::deque<PlannedIntervention> plannedInterventions;
     EventPopupMode eventPopupMode = EventPopupMode::None;
     std::vector<EventLogEntry> eventPopupEvents;

@@ -134,6 +134,8 @@ const char* engineeringDomainName(EngineeringDomain domain)
 const char* gameplayDurationUnitName(GameplayDurationUnit unit)
 {
     switch (unit) {
+    case GameplayDurationUnit::Turns:
+        return "turns";
     case GameplayDurationUnit::Seconds:
         return "seconds";
     case GameplayDurationUnit::Minutes:
@@ -154,6 +156,8 @@ double gameplayDurationCalendarDays(const GameplayDuration& duration)
         return 0.0;
     }
     switch (duration.unit) {
+    case GameplayDurationUnit::Turns:
+        return 0.0;
     case GameplayDurationUnit::Seconds:
         return duration.value / 86400.0;
     case GameplayDurationUnit::Minutes:

@@ -17,7 +17,7 @@ public:
     void updateSimulation(float frameTime, UiState& state, ScenarioSession& session, const WorldActionController& worldActions);
 
 private:
-    void finishTransition(UiState& state, ScenarioSession& session, const MetricsSnapshot& beforeMetrics);
+    void finishTransition(UiState& state, ScenarioSession& session, const MetricsSnapshot& beforeMetrics, const WorldActionController& worldActions);
     void appendResolutionSummary(UiState& state, std::string summary) const;
 
     double fixedStepAccumulator_ = 0.0;

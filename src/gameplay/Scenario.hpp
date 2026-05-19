@@ -69,6 +69,7 @@ struct EngineeringCost {
 };
 
 enum class GameplayDurationUnit {
+    Turns,
     Seconds,
     Minutes,
     Days,
@@ -233,6 +234,7 @@ struct ScenarioObjective {
     std::string summary;
     double threshold = 0.0;
     double durationSeconds = 0.0;
+    int durationTurns = 0;
     bool startsActive = false;
     std::vector<ObjectiveReward> rewards;
     std::vector<std::string> nextObjectives;
@@ -243,8 +245,10 @@ struct ScenarioPhase {
     std::string eventMessage;
     double startTimeSeconds = 0.0;
     NumericRange startTimeSecondsRange{0.0, 0.0};
+    int startTurn = 0;
     double durationSeconds = 30.0;
     NumericRange durationSecondsRange{30.0, 30.0};
+    int durationTurns = 0;
     GameplayDuration transitionDuration;
     double trafficMultiplier = 1.0;
     NumericRange trafficMultiplierRange{1.0, 1.0};
@@ -303,6 +307,8 @@ struct ScenarioRun {
     std::vector<ScenarioModifierDefinition> selectedModifiers;
     ScenarioRunState state = ScenarioRunState::Running;
     double elapsedSeconds = 0.0;
+    int turnNumber = 0;
+    double turnElapsedSeconds = 0.0;
     double calendarElapsedDays = 0.0;
     double objectiveProgress = 0.0;
     int currentPhaseIndex = -1;

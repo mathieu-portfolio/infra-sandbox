@@ -31,6 +31,7 @@ private:
     void loadScenario(const std::string& scenarioId);
     void loadDefaultPackScenario();
     void loadRequestedPack(const std::string& packId);
+    void initializeLoadedScenario(const std::string& feedback);
     void applyPendingScenarioSelection();
     void applyPendingPackSelection();
     void applySandboxRequests();

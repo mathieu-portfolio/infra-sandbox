@@ -21,17 +21,35 @@ void GameplayPhaseController::beginScenarioGroundingSimulation(UiState& state, S
     transitionReturnsToObservation_ = true;
     state.transitionPlaybackScale = 24.0;
     beginTransition(state, session, worldActions);
-    state.transitionDurationLabel = "initial traffic warm-up";
-    state.latestFeedback = "Running initial simulation to establish traffic, queues, and pressure.";
+    state.transitionDurationLabel = "initial operational cycle";
+    state.latestFeedback = "Running the initial operational cycle to establish traffic, queues, and pressure.";
 }
 
 void GameplayPhaseController::applyUiRequests(UiState& state, ScenarioSession& session, const WorldActionController& worldActions)
 {
     if (state.phaseAdvanceRequested) {
         state.phaseAdvanceRequested = false;
-        if (state.gameplayPhase == GameplayPhase::Observation) {
+        if (state.gameplayPhase == GameplayPhase::Planning) {
+            if (state.eventPopupMode != EventPopupMode::None) {
+                state.latestFeedback = "Review the event briefing before resolving the turn.";
+                return;
+            }
+            if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
+                state.worldActionDraftVisible = true;
+                state.latestFeedback = "Pick a World Action before resolving the turn.";
+                return;
+            }
+            state.transitionPlaybackScale = 24.0;
+            beginTransition(state, session, worldActions);
+        } else if (state.gameplayPhase == GameplayPhase::Analysis) {
+            if (state.eventPopupMode != EventPopupMode::None) {
+                state.latestFeedback = "Review the event recap before continuing.";
+                return;
+            }
             state.gameplayPhase = GameplayPhase::Planning;
+            state.resolutionSummaries.clear();
             state.lastCapacityUsageSummary.clear();
+            worldActions.clearPlan(state);
             state.eventPopupMode = EventPopupMode::None;
             state.eventPopupEvents.clear();
             if (auto planningEvent = session.scenarioManager().rollPlanningEvent(session.simulation())) {
@@ -44,29 +62,7 @@ void GameplayPhaseController::applyUiRequests(UiState& state, ScenarioSession& s
             state.eventPanelAcknowledged = false;
             worldActions.generateDraft(state, session);
             state.worldActionDraftVisible = state.eventPopupMode == EventPopupMode::None && !state.worldActionDraft.empty();
-            state.latestFeedback = "Planning phase. Queue actions, then validate the plan.";
-        } else if (state.gameplayPhase == GameplayPhase::Planning) {
-            if (state.eventPopupMode != EventPopupMode::None) {
-                state.latestFeedback = "Review the event popup before validating the plan.";
-                return;
-            }
-            if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
-                state.worldActionDraftVisible = true;
-                state.latestFeedback = "Pick a World Action before validating the plan.";
-                return;
-            }
-            state.transitionPlaybackScale = 24.0;
-            beginTransition(state, session, worldActions);
-        } else if (state.gameplayPhase == GameplayPhase::Resolution) {
-            if (state.eventPopupMode != EventPopupMode::None) {
-                state.latestFeedback = "Review the simulation event recap before continuing.";
-                return;
-            }
-            state.gameplayPhase = GameplayPhase::Observation;
-            state.resolutionSummaries.clear();
-            state.lastCapacityUsageSummary.clear();
-            worldActions.clearPlan(state);
-            state.latestFeedback = "Observation phase. Inspect pressure movement before planning again.";
+            state.latestFeedback = "Planning phase. Queue actions, then resolve one operational cycle.";
         }
     }
 }
@@ -80,21 +76,22 @@ void GameplayPhaseController::beginTransition(UiState& state, ScenarioSession& s
         : duration.label;
     const double calendarDays = gameplayDurationCalendarDays(duration);
     session.scenarioManager().setCalendarProgressionScale(duration.simulationSeconds > 0.0 ? calendarDays / duration.simulationSeconds : 0.0);
-    state.gameplayPhase = GameplayPhase::Transition;
+    session.scenarioManager().beginTurn();
+    state.gameplayPhase = GameplayPhase::Resolving;
     state.transitionActionsApplied = false;
     state.transitionVisualElapsedSeconds = 0.0;
     state.transitionSimulatedSeconds = 0.0;
     state.resolutionSummaries.clear();
     transitionEventLogStart_ = session.scenarioManager().eventLogSize();
     worldActions.applyPlan(state, session);
-    state.latestFeedback = "Transition running. Simulating " + state.transitionDurationLabel + ".";
+    state.latestFeedback = "Resolving turn " + std::to_string(session.scenarioManager().turnNumber()) + ".";
     transitionBaseline_ = session.simulation().metrics();
     fixedStepAccumulator_ = 0.0;
 }
 
 void GameplayPhaseController::updateSimulation(float frameTime, UiState& state, ScenarioSession& session, const WorldActionController& worldActions)
 {
-    if (state.gameplayPhase != GameplayPhase::Transition) {
+    if (state.gameplayPhase != GameplayPhase::Resolving) {
         session.simulation().setPaused(true);
         return;
     }
@@ -113,7 +110,7 @@ void GameplayPhaseController::updateSimulation(float frameTime, UiState& state, 
     if (remaining <= 0.0) {
         state.transitionSimulatedSeconds = target;
         fixedStepAccumulator_ = 0.0;
-        finishTransition(state, session, transitionBaseline_);
+        finishTransition(state, session, transitionBaseline_, worldActions);
         return;
     }
 
@@ -149,55 +146,64 @@ void GameplayPhaseController::updateSimulation(float frameTime, UiState& state, 
     if (state.transitionSimulatedSeconds >= target) {
         state.transitionSimulatedSeconds = target;
         fixedStepAccumulator_ = 0.0;
-        finishTransition(state, session, transitionBaseline_);
+        finishTransition(state, session, transitionBaseline_, worldActions);
     }
 }
 
-void GameplayPhaseController::finishTransition(UiState& state, ScenarioSession& session, const MetricsSnapshot& beforeMetrics)
+void GameplayPhaseController::finishTransition(UiState& state, ScenarioSession& session, const MetricsSnapshot& beforeMetrics, const WorldActionController& worldActions)
 {
     const MetricsSnapshot after = session.simulation().metrics();
-    state.gameplayPhase = GameplayPhase::Resolution;
+    state.gameplayPhase = GameplayPhase::Analysis;
     state.transitionActionsApplied = false;
     state.eventPopupEvents = session.scenarioManager().eventsSince(transitionEventLogStart_);
     state.eventPopupMode = state.eventPopupEvents.empty() ? EventPopupMode::None : EventPopupMode::SimulationRecap;
     state.eventPanelVisible = state.eventPopupMode != EventPopupMode::None;
     state.eventPanelAcknowledged = false;
-    appendResolutionSummary(state, "Simulated " + state.transitionDurationLabel + ".");
+    appendResolutionSummary(state, "Turn " + std::to_string(session.scenarioManager().turnNumber()) + " resolved.");
     if (!state.lastCapacityUsageSummary.empty()) {
         appendResolutionSummary(state, "Engineering capacity used: " + state.lastCapacityUsageSummary + ".");
     }
     if (after.apiQueueDepth < beforeMetrics.apiQueueDepth) {
         appendResolutionSummary(state, "API queue pressure improved locally.");
     } else if (after.apiQueueDepth > beforeMetrics.apiQueueDepth) {
-        appendResolutionSummary(state, "API queue pressure increased during the transition.");
+        appendResolutionSummary(state, "API queue pressure increased this turn.");
     }
     if (after.databaseQueueDepth > beforeMetrics.databaseQueueDepth) {
-        appendResolutionSummary(state, "Persistence pressure increased downstream.");
+        appendResolutionSummary(state, "Persistence pressure increased downstream this turn.");
     } else if (after.databaseQueueDepth < beforeMetrics.databaseQueueDepth) {
         appendResolutionSummary(state, "Persistence pressure decreased after the plan.");
     }
     if (after.averageLatencySeconds > beforeMetrics.averageLatencySeconds * 1.1) {
         appendResolutionSummary(state, "Average latency worsened; inspect dependency paths.");
     } else if (after.averageLatencySeconds + 0.01 < beforeMetrics.averageLatencySeconds) {
-        appendResolutionSummary(state, "Latency improved over the transition window.");
+        appendResolutionSummary(state, "Latency improved this turn.");
     }
     if (session.simulation().pressure().dominantPressure != PressureCategory::None) {
         appendResolutionSummary(state, std::string("Emerging bottleneck: ") + pressureCategoryName(session.simulation().pressure().dominantPressure) + " pressure.");
     }
     state.latestFeedback = state.resolutionSummaries.empty()
-        ? "Transition complete."
-        : "Transition complete. Review the resolution summary.";
+        ? "Turn resolved."
+        : "Turn resolved. Review the analysis summary.";
 
     if (transitionReturnsToObservation_) {
         transitionReturnsToObservation_ = false;
-        state.gameplayPhase = GameplayPhase::Observation;
+        state.gameplayPhase = GameplayPhase::Planning;
         state.eventPopupMode = EventPopupMode::None;
         state.eventPopupEvents.clear();
         state.eventPanelVisible = false;
         state.eventPanelAcknowledged = false;
         state.resolutionSummaries.clear();
         state.lastCapacityUsageSummary.clear();
-        state.latestFeedback = "Initial simulation complete. Inspect the live pressure before planning.";
+        worldActions.clearPlan(state);
+        if (auto planningEvent = session.scenarioManager().rollPlanningEvent(session.simulation())) {
+            state.eventPopupEvents.push_back(*planningEvent);
+            state.eventPopupMode = EventPopupMode::PlanningStart;
+            state.eventPanelVisible = true;
+        }
+        state.eventPanelAcknowledged = false;
+        worldActions.generateDraft(state, session);
+        state.worldActionDraftVisible = state.eventPopupMode == EventPopupMode::None && !state.worldActionDraft.empty();
+        state.latestFeedback = "Initial operational state ready. Plan the next turn.";
     }
     fixedStepAccumulator_ = 0.0;
 }

@@ -58,8 +58,8 @@ double scaledMultiplier(double multiplier, double intensity)
 BurstScenario instantiateBurst(BurstScenario burst, std::uint32_t seed, const std::string& key)
 {
     burst.multiplier = content::sampleRange(burst.multiplierRange, seed, key + ".multiplier");
-    burst.periodSeconds = content::sampleRange(burst.periodSecondsRange, seed, key + ".period_seconds");
-    burst.durationSeconds = content::sampleRange(burst.durationSecondsRange, seed, key + ".duration_seconds");
+    burst.periodSeconds = content::sampleRange(burst.periodSecondsRange, seed, key + ".period_turns");
+    burst.durationSeconds = content::sampleRange(burst.durationSecondsRange, seed, key + ".duration_turns");
     return burst;
 }
 
@@ -75,7 +75,10 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
     if (event.effect.databaseHeavyShareRange) {
         event.effect.databaseHeavyShare = content::sampleRange(*event.effect.databaseHeavyShareRange, seed, key + ".effect.database_heavy_share");
     }
-    event.durationSeconds = content::sampleRange(event.durationSecondsRange, seed, key + ".duration_seconds");
+    event.durationSeconds = content::sampleRange(event.durationSecondsRange, seed, key + ".duration_turns");
+    if (event.durationTurns > 0 && event.durationSecondsRange.min == 10.0 && event.durationSecondsRange.max == 10.0) {
+        event.durationSeconds = 0.0;
+    }
     event.intensity = content::sampleRange(event.intensityRange, seed, key + ".intensity");
     event.effect.trafficMultiplier = scaledMultiplier(event.effect.trafficMultiplier, event.intensity);
     event.effect.burstMultiplier = scaledMultiplier(event.effect.burstMultiplier, event.intensity);
@@ -136,6 +139,8 @@ void ScenarioManager::createRun(std::uint32_t seed)
     run_.activeDefinition = createActiveDefinition(seed);
     run_.state = ScenarioRunState::Running;
     run_.elapsedSeconds = 0.0;
+    run_.turnNumber = 0;
+    run_.turnElapsedSeconds = 0.0;
     run_.calendarElapsedDays = 0.0;
     run_.objectiveProgress = 0.0;
     run_.currentPhaseIndex = run_.activeDefinition.phases.empty() ? -1 : 0;
@@ -144,19 +149,36 @@ void ScenarioManager::createRun(std::uint32_t seed)
     eventManager_.reset(run_.activeDefinition.events, seed);
 }
 
+void ScenarioManager::beginTurn()
+{
+    ++run_.turnNumber;
+    run_.turnElapsedSeconds = 0.0;
+}
+
 void ScenarioManager::update(double dt, Simulation& simulation)
 {
+    if (run_.turnNumber == 0) {
+        beginTurn();
+    }
     run_.elapsedSeconds += dt;
+    run_.turnElapsedSeconds += dt;
     run_.calendarElapsedDays += dt * calendarDaysPerSimulationSecond_;
     run_.currentPhaseIndex = -1;
     for (int i = 0; i < static_cast<int>(run_.activeDefinition.phases.size()); ++i) {
         const auto& phase = run_.activeDefinition.phases[i];
-        if (run_.elapsedSeconds >= phase.startTimeSeconds && run_.elapsedSeconds < phase.startTimeSeconds + phase.durationSeconds) {
+        const bool turnPhase = phase.startTurn > 0 || phase.durationTurns > 0;
+        if (turnPhase) {
+            const int start = std::max(1, phase.startTurn);
+            const int end = phase.durationTurns > 0 ? start + phase.durationTurns : start + 1;
+            if (run_.turnNumber >= start && run_.turnNumber < end) {
+                run_.currentPhaseIndex = i;
+            }
+        } else if (run_.elapsedSeconds >= phase.startTimeSeconds && run_.elapsedSeconds < phase.startTimeSeconds + phase.durationSeconds) {
             run_.currentPhaseIndex = i;
         }
     }
 
-    eventManager_.update(dt, run_.elapsedSeconds, run_.currentPhaseIndex, simulation);
+    eventManager_.update(dt, run_.elapsedSeconds, run_.turnNumber, currentTransitionDuration().simulationSeconds, run_.currentPhaseIndex, simulation);
     const double phaseElapsed = currentPhase() != nullptr
         ? run_.elapsedSeconds - currentPhase()->startTimeSeconds
         : run_.elapsedSeconds;
@@ -167,7 +189,7 @@ void ScenarioManager::update(double dt, Simulation& simulation)
 
 std::optional<EventLogEntry> ScenarioManager::rollPlanningEvent(const Simulation& simulation)
 {
-    return eventManager_.rollPlanningEvent(run_.elapsedSeconds, run_.currentPhaseIndex, simulation);
+    return eventManager_.rollPlanningEvent(run_.elapsedSeconds, run_.turnNumber, currentTransitionDuration().simulationSeconds, run_.currentPhaseIndex, simulation);
 }
 
 std::size_t ScenarioManager::eventLogSize() const
@@ -301,7 +323,7 @@ void ScenarioManager::injectSandboxEvent(const std::string& id, const Simulation
     if (preset != run_.activeDefinition.sandboxEvents.end()) {
         EventDefinition event = *preset;
         event.trigger = {.type = EventTriggerType::TimeBased, .timeSeconds = run_.elapsedSeconds};
-        eventManager_.inject(std::move(event), run_.elapsedSeconds, simulation);
+        eventManager_.inject(std::move(event), run_.elapsedSeconds, run_.turnNumber, currentTransitionDuration().simulationSeconds, simulation);
         return;
     }
 
@@ -333,7 +355,7 @@ void ScenarioManager::injectSandboxEvent(const std::string& id, const Simulation
         event.category = EventCategory::RecoveryEvent;
         event.effect = {.type = EventEffectType::PartialRecovery, .trafficMultiplier = 0.75, .databaseCapacityMultiplier = 1.2, .retryDelayMultiplier = 1.1};
     }
-    eventManager_.inject(std::move(event), run_.elapsedSeconds, simulation);
+    eventManager_.inject(std::move(event), run_.elapsedSeconds, run_.turnNumber, currentTransitionDuration().simulationSeconds, simulation);
 }
 
 void ScenarioManager::clearSandboxEvents()
@@ -356,6 +378,11 @@ double ScenarioManager::elapsedSeconds() const
     return run_.elapsedSeconds;
 }
 
+int ScenarioManager::turnNumber() const
+{
+    return run_.turnNumber;
+}
+
 const GameplayDuration& ScenarioManager::currentTransitionDuration() const
 {
     if (const ScenarioPhase* phase = currentPhase(); phase != nullptr) {
@@ -366,14 +393,9 @@ const GameplayDuration& ScenarioManager::currentTransitionDuration() const
 
 std::string ScenarioManager::visibleCalendarLabel(const Simulation& simulation) const
 {
-    const TimeState& time = simulation.timeState();
-    static constexpr const char* kMonths[] = {
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    };
-    const int monthIndex = std::clamp(time.month, 1, 12) - 1;
+    (void)simulation;
     char buffer[48];
-    std::snprintf(buffer, sizeof(buffer), "%s %02d, %d  %02d:%02d", kMonths[monthIndex], time.day, time.year, time.hour, time.minute);
+    std::snprintf(buffer, sizeof(buffer), "Turn %d", run_.turnNumber);
     return buffer;
 }
 
@@ -406,13 +428,13 @@ ScenarioDefinition ScenarioManager::createActiveDefinition(std::uint32_t seed) c
 {
     ScenarioDefinition definition = scenario_;
     definition.trafficProfile.baseMultiplier = content::sampleRange(definition.trafficProfile.baseMultiplierRange, seed, definition.id + ".traffic.base_multiplier");
-    definition.trafficProfile.growthPerSecond = content::sampleRange(definition.trafficProfile.growthPerSecondRange, seed, definition.id + ".traffic.growth_per_second");
+    definition.trafficProfile.growthPerSecond = content::sampleRange(definition.trafficProfile.growthPerSecondRange, seed, definition.id + ".traffic.growth_per_turn");
     definition.bursts = instantiateBurst(definition.bursts, seed, definition.id + ".bursts");
     for (std::size_t i = 0; i < definition.phases.size(); ++i) {
         auto& phase = definition.phases[i];
         const std::string key = definition.id + ".phases." + std::to_string(i);
         phase.startTimeSeconds = content::sampleRange(phase.startTimeSecondsRange, seed, key + ".start_time_seconds");
-        phase.durationSeconds = content::sampleRange(phase.durationSecondsRange, seed, key + ".duration_seconds");
+        phase.durationSeconds = content::sampleRange(phase.durationSecondsRange, seed, key + ".duration_turns");
         phase.trafficMultiplier = content::sampleRange(phase.trafficMultiplierRange, seed, key + ".traffic_multiplier");
         if (phase.burstOverride) {
             phase.burstOverride = instantiateBurst(*phase.burstOverride, seed, key + ".burst_override");
@@ -515,7 +537,7 @@ void ScenarioManager::applyPhaseToSimulation(Simulation& simulation) const
     const auto& scenario = run_.activeDefinition;
     double multiplier = scenario.trafficProfile.baseMultiplier;
     if (scenario.trafficProfile.type == TrafficProfileType::GradualGrowth) {
-        multiplier += run_.elapsedSeconds * scenario.trafficProfile.growthPerSecond;
+        multiplier += static_cast<double>(run_.turnNumber) * scenario.trafficProfile.growthPerSecond;
     }
 
     if (const ScenarioPhase* phase = currentPhase()) {
@@ -578,7 +600,11 @@ void ScenarioManager::updateState(const Simulation& simulation)
             continue;
         }
         if (objective.conditionType == ObjectiveConditionType::SurviveDuration) {
-            run_.objectiveProgress = objective.durationSeconds > 0.0 ? std::min(1.0, run_.elapsedSeconds / objective.durationSeconds) : 0.0;
+            if (objective.durationTurns > 0) {
+                run_.objectiveProgress = std::min(1.0, static_cast<double>(run_.turnNumber) / static_cast<double>(objective.durationTurns));
+            } else {
+                run_.objectiveProgress = objective.durationSeconds > 0.0 ? std::min(1.0, run_.elapsedSeconds / objective.durationSeconds) : 0.0;
+            }
         }
         if (objectiveSatisfied(objective, simulation)) {
             completeObjective(objective);
@@ -602,6 +628,9 @@ bool ScenarioManager::objectiveSatisfied(const ScenarioObjective& objective, con
     const auto& pressure = simulation.pressure();
     switch (objective.conditionType) {
     case ObjectiveConditionType::SurviveDuration:
+        if (objective.durationTurns > 0) {
+            return run_.turnNumber >= objective.durationTurns;
+        }
         return objective.durationSeconds > 0.0 && run_.elapsedSeconds >= objective.durationSeconds;
     case ObjectiveConditionType::PressureDetected:
         return pressure.dominantPressure == objective.pressure;

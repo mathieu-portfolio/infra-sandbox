@@ -1,8 +1,8 @@
 [
   {
     "id": "planning_user_growth_forecast",
-    "display_name": "User growth forecast",
-    "description": "Usage signals suggest higher demand during the next simulated period.",
+    "display_name": "Demand Forecast",
+    "description": "Usage signals suggest higher demand during the next operational cycle.",
     "category": "demand",
     "moment": "planning_start",
     "weight": 1.2,
@@ -12,19 +12,16 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.12,
-        "max": 1.25
+        "min": 1.28,
+        "max": 1.45
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 36.0
-    },
+    "duration_turns": 2,
     "tags": [
       "planning",
       "traffic",
@@ -33,8 +30,8 @@
   },
   {
     "id": "planning_regional_adoption",
-    "display_name": "Regional adoption wave",
-    "description": "A region is showing stronger adoption and may put uneven pressure on the platform.",
+    "display_name": "Regional Adoption Wave",
+    "description": "One region is adopting the product faster, creating uneven traffic pressure.",
     "category": "geography",
     "moment": "planning_start",
     "weight": 1.0,
@@ -48,23 +45,20 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.15,
-        "max": 1.3
+        "min": 1.3,
+        "max": 1.55
       },
       "burst_multiplier": {
-        "min": 1.05,
-        "max": 1.2
+        "min": 1.2,
+        "max": 1.45
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 36.0
-    },
+    "duration_turns": 2,
     "tags": [
       "planning",
       "traffic",
@@ -73,8 +67,8 @@
   },
   {
     "id": "planning_storage_warning",
-    "display_name": "Storage warning",
-    "description": "Persistence is expected to become a weak point if read/write pressure keeps rising.",
+    "display_name": "Storage Warning",
+    "description": "Persistence may become the weak point if read-heavy behavior keeps rising.",
     "category": "infrastructure",
     "moment": "planning_start",
     "weight": 0.9,
@@ -85,23 +79,21 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1,
+      "delay_turns": 1
     },
     "effect": {
       "type": "degrade_node_capacity",
       "database_capacity_multiplier": {
-        "min": 0.82,
-        "max": 0.92
+        "min": 0.62,
+        "max": 0.78
       },
       "latency_multiplier": {
-        "min": 1.03,
-        "max": 1.1
+        "min": 1.14,
+        "max": 1.28
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 36.0
-    },
+    "duration_turns": 2,
     "tags": [
       "planning",
       "database",
@@ -110,8 +102,8 @@
   },
   {
     "id": "planning_retry_risk",
-    "display_name": "Retry risk",
-    "description": "Client behavior may amplify load if timeouts begin to appear.",
+    "display_name": "Retry Risk",
+    "description": "Timeouts may trigger client retries that amplify load instead of helping recovery.",
     "category": "reliability",
     "moment": "planning_start",
     "weight": 0.8,
@@ -121,23 +113,21 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1,
+      "delay_turns": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.05,
-        "max": 1.14
+        "min": 1.16,
+        "max": 1.32
       },
       "retry_delay_multiplier": {
-        "min": 0.82,
-        "max": 0.94
+        "min": 0.62,
+        "max": 0.78
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 36.0
-    },
+    "duration_turns": 2,
     "tags": [
       "planning",
       "reliability",
@@ -146,8 +136,8 @@
   },
   {
     "id": "planning_cache_opportunity",
-    "display_name": "Cache opportunity",
-    "description": "Repeated reads make caching more valuable during the next simulated period.",
+    "display_name": "Repeated Read Pattern",
+    "description": "Traffic contains repeated reads, making cache placement more valuable.",
     "category": "recovery",
     "moment": "planning_start",
     "weight": 0.9,
@@ -158,7 +148,7 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "emit_feedback",
@@ -167,14 +157,66 @@
         "max": 1.15
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 36.0
-    },
+    "duration_turns": 2,
     "tags": [
       "planning",
       "cache",
       "opportunity"
+    ]
+  },
+  {
+    "id": "planning_deploy_risk",
+    "display_name": "Deploy Risk",
+    "description": "A planned change may add instability if the platform is already under pressure.",
+    "category": "operations",
+    "moment": "planning_start",
+    "weight": 0.45,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1,
+      "delay_turns": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.1,
+        "max": 1.2
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "planning",
+      "operations",
+      "risk"
+    ]
+  },
+  {
+    "id": "planning_observability_gap",
+    "display_name": "Observability Gap",
+    "description": "Metrics may explain symptoms less clearly, making conservative planning more valuable.",
+    "category": "operations",
+    "moment": "planning_start",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "emit_feedback"
+    },
+    "duration_turns": 1,
+    "tags": [
+      "planning",
+      "observability",
+      "diagnosis"
     ]
   },
   {
@@ -187,14 +229,14 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
-      "traffic_multiplier": 1.45,
-      "burst_multiplier": 1.35
+      "traffic_multiplier": 1.8,
+      "burst_multiplier": 1.55
     },
-    "duration_seconds": 18.0,
+    "duration_turns": 1,
     "tags": [
       "sandbox",
       "traffic"
@@ -214,14 +256,14 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
-      "traffic_multiplier": 1.7,
-      "burst_multiplier": 1.35
+      "traffic_multiplier": 2.0,
+      "burst_multiplier": 1.6
     },
-    "duration_seconds": 18.0,
+    "duration_turns": 1,
     "tags": [
       "sandbox",
       "traffic",
@@ -238,14 +280,14 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_burst_intensity",
-      "traffic_multiplier": 1.22,
-      "retry_delay_multiplier": 0.65
+      "traffic_multiplier": 1.45,
+      "retry_delay_multiplier": 0.55
     },
-    "duration_seconds": 18.0,
+    "duration_turns": 1,
     "tags": [
       "sandbox",
       "reliability"
@@ -262,13 +304,13 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "degrade_node_capacity",
-      "database_capacity_multiplier": 0.55
+      "database_capacity_multiplier": 0.45
     },
-    "duration_seconds": 18.0,
+    "duration_turns": 1,
     "tags": [
       "sandbox",
       "database"
@@ -284,7 +326,7 @@
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 0.0
+      "turn": 1
     },
     "effect": {
       "type": "emit_feedback",
@@ -292,7 +334,7 @@
       "database_capacity_multiplier": 1.2,
       "retry_delay_multiplier": 1.1
     },
-    "duration_seconds": 18.0,
+    "duration_turns": 1,
     "tags": [
       "sandbox",
       "recovery"
@@ -300,137 +342,117 @@
   },
   {
     "id": "traffic_spike_26",
-    "display_name": "Traffic spike",
-    "description": "A short-lived traffic surge increases request pressure.",
+    "display_name": "Refresh Wave",
+    "description": "A short client refresh wave increases traffic pressure.",
     "category": "traffic",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": 26.0
+      "turn": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.25,
-        "max": 1.45
+        "min": 1.45,
+        "max": 1.75
       },
       "burst_multiplier": {
-        "min": 1.15,
-        "max": 1.35
+        "min": 1.3,
+        "max": 1.6
       }
     },
-    "duration_seconds": {
-      "min": 15.0,
-      "max": 22.0
-    },
+    "duration_turns": 1,
     "tags": [
       "traffic"
     ]
   },
   {
     "id": "traffic_spike_40",
-    "display_name": "Traffic spike",
-    "description": "A short-lived traffic surge increases request pressure.",
+    "display_name": "Launch Spike",
+    "description": "A visible product moment creates a short demand spike.",
     "category": "traffic",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 36.0,
-        "max": 44.0
-      }
+      "turn": 2
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.25,
-        "max": 1.45
+        "min": 1.5,
+        "max": 1.8
       },
       "burst_multiplier": {
-        "min": 1.15,
-        "max": 1.35
+        "min": 1.3,
+        "max": 1.65
       }
     },
-    "duration_seconds": {
-      "min": 15.0,
-      "max": 22.0
-    },
+    "duration_turns": 1,
     "tags": [
       "traffic"
     ]
   },
   {
     "id": "traffic_spike_64",
-    "display_name": "Traffic spike",
-    "description": "A short-lived traffic surge increases request pressure.",
+    "display_name": "Second Wave",
+    "description": "Another burst arrives before all queues have fully recovered.",
     "category": "traffic",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 58.0,
-        "max": 68.0
-      }
+      "turn": 3
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.25,
-        "max": 1.45
+        "min": 1.55,
+        "max": 1.9
       },
       "burst_multiplier": {
-        "min": 1.15,
-        "max": 1.35
+        "min": 1.35,
+        "max": 1.7
       }
     },
-    "duration_seconds": {
-      "min": 15.0,
-      "max": 22.0
-    },
+    "duration_turns": 1,
     "tags": [
       "traffic"
     ]
   },
   {
     "id": "viral_growth_76",
-    "display_name": "Viral growth",
-    "description": "Demand increases and remains elevated for a while.",
+    "display_name": "Sustained Growth",
+    "description": "Demand rises and stays elevated long enough to expose weak capacity planning.",
     "category": "demand",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 72.0,
-        "max": 82.0
-      }
+      "turn": 3,
+      "delay_turns": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.35,
-        "max": 1.6
+        "min": 1.6,
+        "max": 2.0
       }
     },
-    "duration_seconds": {
-      "min": 36.0,
-      "max": 48.0
-    },
+    "duration_turns": 2,
     "tags": [
       "traffic"
     ]
   },
   {
     "id": "database_slowdown",
-    "display_name": "Database slowdown",
-    "description": "Storage latency reduces database effective capacity.",
+    "display_name": "Slow Storage Window",
+    "description": "Storage latency reduces effective database capacity.",
     "category": "infrastructure",
     "location": {
       "scope": "node_type",
@@ -440,33 +462,27 @@
       "type": "metric_threshold",
       "metric": "database_queue",
       "threshold": 5.0,
-      "delay_seconds": {
-        "min": 2.0,
-        "max": 5.0
-      }
+      "delay_turns": 1
     },
     "effect": {
       "type": "degrade_node_capacity",
       "database_capacity_multiplier": {
-        "min": 0.55,
-        "max": 0.7
+        "min": 0.45,
+        "max": 0.6
       },
       "latency_multiplier": {
-        "min": 1.05,
-        "max": 1.2
+        "min": 1.18,
+        "max": 1.35
       }
     },
-    "duration_seconds": {
-      "min": 24.0,
-      "max": 34.0
-    },
+    "duration_turns": 2,
     "tags": [
       "database"
     ]
   },
   {
     "id": "retry_storm",
-    "display_name": "Retry storm",
+    "display_name": "Retry Feedback Loop",
     "description": "Timeouts cause retries to amplify load after a delay.",
     "category": "reliability",
     "location": {
@@ -476,34 +492,28 @@
       "type": "metric_threshold",
       "metric": "retry_rate",
       "threshold": 0.5,
-      "delay_seconds": {
-        "min": 1.0,
-        "max": 3.0
-      }
+      "delay_turns": 1
     },
     "effect": {
       "type": "modify_traffic_rate",
       "traffic_multiplier": {
-        "min": 1.12,
-        "max": 1.25
+        "min": 1.32,
+        "max": 1.55
       },
       "retry_delay_multiplier": {
-        "min": 0.65,
-        "max": 0.85
+        "min": 0.5,
+        "max": 0.7
       }
     },
-    "duration_seconds": {
-      "min": 18.0,
-      "max": 26.0
-    },
+    "duration_turns": 2,
     "tags": [
       "reliability"
     ]
   },
   {
     "id": "cache_warmup",
-    "display_name": "Cache warmup",
-    "description": "Cache effectiveness becomes visible after repeated reads.",
+    "display_name": "Cache Warmup",
+    "description": "Repeated reads make cache effectiveness visible over time.",
     "category": "recovery",
     "location": {
       "scope": "node_type",
@@ -521,28 +531,22 @@
         "max": 1.12
       }
     },
-    "duration_seconds": {
-      "min": 20.0,
-      "max": 30.0
-    },
+    "duration_turns": 1,
     "tags": [
       "cache"
     ]
   },
   {
     "id": "partial_recovery_106",
-    "display_name": "Partial recovery",
-    "description": "Pressure eases temporarily as systems recover.",
+    "display_name": "Recovery Window",
+    "description": "Pressure eases temporarily so queues can drain.",
     "category": "recovery",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 100.0,
-        "max": 110.0
-      }
+      "turn": 4
     },
     "effect": {
       "type": "emit_feedback",
@@ -555,28 +559,22 @@
         "max": 1.22
       }
     },
-    "duration_seconds": {
-      "min": 16.0,
-      "max": 24.0
-    },
+    "duration_turns": 1,
     "tags": [
       "recovery"
     ]
   },
   {
     "id": "partial_recovery_116",
-    "display_name": "Partial recovery",
-    "description": "Pressure eases temporarily as systems recover.",
+    "display_name": "Quiet Window",
+    "description": "Traffic briefly softens after sustained load.",
     "category": "recovery",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 112.0,
-        "max": 120.0
-      }
+      "turn": 4
     },
     "effect": {
       "type": "emit_feedback",
@@ -589,28 +587,22 @@
         "max": 1.22
       }
     },
-    "duration_seconds": {
-      "min": 16.0,
-      "max": 24.0
-    },
+    "duration_turns": 1,
     "tags": [
       "recovery"
     ]
   },
   {
     "id": "partial_recovery_120",
-    "display_name": "Partial recovery",
-    "description": "Pressure eases temporarily as systems recover.",
+    "display_name": "Storage Breathing Room",
+    "description": "Database pressure eases temporarily after a heavy read period.",
     "category": "recovery",
     "location": {
       "scope": "global"
     },
     "trigger": {
       "type": "time",
-      "time_seconds": {
-        "min": 116.0,
-        "max": 124.0
-      }
+      "turn": 4
     },
     "effect": {
       "type": "emit_feedback",
@@ -623,10 +615,7 @@
         "max": 1.22
       }
     },
-    "duration_seconds": {
-      "min": 16.0,
-      "max": 24.0
-    },
+    "duration_turns": 1,
     "tags": [
       "recovery"
     ]

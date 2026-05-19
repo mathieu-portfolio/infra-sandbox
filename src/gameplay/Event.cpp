@@ -18,7 +18,7 @@ void EventManager::reset(std::vector<EventDefinition> definitions, std::uint32_t
     recentEvents_.clear();
 }
 
-void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation)
+void EventManager::update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation)
 {
     for (auto& active : activeEvents_) {
         active.remainingSeconds -= dt;
@@ -30,8 +30,8 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
         activeEvents_.end());
 
     for (auto it = pendingEvents_.begin(); it != pendingEvents_.end();) {
-        if (scenarioTimeSeconds >= it->fireAtSeconds) {
-            activate(it->definitionIndex, scenarioTimeSeconds, simulation);
+        if ((it->fireAtTurn > 0 && turnNumber >= it->fireAtTurn) || (it->fireAtTurn <= 0 && scenarioTimeSeconds >= it->fireAtSeconds)) {
+            activate(it->definitionIndex, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
             it = pendingEvents_.erase(it);
         } else {
             ++it;
@@ -45,30 +45,32 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
         if (fired_[i] && !definitions_[i].repeatable) {
             continue;
         }
-        if (triggerMet(definitions_[i], scenarioTimeSeconds, phaseIndex, simulation)) {
+        if (triggerMet(definitions_[i], scenarioTimeSeconds, turnNumber, phaseIndex, simulation)) {
             fired_[i] = true;
-            if (definitions_[i].trigger.delaySeconds > 0.0) {
-                pendingEvents_.push_back({i, scenarioTimeSeconds + definitions_[i].trigger.delaySeconds});
+            if (definitions_[i].trigger.delayTurns > 0) {
+                pendingEvents_.push_back({.definitionIndex = i, .fireAtSeconds = 0.0, .fireAtTurn = turnNumber + definitions_[i].trigger.delayTurns});
+            } else if (definitions_[i].trigger.delaySeconds > 0.0) {
+                pendingEvents_.push_back({.definitionIndex = i, .fireAtSeconds = scenarioTimeSeconds + definitions_[i].trigger.delaySeconds, .fireAtTurn = 0});
             } else {
-                activate(i, scenarioTimeSeconds, simulation);
+                activate(i, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
             }
         }
     }
 }
 
-void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation)
+void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation)
 {
     definitions_.push_back(std::move(definition));
     fired_.push_back(true);
-    activate(definitions_.size() - 1, scenarioTimeSeconds, simulation);
+    activate(definitions_.size() - 1, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
 }
 
-std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation)
+std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation)
 {
     std::vector<std::size_t> eligible;
     double totalWeight = 0.0;
     for (std::size_t i = 0; i < definitions_.size(); ++i) {
-        if (!eligibleForRoll(i, EventMoment::PlanningStart, scenarioTimeSeconds, phaseIndex, simulation)) {
+        if (!eligibleForRoll(i, EventMoment::PlanningStart, scenarioTimeSeconds, turnNumber, phaseIndex, simulation)) {
             continue;
         }
         eligible.push_back(i);
@@ -79,7 +81,7 @@ std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTime
         return std::nullopt;
     }
 
-    const std::size_t turnSalt = static_cast<std::size_t>(scenarioTimeSeconds * 1000.0);
+    const std::size_t turnSalt = static_cast<std::size_t>(turnNumber * 1009);
     std::mt19937 rng(seed_ ^ static_cast<std::uint32_t>(turnSalt + recentEvents_.size() * 7919U));
     std::uniform_real_distribution<double> distribution(0.0, totalWeight);
     double pick = distribution(rng);
@@ -87,13 +89,13 @@ std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTime
         pick -= std::max(0.0, definitions_[index].weight);
         if (pick <= 0.0) {
             fired_[index] = true;
-            return activate(index, scenarioTimeSeconds, simulation);
+            return activate(index, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
         }
     }
 
     const std::size_t fallback = eligible.back();
     fired_[fallback] = true;
-    return activate(fallback, scenarioTimeSeconds, simulation);
+    return activate(fallback, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
 }
 
 std::vector<EventLogEntry> EventManager::eventsSince(std::size_t startIndex) const
@@ -177,11 +179,14 @@ std::string EventManager::latestEventName() const
     return recentEvents_.back().name;
 }
 
-bool EventManager::triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const
+bool EventManager::triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const
 {
     const auto& trigger = definition.trigger;
     switch (trigger.type) {
     case EventTriggerType::TimeBased:
+        if (trigger.turnNumber > 0) {
+            return turnNumber >= trigger.turnNumber;
+        }
         return scenarioTimeSeconds >= trigger.timeSeconds;
     case EventTriggerType::MetricThreshold:
         return metricValue(trigger.metric, simulation) >= trigger.threshold;
@@ -194,7 +199,7 @@ bool EventManager::triggerMet(const EventDefinition& definition, double scenario
 }
 
 
-bool EventManager::eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const
+bool EventManager::eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const
 {
     if (definitionIndex >= definitions_.size()) {
         return false;
@@ -206,7 +211,7 @@ bool EventManager::eligibleForRoll(std::size_t definitionIndex, EventMoment mome
     if (fired_[definitionIndex] && !definition.repeatable) {
         return false;
     }
-    return triggerMet(definition, scenarioTimeSeconds, phaseIndex, simulation);
+    return triggerMet(definition, scenarioTimeSeconds, turnNumber, phaseIndex, simulation);
 }
 
 double EventManager::metricValue(EventMetric metric, const Simulation& simulation) const
@@ -229,7 +234,7 @@ double EventManager::metricValue(EventMetric metric, const Simulation& simulatio
     return 0.0;
 }
 
-EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation)
+EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation)
 {
     if (definitionIndex >= definitions_.size()) {
         return {};
@@ -237,14 +242,19 @@ EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenari
 
     EventDefinition definition = definitions_[definitionIndex];
     definition.location = resolvedLocation(definition, scenarioTimeSeconds, simulation);
+    if (definition.durationTurns > 0) {
+        definition.durationSeconds = std::max(1.0, secondsPerTurn) * static_cast<double>(definition.durationTurns);
+    }
     activeEvents_.push_back({
         .definition = definition,
         .startedAtSeconds = scenarioTimeSeconds,
+        .startedAtTurn = turnNumber,
         .remainingSeconds = definition.durationSeconds,
     });
 
     EventLogEntry entry{
         .timeSeconds = scenarioTimeSeconds,
+        .turnNumber = turnNumber,
         .category = definition.category,
         .name = definition.name.empty() ? definition.displayName : definition.name,
         .description = definition.description,

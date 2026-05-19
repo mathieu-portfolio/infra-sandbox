@@ -299,6 +299,10 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
         uiState.suppressMapSelectionOnce = true;
         return;
     }
+    if (uiState.gameplayPhase != GameplayPhase::Planning) {
+        uiState.latestFeedback = "Actions are locked until the next planning phase.";
+        return;
+    }
     if (uiState.gameplayPhase == GameplayPhase::Planning && !uiState.worldActionDraft.empty()) {
         if (CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(screenWidth))) {
             uiState.worldActionDraftVisible = !uiState.worldActionDraftVisible;
@@ -456,10 +460,10 @@ void InterventionController::queueMechanic(const Simulation& simulation, UiState
         .command = command,
         .actionName = std::move(actionName),
         .target = std::move(target),
-        .preview = "Queued for the next transition.",
+        .preview = "Queued for the next turn.",
         .engineeringCosts = costs,
     });
-    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Validate the plan to simulate consequences.";
+    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
 }
 
 void InterventionController::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
@@ -488,5 +492,5 @@ void InterventionController::queueTopologyMutation(const Simulation&, UiState& u
         .preview = std::move(preview),
         .engineeringCosts = costs,
     });
-    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Validate the plan to simulate consequences.";
+    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
 }

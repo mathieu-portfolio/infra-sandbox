@@ -98,6 +98,42 @@ std::vector<std::string> stringsAt(const Json& object, const std::string& key)
     return values;
 }
 
+std::vector<std::string> stringsAtAny(const Json& object, const std::string& preferredKey, const std::string& legacyKey)
+{
+    auto values = stringsAt(object, preferredKey);
+    if (!values.empty() || object.find(preferredKey) != nullptr) {
+        return values;
+    }
+    return stringsAt(object, legacyKey);
+}
+
+template <typename T, typename F>
+std::vector<T> mappedStringsAny(const Json& object, const std::string& preferredKey, const std::string& legacyKey, F mapper)
+{
+    std::vector<T> values;
+    for (const auto& id : stringsAtAny(object, preferredKey, legacyKey)) {
+        values.push_back(mapper(id));
+    }
+    return values;
+}
+
+double numberAtAny(const Json& object, const std::string& preferredKey, const std::string& legacyKey, double fallback = 0.0)
+{
+    if (const Json* value = object.find(preferredKey); value != nullptr && value->isNumber()) {
+        return value->asNumber();
+    }
+    return numberAt(object, legacyKey, fallback);
+}
+
+NumericRange rangeAtAny(const Json& object, const std::string& preferredKey, const std::string& legacyKey, double fallback = 0.0)
+{
+    if (object.find(preferredKey) != nullptr) {
+        return rangeAt(object, preferredKey, fallback);
+    }
+    return rangeAt(object, legacyKey, fallback);
+}
+
+
 ProgressionTier progressionTierFromId(const std::string& id)
 {
     if (id == "foundations") return ProgressionTier::Foundations;
@@ -123,6 +159,7 @@ ScenarioArchetype archetypeFromId(const std::string& id)
 
 GameplayDurationUnit durationUnitFromId(const std::string& id)
 {
+    if (id == "turn" || id == "turns" || id == "operational_cycle" || id == "operational_cycles") return GameplayDurationUnit::Turns;
     if (id == "minute" || id == "minutes") return GameplayDurationUnit::Minutes;
     if (id == "day" || id == "days") return GameplayDurationUnit::Days;
     if (id == "month" || id == "months") return GameplayDurationUnit::Months;
@@ -261,7 +298,7 @@ ObjectiveConditionType objectiveConditionFromId(const std::string& id)
 
 ObjectiveRewardType objectiveRewardFromId(const std::string& id)
 {
-    if (id == "unlock_intervention") return ObjectiveRewardType::UnlockIntervention;
+    if (id == "unlock_action" || id == "unlock_intervention") return ObjectiveRewardType::UnlockIntervention;
     if (id == "unlock_metric") return ObjectiveRewardType::UnlockMetric;
     if (id == "unlock_overlay") return ObjectiveRewardType::UnlockOverlay;
     if (id == "unlock_scenario_phase") return ObjectiveRewardType::UnlockScenarioPhase;
@@ -321,7 +358,7 @@ EventEffectType effectTypeFromId(const std::string& id)
     if (id == "modify_burst_intensity") return EventEffectType::TrafficSpike;
     if (id == "change_request_mix") return EventEffectType::ViralGrowth;
     if (id == "degrade_node_capacity") return EventEffectType::DatabaseSlowdown;
-    if (id == "unlock_intervention") return EventEffectType::MechanicUnlock;
+    if (id == "unlock_action" || id == "unlock_intervention") return EventEffectType::MechanicUnlock;
     if (id == "emit_feedback") return EventEffectType::PartialRecovery;
     return EventEffectType::TrafficSpike;
 }
@@ -378,6 +415,9 @@ void validateEventRanges(const EventDefinition& event, const std::string& label,
         validateRange(*event.effect.databaseHeavyShareRange, label + " database_heavy_share", result);
     }
     validateRange(event.durationSecondsRange, label + " duration_seconds", result);
+    if (event.trigger.turnNumber < 0 || event.trigger.delayTurns < 0 || event.durationTurns < 0) {
+        result.errors.push_back(label + " has invalid negative turn timing.");
+    }
     validateRange(event.intensityRange, label + " intensity", result);
 }
 
@@ -405,9 +445,9 @@ BurstScenario parseBurst(const Json& object)
     burst.enabled = boolAt(object, "enabled");
     burst.multiplierRange = rangeAt(object, "multiplier", 1.0);
     burst.multiplier = burst.multiplierRange.min;
-    burst.periodSecondsRange = rangeAt(object, "period_seconds", 12.0);
+    burst.periodSecondsRange = rangeAtAny(object, "period_turns", "period_seconds", 12.0);
     burst.periodSeconds = burst.periodSecondsRange.min;
-    burst.durationSecondsRange = rangeAt(object, "duration_seconds", 3.0);
+    burst.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", 3.0);
     burst.durationSeconds = burst.durationSecondsRange.min;
     return burst;
 }
@@ -422,7 +462,7 @@ GameplayDuration parseGameplayDuration(const Json& object, const std::string& ke
     parsed.value = numberAt(*duration, "value", parsed.value);
     parsed.unit = durationUnitFromId(stringAt(*duration, "unit", gameplayDurationUnitName(parsed.unit)));
     parsed.label = stringAt(*duration, "label", parsed.label);
-    parsed.simulationSeconds = numberAt(*duration, "simulation_seconds", parsed.simulationSeconds);
+    parsed.simulationSeconds = numberAtAny(*duration, "simulation_turn_seconds", "simulation_seconds", parsed.simulationSeconds);
     parsed.advancesCalendar = boolAt(*duration, "advance_calendar", parsed.advancesCalendar);
     if (parsed.label.empty()) {
         parsed.label = std::to_string(static_cast<int>(parsed.value)) + " " + gameplayDurationUnitName(parsed.unit) + " of platform evolution";
@@ -533,12 +573,14 @@ EventDefinition parseEvent(const Json& object)
         event.trigger.type = triggerTypeFromId(stringAt(*trigger, "type"));
         event.trigger.timeSecondsRange = rangeAt(*trigger, "time_seconds", event.trigger.timeSeconds);
         event.trigger.timeSeconds = event.trigger.timeSecondsRange.min;
+        event.trigger.turnNumber = static_cast<int>(numberAt(*trigger, "turn", numberAt(*trigger, "turn_number", 0.0)));
         event.trigger.metric = metricFromId(stringAt(*trigger, "metric"));
         event.trigger.pressure = pressureFromId(stringAt(*trigger, "pressure"));
         event.trigger.threshold = numberAt(*trigger, "threshold");
         event.trigger.phaseIndex = static_cast<int>(numberAt(*trigger, "phase_index", -1.0));
         event.trigger.delaySecondsRange = rangeAt(*trigger, "delay_seconds", event.trigger.delaySeconds);
         event.trigger.delaySeconds = event.trigger.delaySecondsRange.min;
+        event.trigger.delayTurns = static_cast<int>(numberAt(*trigger, "delay_turns", 0.0));
     }
     if (const Json* effect = object.find("effect")) {
         event.effect.type = effectTypeFromId(stringAt(*effect, "type"));
@@ -556,10 +598,11 @@ EventDefinition parseEvent(const Json& object)
             event.effect.databaseHeavyShareRange = rangeFromJson(*share, 0.0);
             event.effect.databaseHeavyShare = event.effect.databaseHeavyShareRange->min;
         }
-        event.effect.unlockMechanics = mappedStrings<MechanicType>(*effect, "unlock_interventions", mechanicFromId);
+        event.effect.unlockMechanics = mappedStringsAny<MechanicType>(*effect, "unlock_actions", "unlock_interventions", mechanicFromId);
     }
-    event.durationSecondsRange = rangeAt(object, "duration_seconds", event.durationSeconds);
+    event.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", event.durationSeconds);
     event.durationSeconds = event.durationSecondsRange.min;
+    event.durationTurns = static_cast<int>(numberAt(object, "duration_turns", event.durationTurns > 0 ? static_cast<double>(event.durationTurns) : event.durationSecondsRange.min));
     event.intensityRange = rangeAt(object, "intensity", event.intensity);
     event.intensity = event.intensityRange.min;
     event.repeatable = boolAt(object, "repeatable");
@@ -580,7 +623,8 @@ ScenarioObjective parseObjective(const Json& object)
     objective.targetNodeId = stringAt(object, "target_node");
     objective.summary = stringAt(object, "summary", objective.displayName);
     objective.threshold = numberAt(object, "threshold");
-    objective.durationSeconds = numberAt(object, "duration_seconds");
+    objective.durationTurns = static_cast<int>(numberAt(object, "duration_turns", 0.0));
+    objective.durationSeconds = numberAt(object, "duration_seconds", static_cast<double>(objective.durationTurns));
     objective.startsActive = boolAt(object, "starts_active");
     if (const Json* rewards = object.find("rewards"); rewards != nullptr && rewards->isArray()) {
         for (const auto& rewardJson : rewards->asArray()) {
@@ -638,7 +682,9 @@ TrafficProfile parseTraffic(const Json& object)
     profile.type = trafficTypeFromId(stringAt(object, "type"));
     profile.baseMultiplierRange = rangeAt(object, "base_multiplier", profile.baseMultiplier);
     profile.baseMultiplier = profile.baseMultiplierRange.min;
-    profile.growthPerSecondRange = rangeAt(object, "growth_per_second", profile.growthPerSecond);
+    profile.growthPerSecondRange = object.find("growth_per_turn") != nullptr
+        ? rangeAt(object, "growth_per_turn", profile.growthPerSecond)
+        : rangeAt(object, "growth_per_second", profile.growthPerSecond);
     profile.growthPerSecond = profile.growthPerSecondRange.min;
     return profile;
 }
@@ -764,15 +810,17 @@ std::vector<ScenarioPhase> parsePhases(const Json& object)
             phase.eventMessage = stringAt(entry, "event_message");
             phase.startTimeSecondsRange = rangeAt(entry, "start_time_seconds", phase.startTimeSeconds);
             phase.startTimeSeconds = phase.startTimeSecondsRange.min;
-            phase.durationSecondsRange = rangeAt(entry, "duration_seconds", phase.durationSeconds);
+            phase.startTurn = static_cast<int>(numberAt(entry, "start_turn", 0.0));
+            phase.durationSecondsRange = rangeAtAny(entry, "duration_turns", "duration_seconds", phase.durationSeconds);
             phase.durationSeconds = phase.durationSecondsRange.min;
+            phase.durationTurns = static_cast<int>(numberAt(entry, "duration_turns", 0.0));
             phase.transitionDuration = parseGameplayDuration(entry, "transition_duration", phase.transitionDuration);
             phase.trafficMultiplierRange = rangeAt(entry, "traffic_multiplier", phase.trafficMultiplier);
             phase.trafficMultiplier = phase.trafficMultiplierRange.min;
             if (const Json* burst = entry.find("burst_override"); burst != nullptr && burst->isObject()) {
                 phase.burstOverride = parseBurst(*burst);
             }
-            phase.unlockMechanics = mappedStrings<MechanicType>(entry, "unlock_interventions", mechanicFromId);
+            phase.unlockMechanics = mappedStringsAny<MechanicType>(entry, "unlock_actions", "unlock_interventions", mechanicFromId);
             phases.push_back(std::move(phase));
         }
     }
@@ -830,7 +878,7 @@ WorldActionDefinition parseWorldAction(const Json& object)
     action.eventIntensityMultiplier = action.eventIntensityMultiplierRange.min;
     action.complexityDeltaRange = rangeAt(object, "complexity_delta", action.complexityDelta);
     action.complexityDelta = action.complexityDeltaRange.min;
-    action.durationSecondsRange = rangeAt(object, "duration_seconds", action.durationSeconds);
+    action.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", action.durationSeconds);
     action.durationSeconds = action.durationSecondsRange.min;
     if (const Json* intensity = object.find("intensity_range"); intensity != nullptr && intensity->isObject()) {
         action.minIntensity = numberAt(*intensity, "min", action.minIntensity);
@@ -904,7 +952,7 @@ void applyPressureAnalysisConfig(SimulationConfig& config, const Json& object)
         pressure.processorRetryFloor = numberAt(*weights, "processor_retry_floor", pressure.processorRetryFloor);
     }
     if (const Json* history = root->find("history"); history != nullptr && history->isObject()) {
-        pressure.eventCooldownSeconds = numberAt(*history, "event_cooldown_seconds", pressure.eventCooldownSeconds);
+        pressure.eventCooldownSeconds = numberAtAny(*history, "event_cooldown_turns", "event_cooldown_seconds", pressure.eventCooldownSeconds);
         pressure.pressureHistoryLimit = sizeAt(*history, "pressure_history_limit", pressure.pressureHistoryLimit);
         pressure.recentEventLimit = sizeAt(*history, "recent_event_limit", pressure.recentEventLimit);
         pressure.recurringPressureSampleCount = static_cast<int>(numberAt(*history, "recurring_sample_count", pressure.recurringPressureSampleCount));
@@ -1063,10 +1111,14 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     }
 
     std::unordered_map<std::string, TrafficProfile> trafficProfiles;
-    for (const auto& object : loadDirectoryObjects(root / "traffic", result)) {
+    std::vector<Json> trafficObjects = loadOptionalDirectoryObjects(root / "traffic_patterns", result);
+    if (trafficObjects.empty()) {
+        trafficObjects = loadDirectoryObjects(root / "traffic", result);
+    }
+    for (const auto& object : trafficObjects) {
         auto parsed = parseTraffic(object);
         validateRange(parsed.baseMultiplierRange, "Traffic profile " + parsed.id + " base_multiplier", result);
-        validateRange(parsed.growthPerSecondRange, "Traffic profile " + parsed.id + " growth_per_second", result);
+        validateRange(parsed.growthPerSecondRange, "Traffic pattern " + parsed.id + " growth_per_turn", result);
         trafficProfiles[parsed.id] = std::move(parsed);
     }
 
@@ -1088,9 +1140,9 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     }
 
     for (const auto& object : loadDirectoryObjects(root / "progression", result)) {
-        for (const auto& mechanic : stringsAt(object, "available_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "available_actions", "available_interventions")) {
             if (!knownMechanicId(mechanic)) {
-                result.errors.push_back("Progression " + stringAt(object, "id") + " has invalid intervention id: " + mechanic);
+                result.errors.push_back("Progression " + stringAt(object, "id") + " has invalid action id: " + mechanic);
             }
         }
         for (const auto& nodeType : stringsAt(object, "allowed_node_types")) {
@@ -1106,7 +1158,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         tier.tags = stringsAt(object, "tags");
         tier.tier = progressionTierFromId(tier.id);
         tier.visibleMetrics = stringsAt(object, "visible_metrics");
-        tier.availableMechanics = mappedStrings<MechanicType>(object, "available_interventions", mechanicFromId);
+        tier.availableMechanics = mappedStringsAny<MechanicType>(object, "available_actions", "available_interventions", mechanicFromId);
         tier.allowedPressures = mappedStrings<PressureCategory>(object, "allowed_pressures", pressureFromId);
         tier.allowedNodeTypes = mappedStrings<NodeType>(object, "allowed_node_types", nodeTypeFromId);
         progressionTiers_.push_back(std::move(tier));
@@ -1186,7 +1238,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         validateRange(action.pressureResistanceRange, "World action " + action.id + " pressure_resistance", result);
         validateRange(action.eventIntensityMultiplierRange, "World action " + action.id + " event_intensity_multiplier", result);
         validateRange(action.complexityDeltaRange, "World action " + action.id + " complexity_delta", result);
-        validateRange(action.durationSecondsRange, "World action " + action.id + " duration_seconds", result);
+        validateRange(action.durationSecondsRange, "World action " + action.id + " duration_turns", result);
         worldActions_.push_back(std::move(action));
     }
 
@@ -1202,36 +1254,36 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         scenario.topologyTemplateId = stringAt(object, "topology_template");
         scenario.educationalFocus = mappedStrings<EducationalFocus>(object, "educational_focus", focusFromId);
         scenario.guaranteedPressures = mappedStrings<PressureCategory>(object, "guaranteed_pressures", pressureFromId);
-        for (const auto& mechanic : stringsAt(object, "allowed_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "allowed_actions", "allowed_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid allowed intervention id: " + mechanic);
             }
         }
-        for (const auto& mechanic : stringsAt(object, "starting_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "starting_actions", "starting_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid starting intervention id: " + mechanic);
             }
         }
-        for (const auto& mechanic : stringsAt(object, "unlockable_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "unlockable_actions", "unlockable_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid unlockable intervention id: " + mechanic);
             }
         }
-        for (const auto& mechanic : stringsAt(object, "disabled_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "disabled_actions", "disabled_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid disabled intervention id: " + mechanic);
             }
         }
-        for (const auto& mechanic : stringsAt(object, "recommended_interventions")) {
+        for (const auto& mechanic : stringsAtAny(object, "recommended_actions", "recommended_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Scenario " + scenario.id + " has invalid recommended intervention id: " + mechanic);
             }
         }
-        scenario.allowedMechanics = mappedStrings<MechanicType>(object, "allowed_interventions", mechanicFromId);
-        scenario.startingInterventions = mappedStrings<MechanicType>(object, "starting_interventions", mechanicFromId);
-        scenario.unlockableInterventions = mappedStrings<MechanicType>(object, "unlockable_interventions", mechanicFromId);
-        scenario.disabledInterventions = mappedStrings<MechanicType>(object, "disabled_interventions", mechanicFromId);
-        scenario.recommendedMechanics = mappedStrings<MechanicType>(object, "recommended_interventions", mechanicFromId);
+        scenario.allowedMechanics = mappedStringsAny<MechanicType>(object, "allowed_actions", "allowed_interventions", mechanicFromId);
+        scenario.startingInterventions = mappedStringsAny<MechanicType>(object, "starting_actions", "starting_interventions", mechanicFromId);
+        scenario.unlockableInterventions = mappedStringsAny<MechanicType>(object, "unlockable_actions", "unlockable_interventions", mechanicFromId);
+        scenario.disabledInterventions = mappedStringsAny<MechanicType>(object, "disabled_actions", "disabled_interventions", mechanicFromId);
+        scenario.recommendedMechanics = mappedStringsAny<MechanicType>(object, "recommended_actions", "recommended_interventions", mechanicFromId);
         scenario.unlocksScenarios = stringsAt(object, "unlocks_scenarios");
         scenario.requiredCompletedScenarios = stringsAt(object, "required_completed_scenarios");
         scenario.requiredConceptTags = stringsAt(object, "required_concept_tags");
@@ -1245,11 +1297,11 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         } else {
             result.errors.push_back("Scenario " + scenario.id + " references missing topology template: " + scenario.topologyTemplateId);
         }
-        const std::string trafficId = stringAt(object, "traffic_profile");
+        const std::string trafficId = stringAt(object, "traffic_pattern", stringAt(object, "traffic_profile"));
         if (const auto traffic = trafficProfiles.find(trafficId); traffic != trafficProfiles.end()) {
             scenario.trafficProfile = traffic->second;
         } else {
-            result.errors.push_back("Scenario " + scenario.id + " references missing traffic profile: " + trafficId);
+            result.errors.push_back("Scenario " + scenario.id + " references missing traffic pattern: " + trafficId);
         }
         if (const Json* scenarioObjectives = object.find("objectives"); scenarioObjectives != nullptr && scenarioObjectives->isArray()) {
             for (const auto& entry : scenarioObjectives->asArray()) {
@@ -1301,7 +1353,7 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         if (scenario.objectives.empty()) result.errors.push_back("Scenario " + scenario.id + " has no objectives.");
         if (scenario.trafficProfile.baseMultiplier < 0.0) result.errors.push_back("Scenario " + scenario.id + " has invalid traffic multiplier.");
         validateRange(scenario.trafficProfile.baseMultiplierRange, "Scenario " + scenario.id + " traffic base_multiplier", result);
-        validateRange(scenario.trafficProfile.growthPerSecondRange, "Scenario " + scenario.id + " traffic growth_per_second", result);
+        validateRange(scenario.trafficProfile.growthPerSecondRange, "Scenario " + scenario.id + " traffic growth_per_turn", result);
         validateBurstRanges(scenario.bursts, "Scenario " + scenario.id, result);
         if (scenario.turnDuration.value <= 0.0 || scenario.turnDuration.simulationSeconds <= 0.0) {
             result.errors.push_back("Scenario " + scenario.id + " has invalid turn duration.");
@@ -1321,7 +1373,7 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         }
         for (const auto& phase : scenario.phases) {
             validateRange(phase.startTimeSecondsRange, "Scenario " + scenario.id + " phase " + phase.name + " start_time_seconds", result);
-            validateRange(phase.durationSecondsRange, "Scenario " + scenario.id + " phase " + phase.name + " duration_seconds", result);
+            validateRange(phase.durationSecondsRange, "Scenario " + scenario.id + " phase " + phase.name + " duration_turns", result);
             validateRange(phase.trafficMultiplierRange, "Scenario " + scenario.id + " phase " + phase.name + " traffic_multiplier", result);
             if (phase.burstOverride) {
                 validateBurstRanges(*phase.burstOverride, "Scenario " + scenario.id + " phase " + phase.name, result);
@@ -1387,7 +1439,7 @@ void ContentRegistry::loadFallbackContent()
         {.id = "api", .name = "API", .type = NodeType::ApiService, .processingCapacityPerSecond = 4.0},
     };
     scenario.links = {{.sourceNode = 0, .targetNode = 1, .baseLatencySeconds = 0.3, .bandwidthPerSecond = 100.0}};
-    scenario.objectives = {{.id = "fallback_survive", .displayName = "Survive", .type = ScenarioObjectiveType::SurviveDuration, .summary = "Keep fallback service running for 60s.", .durationSeconds = 60.0}};
+    scenario.objectives = {{.id = "fallback_survive", .displayName = "Survive", .type = ScenarioObjectiveType::SurviveDuration, .summary = "Keep fallback service running for 3 turns.", .durationTurns = 3}};
     scenarios_ = {std::move(scenario)};
     interventions_ = {
         {

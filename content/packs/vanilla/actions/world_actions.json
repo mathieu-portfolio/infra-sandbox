@@ -1,94 +1,200 @@
 [
   {
     "id": "backend_tooling",
-    "display_name": "Improve Backend Tooling",
-    "description": "Invest in internal tooling so backend changes are easier to ship this turn.",
-    "categories": ["Organization"],
+    "display_name": "Backend Tooling",
+    "description": "Improve backend change quality so service-side fixes are easier to ship during this turn.",
+    "categories": [
+      "Organization"
+    ],
     "useful_when": "backend capacity is the main planning constraint",
     "tradeoffs": "Less direct infrastructure relief this turn.",
     "icon_id": "node.service",
-    "affected_pressures": ["queue", "persistence"],
-    "capacity_bonus": {"backend": {"min": 1, "max": 2}, "total": {"min": 1, "max": 2}},
-    "pressure_resistance": {"min": 0.03, "max": 0.06},
-    "duration_seconds": {"min": 60.0, "max": 120.0},
-    "intensity_range": {"min": 0.85, "max": 1.2},
-    "tags": ["backend", "tooling"]
+    "affected_pressures": [
+      "queue",
+      "persistence"
+    ],
+    "capacity_bonus": {
+      "backend": {
+        "min": 1,
+        "max": 2
+      },
+      "total": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.03,
+      "max": 0.06
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.2
+    },
+    "tags": [
+      "backend",
+      "tooling"
+    ]
   },
   {
     "id": "infra_automation",
-    "display_name": "Expand Infra Automation",
-    "description": "Automate rollout work and make infrastructure-heavy plans easier to coordinate.",
-    "categories": ["Infrastructure"],
+    "display_name": "Infrastructure Automation",
+    "description": "Automate infrastructure rollout work so topology changes are easier to coordinate.",
+    "categories": [
+      "Infrastructure"
+    ],
     "useful_when": "regional or topology actions are competing for capacity",
     "tradeoffs": "Automation adds coordination overhead.",
     "icon_id": "action.scale_up",
-    "affected_pressures": ["compute", "latency"],
-    "capacity_bonus": {"infrastructure": {"min": 1, "max": 2}, "operations": 1, "total": {"min": 1, "max": 2}},
-    "complexity_delta": {"min": 0.15, "max": 0.35},
-    "duration_seconds": {"min": 60.0, "max": 120.0},
-    "intensity_range": {"min": 0.9, "max": 1.25},
-    "tags": ["infrastructure", "automation"]
+    "affected_pressures": [
+      "compute",
+      "latency"
+    ],
+    "capacity_bonus": {
+      "infrastructure": {
+        "min": 1,
+        "max": 2
+      },
+      "operations": 1,
+      "total": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "complexity_delta": {
+      "min": 0.15,
+      "max": 0.35
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.25
+    },
+    "tags": [
+      "infrastructure",
+      "automation"
+    ]
   },
   {
     "id": "reliability_initiative",
     "display_name": "Reliability Initiative",
     "description": "Focus the team on reducing failure amplification and improving operational guardrails.",
-    "categories": ["Reliability"],
+    "categories": [
+      "Reliability"
+    ],
     "useful_when": "timeouts, retries, or instability are increasing",
     "tradeoffs": "Delivery pace slows slightly while guardrails are added.",
     "icon_id": "action.queue",
-    "affected_pressures": ["retry", "failure"],
-    "capacity_bonus": {"operations": {"min": 1, "max": 2}, "total": 1},
-    "pressure_resistance": {"min": 0.06, "max": 0.1},
-    "event_intensity_multiplier": {"min": 0.84, "max": 0.96},
-    "duration_seconds": {"min": 45.0, "max": 90.0},
-    "intensity_range": {"min": 0.9, "max": 1.15},
-    "tags": ["reliability", "operations"]
+    "affected_pressures": [
+      "retry",
+      "failure"
+    ],
+    "capacity_bonus": {
+      "operations": {
+        "min": 1,
+        "max": 2
+      },
+      "total": 1
+    },
+    "pressure_resistance": {
+      "min": 0.06,
+      "max": 0.1
+    },
+    "event_intensity_multiplier": {
+      "min": 0.84,
+      "max": 0.96
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.15
+    },
+    "tags": [
+      "reliability",
+      "operations"
+    ]
   },
   {
     "id": "freeze_risky_deployments",
     "display_name": "Freeze Risky Deployments",
-    "description": "Reduce change risk while the system is unstable.",
-    "categories": ["Policy"],
+    "description": "Pause risky changes while the system is unstable so recovery work is less noisy.",
+    "categories": [
+      "Policy"
+    ],
     "useful_when": "failure pressure is high and new topology changes are risky",
     "tradeoffs": "Infrastructure and backend capacity are tighter this turn.",
     "icon_id": "action.generic",
-    "affected_pressures": ["failure", "retry"],
-    "capacity_bonus": {"operations": 1},
-    "pressure_resistance": {"min": 0.1, "max": 0.14},
-    "event_intensity_multiplier": {"min": 0.75, "max": 0.88},
-    "duration_seconds": {"min": 45.0, "max": 90.0},
-    "intensity_range": {"min": 0.95, "max": 1.1},
-    "tags": ["policy", "reliability"]
+    "affected_pressures": [
+      "failure",
+      "retry"
+    ],
+    "capacity_bonus": {
+      "operations": 1
+    },
+    "pressure_resistance": {
+      "min": 0.1,
+      "max": 0.14
+    },
+    "event_intensity_multiplier": {
+      "min": 0.75,
+      "max": 0.88
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.95,
+      "max": 1.1
+    },
+    "tags": [
+      "policy",
+      "reliability"
+    ]
   },
   {
     "id": "observability_push",
     "display_name": "Observability Push",
-    "description": "Improve investigation quality and make ambiguous pressure movement easier to interpret.",
-    "categories": ["Observability"],
+    "description": "Improve visibility into pressure movement so bottlenecks are easier to interpret.",
+    "categories": [
+      "Observability"
+    ],
     "useful_when": "the dominant bottleneck is unclear",
     "tradeoffs": "Consumes operations attention before it improves throughput.",
     "icon_id": "action.generic",
-    "affected_pressures": ["latency", "queue", "persistence"],
-    "capacity_bonus": {"operations": 1, "total": 1},
-    "pressure_resistance": {"min": 0.02, "max": 0.05},
-    "duration_seconds": {"min": 60.0, "max": 120.0},
-    "intensity_range": {"min": 0.85, "max": 1.2},
-    "tags": ["observability"]
-  },
-  {
-    "id": "data_platform_investment",
-    "display_name": "Data Platform Investment",
-    "description": "Prioritize data-tier work so persistence fixes are easier to plan.",
-    "categories": ["Data"],
-    "useful_when": "persistence pressure dominates the system",
-    "tradeoffs": "May leave frontend and operations work tighter.",
-    "icon_id": "node.database",
-    "affected_pressures": ["persistence", "latency"],
-    "capacity_bonus": {"data": {"min": 1, "max": 2}, "backend": 1, "total": {"min": 1, "max": 2}},
-    "pressure_resistance": {"min": 0.04, "max": 0.08},
-    "duration_seconds": {"min": 60.0, "max": 120.0},
-    "intensity_range": {"min": 0.9, "max": 1.25},
-    "tags": ["data", "persistence"]
+    "affected_pressures": [
+      "latency",
+      "queue",
+      "persistence"
+    ],
+    "capacity_bonus": {
+      "operations": 1,
+      "total": 1
+    },
+    "pressure_resistance": {
+      "min": 0.02,
+      "max": 0.05
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.2
+    },
+    "tags": [
+      "observability"
+    ]
   }
 ]

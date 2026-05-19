@@ -74,12 +74,14 @@ struct EventTrigger {
     EventTriggerType type = EventTriggerType::TimeBased;
     double timeSeconds = 0.0;
     NumericRange timeSecondsRange{0.0, 0.0};
+    int turnNumber = 0;
     EventMetric metric = EventMetric::AverageLatency;
     PressureCategory pressure = PressureCategory::None;
     double threshold = 0.0;
     int phaseIndex = -1;
     double delaySeconds = 0.0;
     NumericRange delaySecondsRange{0.0, 0.0};
+    int delayTurns = 0;
 };
 
 struct EventEffect {
@@ -112,6 +114,7 @@ struct EventDefinition {
     EventEffect effect;
     double durationSeconds = 10.0;
     NumericRange durationSecondsRange{10.0, 10.0};
+    int durationTurns = 0;
     double intensity = 1.0;
     NumericRange intensityRange{1.0, 1.0};
     double weight = 1.0;
@@ -121,6 +124,7 @@ struct EventDefinition {
 struct ActiveEvent {
     EventDefinition definition;
     double startedAtSeconds = 0.0;
+    int startedAtTurn = 0;
     double remainingSeconds = 0.0;
 };
 
@@ -141,6 +145,7 @@ struct LocalizedEventModifier {
 
 struct EventLogEntry {
     double timeSeconds = 0.0;
+    int turnNumber = 0;
     EventCategory category = EventCategory::TrafficEvent;
     std::string name;
     std::string description;
@@ -150,9 +155,9 @@ struct EventLogEntry {
 class EventManager {
 public:
     void reset(std::vector<EventDefinition> definitions, std::uint32_t seed = 0);
-    void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
-    void inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation);
-    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
+    void update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation);
+    void inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation);
+    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation);
     [[nodiscard]] std::vector<EventLogEntry> eventsSince(std::size_t startIndex) const;
     [[nodiscard]] std::size_t recentEventCount() const;
     void clear();
@@ -167,12 +172,13 @@ private:
     struct PendingEvent {
         std::size_t definitionIndex = 0;
         double fireAtSeconds = 0.0;
+        int fireAtTurn = 0;
     };
 
-    [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
-    [[nodiscard]] bool eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
+    [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const;
+    [[nodiscard]] bool eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const;
     [[nodiscard]] double metricValue(EventMetric metric, const Simulation& simulation) const;
-    EventLogEntry activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation);
+    EventLogEntry activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation);
     [[nodiscard]] EventLocation resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const;
 
     std::vector<EventDefinition> definitions_;

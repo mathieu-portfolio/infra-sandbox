@@ -112,7 +112,7 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
             .pressureResistance = content::sampleRange(definition.pressureResistanceRange, seed, definition.id + ".pressure_resistance") * intensity,
             .eventIntensityMultiplier = content::sampleRange(definition.eventIntensityMultiplierRange, seed, definition.id + ".event_intensity_multiplier"),
             .complexityDelta = content::sampleRange(definition.complexityDeltaRange, seed, definition.id + ".complexity_delta") * intensity,
-            .durationSeconds = content::sampleRange(definition.durationSecondsRange, seed, definition.id + ".duration_seconds"),
+            .durationSeconds = content::sampleRange(definition.durationSecondsRange, seed, definition.id + ".duration_turns"),
         });
     }
     state.selectedWorldActionIndex = -1;

@@ -1,0 +1,158 @@
+[
+  {
+    "id": "foundations",
+    "display_name": "Foundations",
+    "description": "Basic request flow: traffic enters, queues form, latency rises.",
+    "tags": [
+      "starter"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency"
+    ],
+    "available_actions": [
+      "scale_up",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service"
+    ]
+  },
+  {
+    "id": "local_scale",
+    "display_name": "API Scaling",
+    "description": "Single-region compute scaling, backpressure, and queue control.",
+    "tags": [
+      "starter"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "API utilization",
+      "Queue depth",
+      "Latency"
+    ],
+    "available_actions": [
+      "scale_up",
+      "scale_out",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "compute",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "load_balancer"
+    ]
+  },
+  {
+    "id": "state_and_cache",
+    "display_name": "State and Cache",
+    "description": "Persistence bottlenecks, repeated reads, cache behavior, and replicas.",
+    "tags": [
+      "starter"
+    ],
+    "visible_metrics": [
+      "DB queue",
+      "Cache hit rate",
+      "Timeout rate",
+      "Latency"
+    ],
+    "available_actions": [
+      "scale_up",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "queue",
+      "persistence",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "database",
+      "cache"
+    ]
+  },
+  {
+    "id": "failure_feedback",
+    "display_name": "Failure Feedback",
+    "description": "Timeouts, retries, burst absorption, and recovery windows.",
+    "tags": [
+      "starter"
+    ],
+    "visible_metrics": [
+      "Timeout rate",
+      "Retry rate",
+      "Queue depth",
+      "Latency"
+    ],
+    "available_actions": [
+      "scale_up",
+      "add_queue",
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "retry",
+      "failure",
+      "queue",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "database",
+      "queue"
+    ]
+  },
+  {
+    "id": "geographic_scale",
+    "display_name": "Regional Scale",
+    "description": "Regional traffic, distance, cache placement, and latency.",
+    "tags": [
+      "starter"
+    ],
+    "visible_metrics": [
+      "Latency",
+      "Regional traffic",
+      "Queue depth",
+      "Error rate"
+    ],
+    "available_actions": [
+      "scale_up",
+      "enable_cache",
+      "add_regional_cache",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "latency",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "database",
+      "cache",
+      "cdn_edge"
+    ]
+  }
+]
