@@ -4,10 +4,12 @@
 #include "ui/hud/HudPanelPrimitives.hpp"
 #include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "ui/core/UiPrimitives.hpp"
 
 #include "raylib.h"
 
 #include <cstdio>
+#include <array>
 
 namespace {
 const char* phaseName(GameplayPhase phase)
@@ -38,6 +40,89 @@ const char* phaseActionLabel(GameplayPhase phase)
         return "Analyze / Continue";
     }
     return "Advance";
+}
+
+
+constexpr int kViewModeCount = static_cast<int>(UiViewMode::Count);
+
+UiViewMode viewModeAt(int index)
+{
+    return static_cast<UiViewMode>(index);
+}
+
+void selectViewMode(UiState& state, UiViewMode mode)
+{
+    state.activeViewMode = mode;
+    state.activeOverlay = overlayForViewMode(mode);
+    state.scenarioDroplistOpen = false;
+    state.objectivesDroplistOpen = false;
+    state.optionsMenuOpen = false;
+}
+
+bool handleViewModeBar(UiContext& context, Vector2 mouse)
+{
+    if (context.state == nullptr) {
+        return false;
+    }
+
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const Rectangle bar = computeViewModeBarBounds(layout.worldView);
+    if (!CheckCollisionPointRec(mouse, bar)) {
+        return false;
+    }
+
+    for (int i = 0; i < kViewModeCount; ++i) {
+        if (CheckCollisionPointRec(mouse, computeViewModeButtonBounds(bar, i, kViewModeCount))) {
+            selectViewMode(*context.state, viewModeAt(i));
+            return true;
+        }
+    }
+
+    return true;
+}
+
+bool handleViewModeShortcuts(UiContext& context)
+{
+    if (context.state == nullptr) {
+        return false;
+    }
+
+    const std::array<int, kViewModeCount> keys{KEY_ONE, KEY_TWO, KEY_THREE, KEY_FOUR, KEY_FIVE, KEY_SIX};
+    for (int i = 0; i < kViewModeCount; ++i) {
+        if (IsKeyPressed(keys[static_cast<std::size_t>(i)])) {
+            selectViewMode(*context.state, viewModeAt(i));
+            return true;
+        }
+    }
+    return false;
+}
+
+void drawViewModeBar(const UiContext& context)
+{
+    if (context.state == nullptr) {
+        return;
+    }
+
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const Rectangle bar = computeViewModeBarBounds(layout.worldView);
+    DrawRectangleRounded(bar, 0.28f, 12, {12, 18, 27, 218});
+    DrawRectangleRoundedLines(bar, 0.28f, 12, {70, 86, 104, 105});
+
+    auto& icons = IconRegistry::instance();
+    for (int i = 0; i < kViewModeCount; ++i) {
+        const UiViewMode mode = viewModeAt(i);
+        const Rectangle button = computeViewModeButtonBounds(bar, i, kViewModeCount);
+        const bool active = context.state->activeViewMode == mode;
+        const bool hovered = CheckCollisionPointRec(GetMousePosition(), button);
+        const Color fill = active ? Color{72, 52, 164, 238} : hovered ? Color{30, 38, 50, 230} : Color{18, 24, 34, 185};
+        const Color stroke = active ? Color{146, 104, 255, 180} : Color{70, 86, 104, 85};
+        const Color text = active ? Color{240, 236, 255, 255} : Color{169, 179, 190, 255};
+
+        DrawRectangleRounded(button, 0.24f, 8, fill);
+        DrawRectangleRoundedLines(button, 0.24f, 8, stroke);
+        icons.drawIcon(uiViewModeIcon(mode), {button.x + 9.0f, button.y + 7.0f, 14.0f, 14.0f}, text);
+        drawTextClipped(uiViewModeName(mode), {button.x + 28.0f, button.y + 6.0f, button.width - 34.0f, 16.0f}, 13, text);
+    }
 }
 
 bool handlePhaseButton(UiContext& context, Vector2 mouse)
@@ -73,7 +158,13 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
 
 void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManager& scenarioManager)
 {
-    if (context.state == nullptr || !context.state->showHud || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (context.state == nullptr || !context.state->showHud) {
+        return;
+    }
+
+    handleViewModeShortcuts(context);
+
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
     }
 
@@ -94,6 +185,9 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
             }
             return;
         }
+        return;
+    }
+    if (handleViewModeBar(context, mouse)) {
         return;
     }
     if (scenarioDropdown_.update(context, scenarioManager, mouse)) {
@@ -143,6 +237,8 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     DrawText("Help", static_cast<int>(help.x + 26.0f), static_cast<int>(help.y + 10.0f), 14, {139, 148, 158, 255});
 
     optionsMenu_.drawButton(context);
+
+    drawViewModeBar(context);
 
     scenarioDropdown_.drawMenu(context, scenarioManager);
     objectivesDropdown_.drawMenu(context, scenarioManager);

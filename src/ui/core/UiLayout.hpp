@@ -28,7 +28,6 @@ struct LeftSidebarLayout {
     Rectangle overview{};
     Rectangle alerts{};
     Rectangle sandbox{};
-    Rectangle layers{};
     Rectangle legend{};
 };
 
@@ -56,4 +55,6 @@ UiLayout computeUiLayout(int screenWidth, int screenHeight);
 TopBarLayout computeTopBarLayout(Rectangle topBar);
 LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMode);
 BottomPanelLayout computeBottomPanelLayout(Rectangle bottomPanel);
+Rectangle computeViewModeBarBounds(Rectangle worldView);
+Rectangle computeViewModeButtonBounds(Rectangle viewModeBar, int index, int count);
 bool pointInUiPanel(Vector2 point, const UiLayout& layout);

@@ -185,23 +185,6 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         drawTextClipped(labBuffer, {x + 14.0f, y + 274.0f, width - 28.0f, 14.0f}, 12, {89, 196, 255, 255});
     }
 
-    if (left.layers.height <= 0.0f) {
-        return;
-    }
-    Rectangle layers = left.layers;
-    y = layers.y;
-    drawPanelFrame(layers, "Layers");
-    const std::array<const char*, 5> layerNames{"Traffic Flow", "Resources", "Persistence", "Reliability", "Geography"};
-    const std::array<const char*, 5> layerIcons{"layer.flow", "layer.resources", "layer.persistence", "layer.reliability", "layer.geography"};
-    for (int i = 0; i < 5; ++i) {
-        const float rowY = y + 42.0f + static_cast<float>(i) * 26.0f;
-        IconRegistry::instance().drawIcon(layerIcons[static_cast<std::size_t>(i)], {x + 14.0f, rowY, 16.0f, 16.0f}, {139, 148, 158, 255});
-        drawTextClipped(layerNames[static_cast<std::size_t>(i)], {x + 38.0f, rowY - 1.0f, width - 98.0f, 18.0f}, 14, {230, 237, 243, 255});
-        const std::array<UiLayer, 5> layerIds{UiLayer::Flow, UiLayer::Resources, UiLayer::Persistence, UiLayer::Reliability, UiLayer::Geography};
-        const bool enabled = context.state->enabledLayers[static_cast<std::size_t>(layerIds[static_cast<std::size_t>(i)])];
-        drawToggle({x + width - 48.0f, rowY - 1.0f, 34.0f, 18.0f}, enabled);
-    }
-
     Rectangle legend = left.legend;
     y = legend.y;
     drawPanelFrame(legend, "Legend");

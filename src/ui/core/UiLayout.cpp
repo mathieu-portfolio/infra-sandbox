@@ -187,9 +187,6 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
         sandbox->style(ui::fixedHeight(288.0f));
         root->add(std::move(sandbox));
     }
-    auto layers = std::make_unique<ui::PanelNode>("layers");
-    layers->style(ui::fixedHeight(178.0f));
-    root->add(std::move(layers));
     auto legend = std::make_unique<ui::PanelNode>("legend");
     legend->style(ui::flex(1.0f, 130.0f));
     root->add(std::move(legend));
@@ -200,7 +197,6 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
         .overview = boundsOf(*root, "overview"),
         .alerts = boundsOf(*root, "alerts"),
         .sandbox = boundsOf(*root, "sandbox"),
-        .layers = boundsOf(*root, "layers"),
         .legend = boundsOf(*root, "legend"),
     };
 }
@@ -246,7 +242,33 @@ BottomPanelLayout computeBottomPanelLayout(Rectangle bottomPanel)
 bool pointInUiPanel(Vector2 point, const UiLayout& layout)
 {
     return CheckCollisionPointRec(point, layout.topBar)
+        || CheckCollisionPointRec(point, computeViewModeBarBounds(layout.worldView))
         || CheckCollisionPointRec(point, layout.leftSidebar)
         || CheckCollisionPointRec(point, layout.rightSidebar)
         || CheckCollisionPointRec(point, layout.bottomPanel);
+}
+
+Rectangle computeViewModeBarBounds(Rectangle worldView)
+{
+    const float horizontalMargin = 32.0f;
+    const float availableWidth = std::max(240.0f, worldView.width - horizontalMargin);
+    const float width = std::clamp(worldView.width * 0.62f, std::min(520.0f, availableWidth), std::min(760.0f, availableWidth));
+    const float height = 38.0f;
+    return {worldView.x + (worldView.width - width) * 0.5f, worldView.y + 14.0f, width, height};
+}
+
+Rectangle computeViewModeButtonBounds(Rectangle viewModeBar, int index, int count)
+{
+    if (count <= 0) {
+        return viewModeBar;
+    }
+    const float gap = 4.0f;
+    const float padding = 4.0f;
+    const float buttonWidth = (viewModeBar.width - padding * 2.0f - gap * static_cast<float>(count - 1)) / static_cast<float>(count);
+    return {
+        viewModeBar.x + padding + static_cast<float>(index) * (buttonWidth + gap),
+        viewModeBar.y + padding,
+        buttonWidth,
+        viewModeBar.height - padding * 2.0f
+    };
 }

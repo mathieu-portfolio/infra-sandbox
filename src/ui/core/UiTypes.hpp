@@ -30,6 +30,17 @@ enum class UiLayer {
     Count
 };
 
+
+enum class UiViewMode {
+    Overview,
+    Traffic,
+    Resources,
+    Persistence,
+    Reliability,
+    Geography,
+    Count
+};
+
 enum class EventPopupMode {
     None,
     PlanningStart,
@@ -161,7 +172,8 @@ struct UiState {
     std::deque<std::string> resolutionSummaries;
     EngineeringCapacity engineeringCapacity;
     std::string lastCapacityUsageSummary;
-    OverlayMode activeOverlay = OverlayMode::None;
+    UiViewMode activeViewMode = UiViewMode::Overview;
+    OverlayMode activeOverlay = OverlayMode::Bottlenecks;
     UiSelection selection{};
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};
     bool showDebug = false;
@@ -213,6 +225,9 @@ struct UiContext {
     bool paused = false;
 };
 
+const char* uiViewModeName(UiViewMode mode);
+const char* uiViewModeIcon(UiViewMode mode);
+OverlayMode overlayForViewMode(UiViewMode mode);
 const char* overlayModeName(OverlayMode mode);
 const char* timelineCategoryName(TimelineCategory category);
 const char* timelineFilterName(TimelineFilter filter);
