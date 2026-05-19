@@ -1,0 +1,77 @@
+[
+  {
+    "id": "aggressive_retry_clients",
+    "display_name": "Aggressive Retry Clients",
+    "description": "Clients retry quickly after timeouts, making failures feed more load back into the system.",
+    "selection_weight": {
+      "min": 0.45,
+      "max": 0.75
+    },
+    "retry_delay_multiplier": {
+      "min": 0.45,
+      "max": 0.65
+    },
+    "tags": [
+      "retries",
+      "cascading_failures"
+    ]
+  },
+  {
+    "id": "noisy_regional_traffic",
+    "display_name": "Noisy Regional Traffic",
+    "description": "Uneven regional demand creates failover and distance pressure.",
+    "selection_weight": {
+      "min": 0.35,
+      "max": 0.6
+    },
+    "traffic_multiplier": {
+      "min": 1.15,
+      "max": 1.35
+    },
+    "tags": [
+      "regional_scaling",
+      "latency"
+    ]
+  },
+  {
+    "id": "burst_aftershock",
+    "display_name": "Burst Aftershock",
+    "description": "Small aftershocks keep arriving after the first spike, making recovery harder than the initial response.",
+    "selection_weight": {
+      "min": 0.35,
+      "max": 0.55
+    },
+    "burst_override": {
+      "enabled": true,
+      "multiplier": {
+        "min": 1.55,
+        "max": 1.9
+      },
+      "period_turns": {
+        "min": 2,
+        "max": 3
+      },
+      "duration_turns": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "tags": [
+      "traffic",
+      "recovery"
+    ]
+  },
+  {
+    "id": "limited_observability",
+    "display_name": "Limited Observability",
+    "description": "Metrics lag behind reality, emphasizing conservative reliability decisions.",
+    "selection_weight": {
+      "min": 0.25,
+      "max": 0.45
+    },
+    "tags": [
+      "observability",
+      "diagnosis"
+    ]
+  }
+]

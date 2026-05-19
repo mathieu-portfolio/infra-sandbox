@@ -1,0 +1,365 @@
+[
+  {
+    "id": "ops_alert_queue_growth",
+    "display_name": "Queue Growth Alert",
+    "description": "Monitoring shows queues growing faster than queue processors can drain them.",
+    "category": "observability",
+    "moment": "planning_start",
+    "weight": 1.5,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.18,
+        "max": 1.34
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "alert",
+      "queue",
+      "observability"
+    ]
+  },
+  {
+    "id": "ops_timeout_wave",
+    "display_name": "Timeout Wave",
+    "description": "Slow responses cause clients to wait longer and retry more aggressively.",
+    "category": "failure",
+    "moment": "planning_start",
+    "weight": 1.3,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.22,
+        "max": 1.42
+      },
+      "retry_delay_multiplier": {
+        "min": 0.5,
+        "max": 0.7
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "timeout",
+      "retry",
+      "cascade"
+    ]
+  },
+  {
+    "id": "ops_retry_storm_warning",
+    "display_name": "Retry Storm Warning",
+    "description": "A retry policy that looked safe at low traffic now risks multiplying load during failures.",
+    "category": "reliability",
+    "moment": "planning_start",
+    "weight": 1.4,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.35,
+        "max": 1.65
+      },
+      "retry_delay_multiplier": {
+        "min": 0.42,
+        "max": 0.62
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "retry",
+      "cascading_failures"
+    ]
+  },
+  {
+    "id": "ops_database_degradation",
+    "display_name": "Database Degradation",
+    "description": "Storage latency increases and persistence starts dominating the request path.",
+    "category": "infrastructure",
+    "moment": "planning_start",
+    "weight": 1.2,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.42,
+        "max": 0.58
+      },
+      "latency_multiplier": {
+        "min": 1.25,
+        "max": 1.45
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "database_pressure",
+      "latency"
+    ]
+  },
+  {
+    "id": "ops_cache_instability",
+    "display_name": "Cache Instability",
+    "description": "Cache behavior becomes unreliable, pushing repeated reads back toward storage.",
+    "category": "cache",
+    "moment": "planning_start",
+    "weight": 1.0,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "emit_feedback",
+      "database_capacity_multiplier": {
+        "min": 0.78,
+        "max": 0.9
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "cache",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "ops_regional_degradation",
+    "display_name": "Regional Degradation",
+    "description": "One region starts responding slowly, shifting pressure into cross-region paths.",
+    "category": "geography",
+    "moment": "planning_start",
+    "weight": 1.1,
+    "repeatable": true,
+    "location": {
+      "scope": "random_region",
+      "regions": [
+        "Europe",
+        "NorthAmerica"
+      ]
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.25,
+        "max": 1.5
+      },
+      "burst_multiplier": {
+        "min": 1.35,
+        "max": 1.7
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "regional_scaling",
+      "latency",
+      "failover"
+    ]
+  },
+  {
+    "id": "ops_deploy_regression",
+    "display_name": "Deploy Regression",
+    "description": "A risky change increases operational noise during the incident window.",
+    "category": "operations",
+    "moment": "planning_start",
+    "weight": 0.8,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 3
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.12,
+        "max": 1.26
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "deployment",
+      "operations"
+    ]
+  },
+  {
+    "id": "ops_observability_gap",
+    "display_name": "Observability Gap",
+    "description": "Signals are incomplete: the system is failing, but the dominant bottleneck is harder to read.",
+    "category": "observability",
+    "moment": "planning_start",
+    "weight": 0.9,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "emit_feedback"
+    },
+    "duration_turns": 2,
+    "tags": [
+      "observability",
+      "diagnosis"
+    ]
+  },
+  {
+    "id": "ops_partial_recovery",
+    "display_name": "Partial Recovery",
+    "description": "Mitigations start helping, but remaining backlog can still reignite the incident.",
+    "category": "recovery",
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 5
+    },
+    "effect": {
+      "type": "emit_feedback",
+      "traffic_multiplier": {
+        "min": 0.78,
+        "max": 0.9
+      },
+      "database_capacity_multiplier": {
+        "min": 1.08,
+        "max": 1.24
+      },
+      "retry_delay_multiplier": {
+        "min": 1.1,
+        "max": 1.35
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "recovery",
+      "stabilization"
+    ]
+  },
+  {
+    "id": "ops_postmortem_signal",
+    "display_name": "Post-Incident Signal",
+    "description": "The system is calmer, but the recap shows which pressure source actually dominated.",
+    "category": "recovery",
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 6
+    },
+    "effect": {
+      "type": "emit_feedback"
+    },
+    "duration_turns": 1,
+    "tags": [
+      "postmortem",
+      "learning"
+    ]
+  },
+  {
+    "id": "sandbox_incident_spike",
+    "display_name": "Incident Traffic Spike",
+    "description": "Inject a large traffic spike to test overload response.",
+    "category": "sandbox",
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "manual"
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": 1.9,
+      "burst_multiplier": 1.7
+    },
+    "duration_turns": 2,
+    "tags": [
+      "sandbox",
+      "traffic"
+    ]
+  },
+  {
+    "id": "sandbox_retry_storm_ops",
+    "display_name": "Inject Retry Storm",
+    "description": "Force retry amplification and watch whether queues collapse.",
+    "category": "sandbox",
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "manual"
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": 1.55,
+      "retry_delay_multiplier": 0.48
+    },
+    "duration_turns": 3,
+    "tags": [
+      "sandbox",
+      "retry"
+    ]
+  },
+  {
+    "id": "sandbox_database_outage_ops",
+    "display_name": "Inject Database Slowdown",
+    "description": "Reduce database capacity to test read relief and backpressure tactics.",
+    "category": "sandbox",
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "manual"
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": 0.38,
+      "latency_multiplier": 1.4
+    },
+    "duration_turns": 3,
+    "tags": [
+      "sandbox",
+      "database"
+    ]
+  }
+]

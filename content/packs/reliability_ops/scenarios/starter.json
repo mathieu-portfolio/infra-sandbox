@@ -1,0 +1,906 @@
+[
+  {
+    "id": "incident_basics",
+    "display_name": "Incident Basics",
+    "description": "A small service starts close to overload. Learn to read the first incident signals and apply backpressure before queues dominate.",
+    "tags": [
+      "reliability",
+      "intro",
+      "incident_response"
+    ],
+    "archetype": "incident_response",
+    "minimum_tier": "incident_foundations",
+    "unlocks_scenarios": [
+      "retry_storm_response"
+    ],
+    "topology_template": "demo_regional_api",
+    "traffic_pattern": "incident_baseline",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "incident response",
+      "queues",
+      "latency",
+      "backpressure"
+    ],
+    "guaranteed_pressures": [
+      "traffic",
+      "queue",
+      "latency"
+    ],
+    "allowed_actions": [
+      "scale_up",
+      "throttle_traffic"
+    ],
+    "engineering_capacity": {
+      "frontend": 1,
+      "backend": 1,
+      "infrastructure": 1,
+      "data": 1,
+      "operations": 2,
+      "total": 2
+    },
+    "starting_actions": [
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "objectives": [
+      {
+        "objective_id": "observe_incident_1_turn",
+        "starts_active": true
+      },
+      {
+        "objective_id": "stabilize_incident_queue"
+      }
+    ],
+    "events": [
+      "ops_alert_queue_growth",
+      "ops_timeout_wave",
+      "ops_observability_gap",
+      "ops_partial_recovery"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "alert",
+        "display_name": "Incident alert",
+        "event_message": "Queues are already rising when the incident starts.",
+        "start_turn": 1,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.15
+      },
+      {
+        "id": "pressure",
+        "display_name": "Pressure compounds",
+        "event_message": "If the system keeps accepting everything, queueing will dominate.",
+        "start_turn": 2,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.55
+      },
+      {
+        "id": "recovery",
+        "display_name": "Controlled recovery",
+        "event_message": "Stabilize the service while demand remains above comfortable capacity.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 3.6
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.8
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.8
+      },
+      {
+        "id": "write",
+        "share": 0.2
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.75
+    }
+  },
+  {
+    "id": "retry_storm_response",
+    "display_name": "Retry Storm Response",
+    "description": "Timeouts are feeding retries back into the platform. Tune retries and reduce accepted work before the cascade wins.",
+    "tags": [
+      "reliability",
+      "retry",
+      "cascading_failures"
+    ],
+    "archetype": "retry_storm",
+    "minimum_tier": "retry_response",
+    "required_completed_scenarios": [
+      "incident_basics"
+    ],
+    "unlocks_scenarios": [
+      "backlog_recovery"
+    ],
+    "topology_template": "demo_regional_api",
+    "traffic_pattern": "retry_amplification",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "retries",
+      "cascading failures",
+      "timeouts"
+    ],
+    "guaranteed_pressures": [
+      "retry",
+      "failure",
+      "queue",
+      "latency"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "scale_up",
+      "add_queue"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 1,
+      "operations": 2,
+      "data": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "unlockable_actions": [
+      "add_queue",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "survive_retry_storm_5_turns",
+        "starts_active": true,
+        "rewards": [
+          {
+            "type": "complete_scenario",
+            "message": "Retry storm contained. Backlog Recovery unlocked."
+          }
+        ]
+      },
+      {
+        "objective_id": "timeout_under_4s_ops"
+      }
+    ],
+    "events": [
+      "ops_retry_storm_warning",
+      "ops_timeout_wave",
+      "ops_alert_queue_growth",
+      "ops_partial_recovery",
+      "ops_observability_gap"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "timeouts",
+        "display_name": "Timeouts begin",
+        "event_message": "Timeouts appear before queues fully explain the slowdown.",
+        "start_turn": 1,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.25
+      },
+      {
+        "id": "retry_loop",
+        "display_name": "Retry loop",
+        "event_message": "Retries multiply load and amplify latency.",
+        "start_turn": 2,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.7,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 2.1,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "stabilize",
+        "display_name": "Stabilize policy",
+        "event_message": "Tune retries and drain the queue before new attempts arrive.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.45
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.4
+      }
+    ],
+    "modifiers": [
+      "aggressive_retry_clients",
+      "burst_aftershock"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 2,
+      "retry_delay_seconds": 0.45
+    }
+  },
+  {
+    "id": "backlog_recovery",
+    "display_name": "Backlog Recovery",
+    "description": "Traffic waves keep arriving before the system fully recovers. Use queues, capacity, and backpressure to drain backlog instead of hiding it.",
+    "tags": [
+      "reliability",
+      "queues",
+      "recovery"
+    ],
+    "archetype": "queue_recovery",
+    "minimum_tier": "queue_recovery",
+    "required_completed_scenarios": [
+      "retry_storm_response"
+    ],
+    "unlocks_scenarios": [
+      "degraded_region"
+    ],
+    "topology_template": "infrastructure_lab",
+    "traffic_pattern": "backlog_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "queues",
+      "async processing",
+      "recovery"
+    ],
+    "guaranteed_pressures": [
+      "queue",
+      "traffic",
+      "latency"
+    ],
+    "allowed_actions": [
+      "add_queue",
+      "scale_up",
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "operations": 2,
+      "data": 1,
+      "total": 4
+    },
+    "starting_actions": [
+      "add_queue",
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "scale_up",
+      "toggle_retries"
+    ],
+    "recommended_actions": [
+      "add_queue",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "drain_backlog_4_turns",
+        "starts_active": true,
+        "rewards": [
+          {
+            "type": "complete_scenario",
+            "message": "Backlog recovery complete. Degraded Region unlocked."
+          }
+        ]
+      }
+    ],
+    "events": [
+      "ops_alert_queue_growth",
+      "ops_timeout_wave",
+      "ops_retry_storm_warning",
+      "ops_partial_recovery",
+      "ops_deploy_regression"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "wave_one",
+        "display_name": "First wave",
+        "event_message": "The first burst creates a visible backlog.",
+        "start_turn": 1,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 2.4,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "aftershock",
+        "display_name": "Aftershock",
+        "event_message": "Backlog has not drained before the next wave arrives.",
+        "start_turn": 2,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.55,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 2.0,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "drain",
+        "display_name": "Drain window",
+        "event_message": "The workload calms slightly, but the queue must actually recover.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.2
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.0
+      },
+      {
+        "id": "eu_api_secondary",
+        "processing_capacity_per_second": 3.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.6
+      }
+    ],
+    "modifiers": [
+      "burst_aftershock",
+      "aggressive_retry_clients"
+    ]
+  },
+  {
+    "id": "degraded_region",
+    "display_name": "Degraded Region",
+    "description": "One region slows down and remote requests spill pressure into the rest of the platform. Keep core service responsive during uneven regional load.",
+    "tags": [
+      "reliability",
+      "regional",
+      "failover"
+    ],
+    "archetype": "regional_incident",
+    "minimum_tier": "regional_recovery",
+    "required_completed_scenarios": [
+      "backlog_recovery"
+    ],
+    "unlocks_scenarios": [
+      "cache_failure_recovery"
+    ],
+    "topology_template": "infrastructure_lab",
+    "traffic_pattern": "regional_failover_pressure",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "regional latency",
+      "failover",
+      "graceful degradation"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "traffic",
+      "queue"
+    ],
+    "allowed_actions": [
+      "add_regional_cache",
+      "add_cache",
+      "scale_up",
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 3,
+      "operations": 2,
+      "data": 1,
+      "total": 4
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "add_regional_cache"
+    ],
+    "unlockable_actions": [
+      "add_cache",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "add_regional_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "recover_region_5_turns",
+        "starts_active": true,
+        "rewards": [
+          {
+            "type": "complete_scenario",
+            "message": "Regional degradation stabilized. Cache Failure Recovery unlocked."
+          }
+        ]
+      }
+    ],
+    "events": [
+      "ops_regional_degradation",
+      "ops_timeout_wave",
+      "ops_alert_queue_growth",
+      "ops_partial_recovery",
+      "ops_observability_gap"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "regional_noise",
+        "display_name": "Regional noise",
+        "event_message": "One region is slower and pushes traffic toward remote paths.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.3
+      },
+      {
+        "id": "failover_pressure",
+        "display_name": "Failover pressure",
+        "event_message": "Remote reads and retries compete for the same central services.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.65
+      },
+      {
+        "id": "recovery",
+        "display_name": "Regional recovery",
+        "event_message": "Place relief near users and keep central services from collapsing.",
+        "start_turn": 6,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "na_users",
+        "request_rate_per_second": 6.0
+      },
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 5.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.4
+      }
+    ],
+    "modifiers": [
+      "noisy_regional_traffic",
+      "limited_observability"
+    ],
+    "cache": {
+      "enabled": false,
+      "max_entries": 10,
+      "ttl_seconds": 12.0
+    }
+  },
+  {
+    "id": "cache_failure_recovery",
+    "display_name": "Cache Failure Recovery",
+    "description": "Cache behavior stops shielding storage. Recover without blindly scaling the API layer.",
+    "tags": [
+      "reliability",
+      "cache",
+      "database_pressure"
+    ],
+    "archetype": "cache_incident",
+    "minimum_tier": "ops_lab",
+    "required_completed_scenarios": [
+      "degraded_region"
+    ],
+    "unlocks_scenarios": [
+      "reliability_lab"
+    ],
+    "topology_template": "infrastructure_lab",
+    "traffic_pattern": "degraded_storage_reads",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "caching",
+      "database pressure",
+      "incident recovery"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "latency",
+      "queue"
+    ],
+    "allowed_actions": [
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "operations": 2,
+      "data": 2,
+      "total": 4
+    },
+    "starting_actions": [
+      "clear_cache",
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "add_cache",
+      "add_read_replica",
+      "enable_cache"
+    ],
+    "recommended_actions": [
+      "add_cache",
+      "add_read_replica",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "cache_failure_recovery",
+        "starts_active": true,
+        "rewards": [
+          {
+            "type": "complete_scenario",
+            "message": "Cache failure recovered. Reliability Lab unlocked."
+          }
+        ]
+      },
+      {
+        "objective_id": "reduce_persistence_pressure_ops"
+      }
+    ],
+    "events": [
+      "ops_cache_instability",
+      "ops_database_degradation",
+      "ops_timeout_wave",
+      "ops_partial_recovery",
+      "ops_observability_gap"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "cache_cracks",
+        "display_name": "Cache cracks",
+        "event_message": "Repeated reads start reaching storage again.",
+        "start_turn": 1,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.2
+      },
+      {
+        "id": "storage_pressure",
+        "display_name": "Storage pressure",
+        "event_message": "Database capacity becomes the bottleneck, not API compute.",
+        "start_turn": 2,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.55
+      },
+      {
+        "id": "protect_storage",
+        "display_name": "Protect storage",
+        "event_message": "Keep reads away from storage long enough to recover.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 7.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 1.6
+      }
+    ],
+    "modifiers": [
+      "slow_database_window",
+      "limited_observability"
+    ],
+    "cache": {
+      "enabled": true,
+      "max_entries": 5,
+      "ttl_seconds": 6.0
+    }
+  },
+  {
+    "id": "reliability_lab",
+    "display_name": "Reliability Lab",
+    "description": "Sandbox for incident drills: inject traffic spikes, retry storms, database slowdowns, and recovery windows.",
+    "tags": [
+      "sandbox",
+      "reliability",
+      "ops_lab"
+    ],
+    "sandbox_lab": true,
+    "archetype": "ops_lab",
+    "minimum_tier": "ops_lab",
+    "topology_template": "infrastructure_lab",
+    "traffic_pattern": "incident_baseline",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 90.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "incident response",
+      "observability",
+      "backpressure",
+      "recovery",
+      "retries"
+    ],
+    "guaranteed_pressures": [
+      "traffic",
+      "queue",
+      "retry",
+      "failure",
+      "persistence",
+      "latency"
+    ],
+    "allowed_actions": [
+      "scale_up",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "add_queue",
+      "add_regional_cache",
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "engineering_capacity": {
+      "frontend": 1,
+      "backend": 3,
+      "infrastructure": 3,
+      "data": 2,
+      "operations": 3,
+      "total": 6
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "add_queue"
+    ],
+    "recommended_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "add_queue"
+    ],
+    "objectives": [
+      {
+        "objective_id": "ops_lab_6_turns",
+        "starts_active": true
+      }
+    ],
+    "events": [
+      "ops_alert_queue_growth",
+      "ops_timeout_wave",
+      "ops_retry_storm_warning",
+      "ops_database_degradation",
+      "ops_cache_instability",
+      "ops_regional_degradation",
+      "ops_deploy_regression",
+      "ops_observability_gap"
+    ],
+    "sandbox_events": [
+      "sandbox_incident_spike",
+      "sandbox_retry_storm_ops",
+      "sandbox_database_outage_ops",
+      "ops_partial_recovery"
+    ],
+    "failure_conditions": [
+      "timeout_under_4s_ops"
+    ],
+    "phases": [
+      {
+        "id": "lab",
+        "display_name": "Incident lab baseline",
+        "event_message": "Use sandbox controls to compare reliability tactics.",
+        "start_turn": 1,
+        "duration_turns": 999,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 90.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.15
+      }
+    ],
+    "cache": {
+      "enabled": true,
+      "max_entries": 12,
+      "ttl_seconds": 12.0
+    },
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.65
+    },
+    "bursts": {
+      "enabled": false,
+      "multiplier": 2.0,
+      "period_turns": 3,
+      "duration_turns": 1
+    }
+  }
+]

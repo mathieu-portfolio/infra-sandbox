@@ -47,6 +47,21 @@ std::string stringAt(const Json& object, const std::string& key, const std::stri
     return fallback;
 }
 
+std::vector<std::string> stringsAt(const Json& object, const std::string& key)
+{
+    std::vector<std::string> values;
+    const Json* array = object.find(key);
+    if (array == nullptr || !array->isArray()) {
+        return values;
+    }
+    for (const auto& entry : array->asArray()) {
+        if (entry.isString()) {
+            values.push_back(entry.asString());
+        }
+    }
+    return values;
+}
+
 ContentPackMetadata parsePackMetadata(const Json& object)
 {
     return {
@@ -56,6 +71,7 @@ ContentPackMetadata parsePackMetadata(const Json& object)
         .version = stringAt(object, "version"),
         .author = stringAt(object, "author"),
         .defaultScenarioId = stringAt(object, "default_scenario_id"),
+        .dependsOn = stringsAt(object, "depends_on"),
     };
 }
 
@@ -81,21 +97,6 @@ std::size_t sizeAt(const Json& object, const std::string& key, std::size_t fallb
         return static_cast<std::size_t>(std::max(0.0, value->asNumber()));
     }
     return fallback;
-}
-
-std::vector<std::string> stringsAt(const Json& object, const std::string& key)
-{
-    std::vector<std::string> values;
-    const Json* array = object.find(key);
-    if (array == nullptr || !array->isArray()) {
-        return values;
-    }
-    for (const auto& entry : array->asArray()) {
-        if (entry.isString()) {
-            values.push_back(entry.asString());
-        }
-    }
-    return values;
 }
 
 std::vector<std::string> stringsAtAny(const Json& object, const std::string& preferredKey, const std::string& legacyKey)
@@ -918,6 +919,25 @@ std::vector<Json> loadOptionalDirectoryObjects(const std::filesystem::path& dire
     return loadDirectoryObjects(directory, result);
 }
 
+std::vector<Json> loadLayerDirectoryObjects(const std::vector<std::filesystem::path>& roots, const std::string& folder, ContentLoadResult& result, bool required = true)
+{
+    std::vector<Json> objects;
+    bool found = false;
+    for (const auto& root : roots) {
+        const auto directory = root / folder;
+        if (!std::filesystem::exists(directory)) {
+            continue;
+        }
+        found = true;
+        auto layerObjects = loadDirectoryObjects(directory, result);
+        objects.insert(objects.end(), layerObjects.begin(), layerObjects.end());
+    }
+    if (required && !found) {
+        result.errors.push_back("Missing content folder in loaded layers: " + folder);
+    }
+    return objects;
+}
+
 void applyPressureAnalysisConfig(SimulationConfig& config, const Json& object)
 {
     const Json* root = object.find("pressure_analysis");
@@ -1016,7 +1036,12 @@ ContentRegistry& ContentRegistry::instance()
 
 ContentLoadResult ContentRegistry::loadFromDisk(const std::filesystem::path& root)
 {
-    ContentLoadResult result = loadInternal(root);
+    return loadFromLayers({root});
+}
+
+ContentLoadResult ContentRegistry::loadFromLayers(const std::vector<std::filesystem::path>& roots)
+{
+    ContentLoadResult result = loadInternal(roots);
     if (!result.errors.empty() || scenarios_.empty() || progressionTiers_.empty()) {
         loadErrors_ = result.errors;
         loadFallbackContent();
@@ -1032,7 +1057,7 @@ ContentLoadResult ContentRegistry::loadFromDisk(const std::filesystem::path& roo
     }
     loadedFromContent_ = true;
     loadErrors_.clear();
-    currentPackPath_ = root;
+    currentPackPath_ = roots.empty() ? std::filesystem::path{} : roots.back();
     result.loaded = true;
     return result;
 }
@@ -1051,8 +1076,18 @@ void ContentRegistry::clearLoadedContent()
 
 ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& root)
 {
+    return loadInternal(std::vector<std::filesystem::path>{root});
+}
+
+ContentLoadResult ContentRegistry::loadInternal(const std::vector<std::filesystem::path>& roots)
+{
     ContentLoadResult result;
     clearLoadedContent();
+    if (roots.empty()) {
+        result.errors.push_back("No content layers provided.");
+        return result;
+    }
+    const auto& root = roots.back();
 
     const Json metadata = loadJsonFile(root / "pack.json", result);
     if (metadata.isObject()) {
@@ -1062,12 +1097,12 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         if (packMetadata_.version.empty()) result.errors.push_back("Content pack " + packMetadata_.id + " is missing version.");
     }
 
-    for (const auto& object : loadOptionalDirectoryObjects(root / "balancing", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "balancing", result, false)) {
         applyPressureAnalysisConfig(simulationConfig_, object);
     }
 
     std::unordered_map<std::string, Json> topologies;
-    for (const auto& object : loadDirectoryObjects(root / "topology", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "topology", result)) {
         if (const Json* nodes = object.find("nodes"); nodes != nullptr && nodes->isArray()) {
             for (const auto& node : nodes->asArray()) {
                 const std::string type = stringAt(node, "type");
@@ -1080,13 +1115,13 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     }
 
     std::unordered_map<std::string, ScenarioObjective> objectives;
-    for (const auto& object : loadDirectoryObjects(root / "objectives", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "objectives", result)) {
         auto parsed = parseObjective(object);
         objectives[parsed.id] = std::move(parsed);
     }
 
     std::unordered_map<std::string, EventDefinition> events;
-    for (const auto& object : loadDirectoryObjects(root / "events", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "events", result)) {
         if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
             const std::string scope = stringAt(*location, "scope", "global");
             if (scope != "global" && scope != "region" && scope != "node_type" && scope != "random_region") {
@@ -1111,9 +1146,9 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     }
 
     std::unordered_map<std::string, TrafficProfile> trafficProfiles;
-    std::vector<Json> trafficObjects = loadOptionalDirectoryObjects(root / "traffic_patterns", result);
+    std::vector<Json> trafficObjects = loadLayerDirectoryObjects(roots, "traffic_patterns", result, false);
     if (trafficObjects.empty()) {
-        trafficObjects = loadDirectoryObjects(root / "traffic", result);
+        trafficObjects = loadLayerDirectoryObjects(roots, "traffic", result, true);
     }
     for (const auto& object : trafficObjects) {
         auto parsed = parseTraffic(object);
@@ -1123,7 +1158,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
     }
 
     std::unordered_map<std::string, ScenarioModifierDefinition> modifiers;
-    for (const auto& object : loadDirectoryObjects(root / "modifiers", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "modifiers", result)) {
         auto parsed = parseModifier(object, events);
         validateRange(parsed.selectionWeightRange, "Modifier " + parsed.id + " selection_weight", result);
         validateRange(parsed.trafficMultiplierRange, "Modifier " + parsed.id + " traffic_multiplier", result);
@@ -1139,7 +1174,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         modifiers[parsed.id] = std::move(parsed);
     }
 
-    for (const auto& object : loadDirectoryObjects(root / "progression", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "progression", result)) {
         for (const auto& mechanic : stringsAtAny(object, "available_actions", "available_interventions")) {
             if (!knownMechanicId(mechanic)) {
                 result.errors.push_back("Progression " + stringAt(object, "id") + " has invalid action id: " + mechanic);
@@ -1164,7 +1199,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         progressionTiers_.push_back(std::move(tier));
     }
 
-    for (const auto& object : loadDirectoryObjects(root / "actions", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "actions", result)) {
         if (!isNodeActionObject(object)) {
             continue;
         }
@@ -1217,7 +1252,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         interventions_.push_back(parseIntervention(object));
     }
 
-    for (const auto& object : loadOptionalDirectoryObjects(root / "actions", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "actions", result, false)) {
         if (isNodeActionObject(object)) {
             continue;
         }
@@ -1242,7 +1277,7 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         worldActions_.push_back(std::move(action));
     }
 
-    for (const auto& object : loadDirectoryObjects(root / "scenarios", result)) {
+    for (const auto& object : loadLayerDirectoryObjects(roots, "scenarios", result)) {
         ScenarioDefinition scenario;
         scenario.id = stringAt(object, "id");
         scenario.displayName = stringAt(object, "display_name", scenario.id);

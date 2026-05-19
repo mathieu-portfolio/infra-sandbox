@@ -1,0 +1,11 @@
+{
+  "id": "reliability_ops",
+  "display_name": "Reliability Ops",
+  "description": "Focused reliability and operations pack built on the common foundation. Adds incident scenarios, disruptive events, recovery objectives, and reliability-specific traffic patterns.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "default_scenario_id": "incident_basics",
+  "depends_on": [
+    "common"
+  ]
+}

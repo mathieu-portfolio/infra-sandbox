@@ -1,0 +1,166 @@
+[
+  {
+    "id": "incident_foundations",
+    "display_name": "Incident Foundations",
+    "description": "Read the first signals: queues, latency, failures, and retry pressure.",
+    "tags": [
+      "reliability"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "failure"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service"
+    ]
+  },
+  {
+    "id": "retry_response",
+    "display_name": "Retry Response",
+    "description": "Understand how retries can turn transient latency into cascading overload.",
+    "tags": [
+      "retries"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Retry rate",
+      "Timeouts",
+      "Queue depth",
+      "Latency"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "scale_up"
+    ],
+    "allowed_pressures": [
+      "retry",
+      "failure",
+      "queue",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "load_balancer"
+    ]
+  },
+  {
+    "id": "queue_recovery",
+    "display_name": "Queue Recovery",
+    "description": "Use buffering, capacity, and backpressure to drain backlog instead of hiding it.",
+    "tags": [
+      "queues"
+    ],
+    "visible_metrics": [
+      "Queue depth",
+      "Processed req/s",
+      "API utilization",
+      "Latency"
+    ],
+    "available_actions": [
+      "add_queue",
+      "scale_up",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "queue",
+      "compute",
+      "traffic",
+      "latency"
+    ],
+    "allowed_node_types": [
+      "api_service",
+      "queue"
+    ]
+  },
+  {
+    "id": "regional_recovery",
+    "display_name": "Regional Recovery",
+    "description": "Recover when geographic imbalance shifts load and latency across regions.",
+    "tags": [
+      "regional"
+    ],
+    "visible_metrics": [
+      "Regional traffic",
+      "Latency",
+      "Queue depth",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "add_regional_cache",
+      "add_cache",
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "allowed_pressures": [
+      "latency",
+      "traffic",
+      "queue",
+      "geography"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "cdn_edge",
+      "cache",
+      "api_service"
+    ]
+  },
+  {
+    "id": "ops_lab",
+    "display_name": "Ops Lab",
+    "description": "Combine incident actions, observability, graceful degradation, and recovery tactics.",
+    "tags": [
+      "sandbox"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Retry rate",
+      "Timeouts",
+      "Database utilization"
+    ],
+    "available_actions": [
+      "scale_up",
+      "throttle_traffic",
+      "toggle_retries",
+      "add_queue",
+      "add_cache",
+      "add_read_replica",
+      "add_regional_cache",
+      "clear_cache"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry",
+      "failure",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database",
+      "queue",
+      "cdn_edge"
+    ]
+  }
+]

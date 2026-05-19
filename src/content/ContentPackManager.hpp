@@ -26,6 +26,7 @@ public:
 
 private:
     std::vector<ContentPackInfo> packs_;
+    std::filesystem::path contentRoot_;
     std::string activePackId_;
 };
 

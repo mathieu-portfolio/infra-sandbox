@@ -1,8 +1,11 @@
 {
   "id": "vanilla",
   "display_name": "Vanilla",
-  "description": "Default infrastructure sandbox content pack.",
+  "description": "Default beginner pack built on the common foundation. Introduces core infrastructure pressure, queues, caching, database load, bursts, and regional latency.",
   "version": "0.1.0",
   "author": "Mathieu",
-  "default_scenario_id": "starter"
+  "default_scenario_id": "starter",
+  "depends_on": [
+    "common"
+  ]
 }

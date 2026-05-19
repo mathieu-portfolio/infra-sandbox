@@ -28,6 +28,21 @@ std::string stringAt(const Json& object, const std::string& key)
     return {};
 }
 
+std::vector<std::string> stringsAt(const Json& object, const std::string& key)
+{
+    std::vector<std::string> values;
+    const Json* array = object.find(key);
+    if (array == nullptr || !array->isArray()) {
+        return values;
+    }
+    for (const auto& entry : array->asArray()) {
+        if (entry.isString()) {
+            values.push_back(entry.asString());
+        }
+    }
+    return values;
+}
+
 ContentPackMetadata parseMetadata(const Json& object)
 {
     return {
@@ -37,6 +52,7 @@ ContentPackMetadata parseMetadata(const Json& object)
         .version = stringAt(object, "version"),
         .author = stringAt(object, "author"),
         .defaultScenarioId = stringAt(object, "default_scenario_id"),
+        .dependsOn = stringsAt(object, "depends_on"),
     };
 }
 
@@ -50,6 +66,7 @@ ContentLoadResult ContentPackManager::discover(const std::filesystem::path& cont
 {
     ContentLoadResult result;
     packs_.clear();
+    contentRoot_ = contentRoot;
     activePackId_.clear();
 
     const std::filesystem::path packsRoot = contentRoot / "packs";
@@ -134,7 +151,23 @@ ContentLoadResult ContentPackManager::loadPack(const std::string& packId)
         return result;
     }
 
-    ContentLoadResult result = ContentRegistry::instance().loadFromDisk(pack->path);
+    std::vector<std::filesystem::path> layers;
+    for (const auto& dependency : pack->metadata.dependsOn) {
+        if (dependency == "common") {
+            layers.push_back(contentRoot_ / "common");
+            continue;
+        }
+        if (const ContentPackInfo* dependencyPack = packById(dependency); dependencyPack != nullptr) {
+            layers.push_back(dependencyPack->path);
+            continue;
+        }
+        ContentLoadResult result;
+        result.errors.push_back("Content pack " + packId + " has unknown dependency: " + dependency);
+        return result;
+    }
+    layers.push_back(pack->path);
+
+    ContentLoadResult result = ContentRegistry::instance().loadFromLayers(layers);
     if (result.loaded) {
         activePackId_ = pack->metadata.id;
     }

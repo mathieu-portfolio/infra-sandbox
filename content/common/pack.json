@@ -1,0 +1,8 @@
+{
+  "id": "common",
+  "display_name": "Common Foundation",
+  "description": "Shared infrastructure vocabulary used by focused content packs: core actions, events, objectives, topology, traffic patterns, balancing, and UI assets.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "shared": true
+}

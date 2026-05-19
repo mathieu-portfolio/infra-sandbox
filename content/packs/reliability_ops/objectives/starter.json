@@ -1,0 +1,150 @@
+[
+  {
+    "id": "observe_incident_1_turn",
+    "display_name": "Read the Incident Signals",
+    "description": "Observe the first operational cycle and identify whether the dominant symptom is queueing, retries, timeout pressure, or persistence slowdown.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Observe one initialized incident turn before committing to a mitigation.",
+    "duration_turns": 1,
+    "starts_active": true,
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "throttle_traffic",
+        "message": "Backpressure unlocked. Use it when accepting more traffic would make the incident worse."
+      }
+    ],
+    "next_objectives": [
+      "stabilize_incident_queue"
+    ],
+    "tags": [
+      "diagnosis",
+      "incident_response",
+      "observability"
+    ]
+  },
+  {
+    "id": "stabilize_incident_queue",
+    "display_name": "Stop Queue Growth",
+    "description": "Bring queue pressure back under control before retries and timeouts compound the incident.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "queue",
+    "threshold": 0.48,
+    "summary": "Reduce queue pressure below 48%.",
+    "rewards": [
+      {
+        "type": "complete_scenario",
+        "message": "Incident basics stabilized. Retry Storm Response unlocked."
+      }
+    ],
+    "tags": [
+      "queue",
+      "stabilization",
+      "backpressure"
+    ]
+  },
+  {
+    "id": "survive_retry_storm_5_turns",
+    "display_name": "Survive the Retry Storm",
+    "description": "Keep the system alive while client retries amplify every timeout into more work.",
+    "type": "survive_duration",
+    "summary": "Survive 5 turns of retry amplification.",
+    "duration_turns": 5,
+    "tags": [
+      "retries",
+      "cascading_failures",
+      "reliability"
+    ]
+  },
+  {
+    "id": "timeout_under_4s_ops",
+    "display_name": "Keep Timeouts Contained",
+    "description": "Prevent timeout pressure from becoming the dominant failure mode during the incident.",
+    "type": "latency_under",
+    "threshold": 4.0,
+    "summary": "Keep effective latency below 4 seconds.",
+    "tags": [
+      "timeouts",
+      "latency",
+      "reliability"
+    ]
+  },
+  {
+    "id": "drain_backlog_4_turns",
+    "display_name": "Drain the Backlog",
+    "description": "Use buffering and capacity changes so the queue recovers instead of staying permanently saturated.",
+    "type": "survive_duration",
+    "summary": "Maintain recovery for 4 turns while backlog pressure is high.",
+    "duration_turns": 4,
+    "tags": [
+      "queues",
+      "recovery",
+      "async_processing"
+    ]
+  },
+  {
+    "id": "reduce_persistence_pressure_ops",
+    "display_name": "Protect the Database",
+    "description": "Reduce persistence pressure so storage slowdown does not cascade into API failures.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.45,
+    "summary": "Reduce persistence pressure below 45%.",
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "add_read_replica",
+        "message": "Read Replica unlocked. Use it when database reads dominate recovery."
+      }
+    ],
+    "tags": [
+      "database_pressure",
+      "recovery",
+      "reliability"
+    ]
+  },
+  {
+    "id": "recover_region_5_turns",
+    "display_name": "Recover the Degraded Region",
+    "description": "Keep global latency stable while one region is noisy and remote traffic shifts pressure elsewhere.",
+    "type": "survive_duration",
+    "summary": "Survive 5 turns of uneven regional pressure.",
+    "duration_turns": 5,
+    "tags": [
+      "regional_scaling",
+      "latency",
+      "failover"
+    ]
+  },
+  {
+    "id": "cache_failure_recovery",
+    "display_name": "Recover From Cache Instability",
+    "description": "Stabilize after cache behavior stops protecting the database path.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.5,
+    "summary": "Bring persistence pressure below 50% after cache instability.",
+    "tags": [
+      "caching",
+      "database_pressure",
+      "incident_response"
+    ]
+  },
+  {
+    "id": "ops_lab_6_turns",
+    "display_name": "Run the Incident Lab",
+    "description": "Survive a mixed incident sequence long enough to compare mitigation strategies.",
+    "type": "survive_duration",
+    "summary": "Survive 6 operational cycles in the reliability lab.",
+    "duration_turns": 6,
+    "tags": [
+      "sandbox",
+      "incidents",
+      "reliability"
+    ]
+  }
+]

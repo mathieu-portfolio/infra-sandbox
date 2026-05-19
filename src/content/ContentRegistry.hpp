@@ -19,6 +19,7 @@ struct ContentPackMetadata {
     std::string version;
     std::string author;
     std::string defaultScenarioId;
+    std::vector<std::string> dependsOn;
 };
 
 enum class InterventionKind {
@@ -93,6 +94,7 @@ public:
     [[nodiscard]] static ContentRegistry& instance();
 
     [[nodiscard]] ContentLoadResult loadFromDisk(const std::filesystem::path& root);
+    [[nodiscard]] ContentLoadResult loadFromLayers(const std::vector<std::filesystem::path>& roots);
     void loadFallbackContent();
 
     [[nodiscard]] const ContentPackMetadata& packMetadata() const;
@@ -109,6 +111,7 @@ public:
 
 private:
     ContentLoadResult loadInternal(const std::filesystem::path& root);
+    ContentLoadResult loadInternal(const std::vector<std::filesystem::path>& roots);
     void clearLoadedContent();
     void validate(ContentLoadResult& result) const;
 
