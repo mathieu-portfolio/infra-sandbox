@@ -18,6 +18,7 @@ struct ContentPackMetadata {
     std::string description;
     std::string version;
     std::string author;
+    std::string defaultScenarioId;
 };
 
 enum class InterventionKind {
@@ -120,12 +121,6 @@ private:
     SimulationConfig simulationConfig_;
     std::vector<std::string> loadErrors_;
     bool loadedFromContent_ = false;
-};
-
-class ContentManager {
-public:
-    [[nodiscard]] static ContentLoadResult loadPack(const std::filesystem::path& path);
-    [[nodiscard]] static ContentLoadResult loadDefaultContent();
 };
 
 } // namespace content

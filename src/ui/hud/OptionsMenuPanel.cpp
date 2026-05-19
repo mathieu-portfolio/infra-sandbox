@@ -38,6 +38,7 @@ bool OptionsMenuPanel::update(UiContext& context, Vector2 mouse)
     const Rectangle button = hudOptionsButtonBounds(context.screenWidth);
     if (CheckCollisionPointRec(mouse, button)) {
         context.state->optionsMenuOpen = !context.state->optionsMenuOpen;
+        context.state->packDroplistOpen = false;
         context.state->scenarioDroplistOpen = false;
         context.state->objectivesDroplistOpen = false;
         return true;

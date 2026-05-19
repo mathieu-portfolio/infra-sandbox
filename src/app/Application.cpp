@@ -5,13 +5,33 @@
 
 #include "raylib.h"
 
+#include <algorithm>
+
 namespace {
 constexpr int kWindowWidth = 1280;
 constexpr int kWindowHeight = 800;
+
+ScenarioDefinition initializeContentAndDefaultScenario(content::ContentPackManager& packManager)
+{
+    (void)packManager.discoverDefaultLocations();
+    (void)packManager.loadPack("vanilla");
+    const content::ContentPackMetadata& metadata = content::ContentRegistry::instance().packMetadata();
+    if (!metadata.defaultScenarioId.empty()) {
+        const auto scenarios = ScenarioRegistry::createAll();
+        const auto it = std::find_if(scenarios.begin(), scenarios.end(), [&](const ScenarioDefinition& scenario) {
+            return scenario.id == metadata.defaultScenarioId;
+        });
+        if (it != scenarios.end()) {
+            return *it;
+        }
+    }
+    return Scenario::createDefault();
+}
 }
 
 Application::Application()
-    : session_(),
+    : contentPackManager_(),
+      session_(initializeContentAndDefaultScenario(contentPackManager_)),
       renderer_(session_.definition())
 {
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_MAXIMIZED);
@@ -35,12 +55,13 @@ void Application::run()
         cameraController_.update(GetFrameTime());
         gameplayPhaseController_.updateSimulation(GetFrameTime(), renderer_.uiManager().state(), session_, worldActionController_);
 
-        renderer_.draw(session_.simulation(), session_.scenarioManager(), paused_, cameraController_);
+        renderer_.draw(session_.simulation(), session_.scenarioManager(), contentPackManager_, paused_, cameraController_);
     }
 }
 
 void Application::handleInput()
 {
+    applyPendingPackSelection();
     applyPendingScenarioSelection();
     applySandboxRequests();
     applyUiRequests();
@@ -66,6 +87,7 @@ void Application::handleInput()
         }
     }
 
+    applyPendingPackSelection();
     applyPendingScenarioSelection();
     applySandboxRequests();
     applyUiRequests();
@@ -80,6 +102,39 @@ void Application::resetScenario()
     gameplayPhaseController_.reset();
     session_.simulation().setPaused(true);
     gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+}
+
+void Application::loadDefaultPackScenario()
+{
+    const content::ContentPackMetadata& metadata = content::ContentRegistry::instance().packMetadata();
+    if (!metadata.defaultScenarioId.empty() && session_.loadScenario(metadata.defaultScenarioId)) {
+        UiState& state = renderer_.uiManager().state();
+        resetUiStateForScenario(state, "Content pack loaded. Running the default scenario warm-up.");
+        gameplayPhaseController_.reset();
+        session_.simulation().setPaused(true);
+        gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+        return;
+    }
+    session_.reloadDefaultScenario();
+    UiState& state = renderer_.uiManager().state();
+    resetUiStateForScenario(state, "Content pack loaded. Running the default scenario warm-up.");
+    gameplayPhaseController_.reset();
+    session_.simulation().setPaused(true);
+    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+}
+
+void Application::loadRequestedPack(const std::string& packId)
+{
+    const content::ContentLoadResult result = contentPackManager_.loadPack(packId);
+    if (!result.loaded) {
+        for (const auto& error : result.errors) {
+            TraceLog(LOG_WARNING, "Content pack: %s", error.c_str());
+        }
+        renderer_.uiManager().state().latestFeedback = "Unable to load content pack: " + packId;
+        return;
+    }
+    renderer_.uiManager().releaseResources();
+    loadDefaultPackScenario();
 }
 
 void Application::loadScenario(std::size_t scenarioIndex)
@@ -126,6 +181,20 @@ void Application::applyPendingScenarioSelection()
     const int scenarioIndex = state.requestedScenarioIndex;
     state.requestedScenarioIndex = -1;
     loadScenario(static_cast<std::size_t>(scenarioIndex));
+}
+
+void Application::applyPendingPackSelection()
+{
+    UiState& state = renderer_.uiManager().state();
+    if (state.requestedPackId.empty()) {
+        return;
+    }
+
+    const std::string packId = state.requestedPackId;
+    state.requestedPackId.clear();
+    state.requestedScenarioId.clear();
+    state.requestedScenarioIndex = -1;
+    loadRequestedPack(packId);
 }
 
 void Application::applySandboxRequests()

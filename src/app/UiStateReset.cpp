@@ -27,6 +27,8 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.lastCapacityUsageSummary.clear();
     state.selection = {};
     state.scenarioDroplistOpen = false;
+    state.packDroplistOpen = false;
+    state.requestedPackId.clear();
     state.objectivesDroplistOpen = false;
     state.requestedScenarioIndex = -1;
     state.requestedScenarioId.clear();

@@ -188,7 +188,7 @@ Scenario completion updates runtime `ProgressionState`:
 
 The starter roadmap is data-driven:
 
-`first_request -> local_startup -> database_bottleneck -> burst_traffic -> transatlantic_latency`
+`starter -> local_startup -> database_bottleneck -> burst_traffic -> transatlantic_latency`
 
 ## Validation
 

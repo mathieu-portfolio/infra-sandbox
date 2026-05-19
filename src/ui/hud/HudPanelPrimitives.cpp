@@ -27,6 +27,11 @@ Rectangle hudScenarioDroplistBounds(int screenWidth)
     return topBarLayoutForWidth(screenWidth).scenario;
 }
 
+Rectangle hudPackDroplistBounds(int screenWidth)
+{
+    return topBarLayoutForWidth(screenWidth).pack;
+}
+
 Rectangle hudObjectivesDroplistBounds(int screenWidth)
 {
     return topBarLayoutForWidth(screenWidth).objectives;

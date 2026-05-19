@@ -1,38 +1,47 @@
 #include "gameplay/Scenario.hpp"
 
+#include "content/ContentPackManager.hpp"
 #include "content/ContentRegistry.hpp"
 
 #include <algorithm>
 
+namespace {
+void ensureContentLoaded()
+{
+    if (!content::ContentRegistry::instance().scenarios().empty()) {
+        return;
+    }
+
+    content::ContentPackManager packManager;
+    if (packManager.discoverDefaultLocations().loaded && packManager.loadPack("vanilla").loaded) {
+        return;
+    }
+
+    content::ContentRegistry::instance().loadFallbackContent();
+}
+}
+
 const std::vector<ProgressionTierDefinition>& ProgressionRegistry::definitions()
 {
-    if (content::ContentRegistry::instance().progressionTiers().empty()) {
-        (void)content::ContentManager::loadDefaultContent();
-    }
+    ensureContentLoaded();
     return content::ContentRegistry::instance().progressionTiers();
 }
 
 const ProgressionTierDefinition& ProgressionRegistry::definition(ProgressionTier tier)
 {
-    if (content::ContentRegistry::instance().progressionTiers().empty()) {
-        (void)content::ContentManager::loadDefaultContent();
-    }
+    ensureContentLoaded();
     return content::ContentRegistry::instance().progressionTier(tier);
 }
 
 ScenarioDefinition Scenario::createDefault()
 {
-    if (content::ContentRegistry::instance().scenarios().empty()) {
-        (void)content::ContentManager::loadDefaultContent();
-    }
+    ensureContentLoaded();
     return content::ContentRegistry::instance().defaultScenario();
 }
 
 std::vector<ScenarioDefinition> ScenarioRegistry::createAll()
 {
-    if (content::ContentRegistry::instance().scenarios().empty()) {
-        (void)content::ContentManager::loadDefaultContent();
-    }
+    ensureContentLoaded();
     return content::ContentRegistry::instance().scenarios();
 }
 

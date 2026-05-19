@@ -91,6 +91,9 @@ void IconRegistry::release()
         }
     }
     icons_.clear();
+    iconPaths_.clear();
+    aliases_.clear();
+    configLoaded_ = false;
 }
 
 IconRegistry::IconEntry& IconRegistry::entryFor(const std::string& id)

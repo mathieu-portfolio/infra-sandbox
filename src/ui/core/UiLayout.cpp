@@ -12,6 +12,12 @@ Rectangle boundsOf(const ui::UiNode& root, const char* id)
     }
     return {};
 }
+
+Rectangle centeredTopBarField(Rectangle bounds)
+{
+    constexpr float height = 34.0f;
+    return {bounds.x, bounds.y + (bounds.height - height) * 0.5f, bounds.width, height};
+}
 }
 
 UiLayout computeUiLayout(int screenWidth, int screenHeight)
@@ -110,11 +116,11 @@ TopBarLayout computeTopBarLayout(Rectangle topBar)
     brandStyle.heightMode = ui::SizeMode::Flex;
     brand->style(brandStyle);
     root->add(std::move(brand));
-    auto scenario = std::make_unique<ui::PanelNode>("scenario");
+    auto scenarioStack = std::make_unique<ui::PanelNode>("scenarioStack");
     ui::LayoutStyle scenarioStyle = brandStyle;
     scenarioStyle.fixedWidth = 270.0f;
-    scenario->style(scenarioStyle);
-    root->add(std::move(scenario));
+    scenarioStack->style(scenarioStyle);
+    root->add(std::move(scenarioStack));
     auto time = std::make_unique<ui::PanelNode>("time");
     ui::LayoutStyle timeStyle = brandStyle;
     timeStyle.fixedWidth = 154.0f;
@@ -156,17 +162,19 @@ TopBarLayout computeTopBarLayout(Rectangle topBar)
 
     root->measure({topBar.width, topBar.height});
     root->layout(topBar);
+    const Rectangle scenarioStackBounds = boundsOf(*root, "scenarioStack");
     return {
         .root = topBar,
-        .brand = boundsOf(*root, "brand"),
-        .scenario = boundsOf(*root, "scenario"),
-        .time = boundsOf(*root, "time"),
-        .phase = boundsOf(*root, "phase"),
-        .phaseLabel = boundsOf(*root, "phaseLabel"),
-        .objectives = boundsOf(*root, "objectives"),
-        .feedback = boundsOf(*root, "feedback"),
-        .help = boundsOf(*root, "help"),
-        .options = boundsOf(*root, "options"),
+        .brand = centeredTopBarField(boundsOf(*root, "brand")),
+        .pack = {scenarioStackBounds.x, scenarioStackBounds.y, scenarioStackBounds.width, 32.0f},
+        .scenario = {scenarioStackBounds.x, scenarioStackBounds.y + 36.0f, scenarioStackBounds.width, 32.0f},
+        .time = centeredTopBarField(boundsOf(*root, "time")),
+        .phase = centeredTopBarField(boundsOf(*root, "phase")),
+        .phaseLabel = centeredTopBarField(boundsOf(*root, "phaseLabel")),
+        .objectives = centeredTopBarField(boundsOf(*root, "objectives")),
+        .feedback = centeredTopBarField(boundsOf(*root, "feedback")),
+        .help = centeredTopBarField(boundsOf(*root, "help")),
+        .options = centeredTopBarField(boundsOf(*root, "options")),
     };
 }
 

@@ -3,6 +3,7 @@
 #include "gameplay/GameplayPhaseController.hpp"
 #include "gameplay/SandboxController.hpp"
 #include "app/ScenarioSession.hpp"
+#include "content/ContentPackManager.hpp"
 #include "gameplay/WorldActionController.hpp"
 #include "control/InterventionController.hpp"
 #include "control/OverlayController.hpp"
@@ -28,13 +29,17 @@ private:
     void resetScenario();
     void loadScenario(std::size_t scenarioIndex);
     void loadScenario(const std::string& scenarioId);
+    void loadDefaultPackScenario();
+    void loadRequestedPack(const std::string& packId);
     void applyPendingScenarioSelection();
+    void applyPendingPackSelection();
     void applySandboxRequests();
     void applyUiRequests();
     void applyWindowRequests();
     bool shouldBlockCameraInput() const;
 
     InputManager inputManager_;
+    content::ContentPackManager contentPackManager_;
     ScenarioSession session_;
     Renderer renderer_;
     CameraController cameraController_;

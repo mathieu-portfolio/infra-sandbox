@@ -19,14 +19,14 @@ EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapac
 }
 }
 
-void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused)
+void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
     state_.engineeringCapacity = addCapacity(scenarioManager.definition().engineeringCapacity, state_.worldActionCapacityBonus);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
-    hudPanel_.update(context, simulation, scenarioManager);
+    hudPanel_.update(context, simulation, scenarioManager, packManager);
     metricsPanel_.update(context, simulation);
     selectionPanel_.update(context, simulation);
     actionPanel_.update(context, simulation);
@@ -92,7 +92,7 @@ void UiManager::updateMetricHistory(const Simulation& simulation)
     }
 }
 
-void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused) const
+void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused) const
 {
     UiState* mutableState = const_cast<UiState*>(&state_);
     UiContext context{mutableState, GetScreenWidth(), GetScreenHeight(), paused};
@@ -101,7 +101,7 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     timelinePanel_.draw(context, simulation, scenarioManager);
     selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
-    hudPanel_.draw(context, simulation, scenarioManager);
+    hudPanel_.draw(context, simulation, scenarioManager, packManager);
     actionPanel_.drawPlanningOverlays(context, scenarioManager);
 }
 

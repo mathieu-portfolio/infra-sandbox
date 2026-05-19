@@ -4,12 +4,27 @@
 
 #include <vector>
 #include <algorithm>
+#include <utility>
 
 ScenarioSession::ScenarioSession()
     : scenarioDefinition_(Scenario::createDefault()),
       scenarioManager_(scenarioDefinition_),
       simulation_(makeSimulation(scenarioManager_.definition()))
 {
+}
+
+ScenarioSession::ScenarioSession(ScenarioDefinition scenario)
+    : scenarioDefinition_(std::move(scenario)),
+      scenarioManager_(scenarioDefinition_),
+      simulation_(makeSimulation(scenarioManager_.definition()))
+{
+}
+
+void ScenarioSession::reloadDefaultScenario()
+{
+    scenarioDefinition_ = Scenario::createDefault();
+    scenarioManager_.load(scenarioDefinition_);
+    simulation_ = makeSimulation(scenarioManager_.definition());
 }
 
 Simulation ScenarioSession::makeSimulation(const ScenarioDefinition& scenario)

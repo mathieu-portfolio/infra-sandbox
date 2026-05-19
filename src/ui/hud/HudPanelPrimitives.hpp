@@ -7,6 +7,7 @@
 #include <string>
 
 Rectangle hudScenarioDroplistBounds(int screenWidth);
+Rectangle hudPackDroplistBounds(int screenWidth);
 Rectangle hudObjectivesDroplistBounds(int screenWidth);
 Rectangle hudPhaseButtonBounds(int screenWidth);
 Rectangle hudFeedbackBounds(int screenWidth);

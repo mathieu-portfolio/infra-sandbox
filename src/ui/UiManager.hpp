@@ -1,6 +1,7 @@
 #pragma once
 
 #include "simulation/Simulation.hpp"
+#include "content/ContentPackManager.hpp"
 #include "gameplay/ScenarioManager.hpp"
 #include "ui/DebugPanel.hpp"
 #include "ui/HudPanel.hpp"
@@ -13,8 +14,8 @@
 
 class UiManager {
 public:
-    void update(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused);
-    void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused) const;
+    void update(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused);
+    void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused) const;
 
     [[nodiscard]] const UiState& state() const;
     [[nodiscard]] UiState& state();

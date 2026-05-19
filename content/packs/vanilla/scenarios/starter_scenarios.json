@@ -145,7 +145,7 @@
     ]
   },
   {
-    "id": "first_request",
+    "id": "starter",
     "display_name": "First Request",
     "description": "A small service handles initial traffic while the player learns the controls.",
     "tags": [
@@ -260,7 +260,7 @@
     "archetype": "local_startup",
     "minimum_tier": "local_scale",
     "required_completed_scenarios": [
-      "first_request"
+      "starter"
     ],
     "unlocks_scenarios": [
       "database_bottleneck"

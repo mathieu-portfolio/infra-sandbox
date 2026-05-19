@@ -13,6 +13,7 @@ struct UiLayout {
 struct TopBarLayout {
     Rectangle root{};
     Rectangle brand{};
+    Rectangle pack{};
     Rectangle scenario{};
     Rectangle time{};
     Rectangle phase{};
@@ -45,7 +46,7 @@ struct UiTheme {
     static constexpr float margin = 12.0f;
     static constexpr float gap = 10.0f;
     static constexpr float padding = 12.0f;
-    static constexpr float topBarHeight = 54.0f;
+    static constexpr float topBarHeight = 88.0f;
     static constexpr float leftWidth = 250.0f;
     static constexpr float rightWidth = 520.0f;
     static constexpr float bottomHeight = 344.0f;

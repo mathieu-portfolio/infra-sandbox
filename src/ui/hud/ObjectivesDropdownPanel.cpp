@@ -97,6 +97,7 @@ bool ObjectivesDropdownPanel::update(UiContext& context, const ScenarioManager& 
     const Rectangle field = hudObjectivesDroplistBounds(context.screenWidth);
     if (CheckCollisionPointRec(mouse, field)) {
         context.state->objectivesDroplistOpen = !context.state->objectivesDroplistOpen;
+        context.state->packDroplistOpen = false;
         context.state->scenarioDroplistOpen = false;
         context.state->optionsMenuOpen = false;
         return true;

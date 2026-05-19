@@ -55,6 +55,7 @@ void selectViewMode(UiState& state, UiViewMode mode)
     state.activeViewMode = mode;
     state.activeOverlay = overlayForViewMode(mode);
     state.scenarioDroplistOpen = false;
+    state.packDroplistOpen = false;
     state.objectivesDroplistOpen = false;
     state.optionsMenuOpen = false;
 }
@@ -149,6 +150,7 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
     }
 
     context.state->phaseAdvanceRequested = true;
+    context.state->packDroplistOpen = false;
     context.state->scenarioDroplistOpen = false;
     context.state->objectivesDroplistOpen = false;
     context.state->optionsMenuOpen = false;
@@ -156,7 +158,7 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
 }
 }
 
-void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManager& scenarioManager)
+void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager)
 {
     if (context.state == nullptr || !context.state->showHud) {
         return;
@@ -190,6 +192,9 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     if (handleViewModeBar(context, mouse)) {
         return;
     }
+    if (packDropdown_.update(context, packManager, mouse)) {
+        return;
+    }
     if (scenarioDropdown_.update(context, scenarioManager, mouse)) {
         return;
     }
@@ -202,7 +207,7 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     handlePhaseButton(context, mouse);
 }
 
-void HudPanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager) const
+void HudPanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager) const
 {
     if (context.state == nullptr || !context.state->showHud) {
         return;
@@ -217,6 +222,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     icons.drawIcon("hud.logo", {top.brand.x + 4.0f, top.brand.y + 4.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
     DrawText("INFRA SANDBOX", static_cast<int>(top.brand.x + 38.0f), static_cast<int>(top.brand.y + 8.0f), 18, {230, 237, 243, 255});
 
+    packDropdown_.drawField(context, packManager);
     scenarioDropdown_.drawField(context, scenarioManager);
 
     char buffer[160];
@@ -240,6 +246,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
 
     drawViewModeBar(context);
 
+    packDropdown_.drawMenu(context, packManager);
     scenarioDropdown_.drawMenu(context, scenarioManager);
     objectivesDropdown_.drawMenu(context, scenarioManager);
     optionsMenu_.drawMenu(context);

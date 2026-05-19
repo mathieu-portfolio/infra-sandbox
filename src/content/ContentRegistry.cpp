@@ -55,6 +55,7 @@ ContentPackMetadata parsePackMetadata(const Json& object)
         .description = stringAt(object, "description"),
         .version = stringAt(object, "version"),
         .author = stringAt(object, "author"),
+        .defaultScenarioId = stringAt(object, "default_scenario_id"),
     };
 }
 
@@ -1341,6 +1342,9 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         }
     }
     requireIdSet("Scenario", scenarioIds, result);
+    if (!packMetadata_.defaultScenarioId.empty() && std::find(scenarioIds.begin(), scenarioIds.end(), packMetadata_.defaultScenarioId) == scenarioIds.end()) {
+        result.errors.push_back("Content pack " + packMetadata_.id + " references missing default scenario: " + packMetadata_.defaultScenarioId);
+    }
 
     std::vector<std::string> tierIds;
     for (const auto& tier : progressionTiers_) tierIds.push_back(tier.id);
@@ -1433,6 +1437,14 @@ const ProgressionTierDefinition& ContentRegistry::progressionTier(ProgressionTie
 const std::vector<ScenarioDefinition>& ContentRegistry::scenarios() const { return scenarios_; }
 const ScenarioDefinition& ContentRegistry::defaultScenario() const
 {
+    if (!packMetadata_.defaultScenarioId.empty()) {
+        const auto defaultIt = std::find_if(scenarios_.begin(), scenarios_.end(), [&](const ScenarioDefinition& scenario) {
+            return scenario.id == packMetadata_.defaultScenarioId;
+        });
+        if (defaultIt != scenarios_.end()) {
+            return *defaultIt;
+        }
+    }
     const auto it = std::find_if(scenarios_.begin(), scenarios_.end(), [](const ScenarioDefinition& scenario) {
         return !scenario.sandboxLab;
     });
@@ -1443,32 +1455,5 @@ const std::vector<WorldActionDefinition>& ContentRegistry::worldActions() const 
 const SimulationConfig& ContentRegistry::simulationConfig() const { return simulationConfig_; }
 const std::vector<std::string>& ContentRegistry::loadErrors() const { return loadErrors_; }
 bool ContentRegistry::loadedFromContent() const { return loadedFromContent_; }
-
-ContentLoadResult ContentManager::loadPack(const std::filesystem::path& path)
-{
-    return ContentRegistry::instance().loadFromDisk(path);
-}
-
-ContentLoadResult ContentManager::loadDefaultContent()
-{
-    std::vector<std::filesystem::path> candidates;
-#ifdef INFRA_CONTENT_DIR
-    candidates.emplace_back(std::filesystem::path(INFRA_CONTENT_DIR) / "packs" / "vanilla");
-#endif
-    candidates.emplace_back(std::filesystem::path("content") / "packs" / "vanilla");
-    candidates.emplace_back(std::filesystem::path("../content") / "packs" / "vanilla");
-    candidates.emplace_back(std::filesystem::path("../../content") / "packs" / "vanilla");
-    candidates.emplace_back(std::filesystem::path("../../../content") / "packs" / "vanilla");
-
-    for (const auto& candidate : candidates) {
-        if (std::filesystem::exists(candidate / "pack.json")) {
-            return loadPack(candidate);
-        }
-    }
-    ContentLoadResult result;
-    result.errors.push_back("No default content pack found.");
-    ContentRegistry::instance().loadFallbackContent();
-    return result;
-}
 
 } // namespace content

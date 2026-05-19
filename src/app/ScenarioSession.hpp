@@ -9,7 +9,9 @@
 class ScenarioSession {
 public:
     ScenarioSession();
+    explicit ScenarioSession(ScenarioDefinition scenario);
 
+    void reloadDefaultScenario();
     void reset();
     bool loadScenario(std::size_t scenarioIndex);
     bool loadScenario(const std::string& scenarioId);

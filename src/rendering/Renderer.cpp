@@ -96,9 +96,9 @@ Renderer::Renderer(const ScenarioDefinition& scenario)
 {
 }
 
-void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera)
+void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused, const CameraController& camera)
 {
-    uiManager_.update(simulation, scenarioManager, paused);
+    uiManager_.update(simulation, scenarioManager, packManager, paused);
     for (const auto& event : uiManager_.state().pendingVisualFeedbackEvents) {
         visualFeedback_.submit(event);
     }
@@ -118,7 +118,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
     drawNodes(simulation, camera, geoLayout);
     drawQueueBars(simulation, camera, geoLayout);
     drawLabels(simulation, camera, geoLayout);
-    uiManager_.draw(simulation, scenarioManager, paused);
+    uiManager_.draw(simulation, scenarioManager, packManager, paused);
 
     EndDrawing();
 }

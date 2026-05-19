@@ -182,6 +182,8 @@ struct UiState {
     bool showGeoGrid = true;
     bool optionsMenuOpen = false;
     bool fullscreenToggleRequested = false;
+    bool packDroplistOpen = false;
+    std::string requestedPackId;
     bool scenarioDroplistOpen = false;
     bool objectivesDroplistOpen = false;
     int requestedScenarioIndex = -1;

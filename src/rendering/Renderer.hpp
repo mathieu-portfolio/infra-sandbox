@@ -2,6 +2,7 @@
 
 #include "gameplay/Scenario.hpp"
 #include "gameplay/ScenarioManager.hpp"
+#include "content/ContentPackManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
@@ -13,7 +14,7 @@ class Renderer {
 public:
     explicit Renderer(const ScenarioDefinition& scenario);
 
-    void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, bool paused, const CameraController& camera);
+    void draw(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused, const CameraController& camera);
     void releaseResources();
 
 private:
