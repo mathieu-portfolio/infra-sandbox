@@ -356,17 +356,49 @@ void Application::updatePhaseSimulation(float frameTime)
     }
 
     state.transitionVisualElapsedSeconds += frameTime;
-    const double remaining = std::max(0.0, state.transitionTargetSimulatedSeconds - state.transitionSimulatedSeconds);
-    const double simulatedDelta = std::min(remaining, static_cast<double>(frameTime) * state.transitionPlaybackScale);
-    fixedStepAccumulator_ += simulatedDelta;
-    while (fixedStepAccumulator_ >= kFixedStepSeconds && state.transitionSimulatedSeconds < state.transitionTargetSimulatedSeconds) {
-        scenarioManager_.update(kFixedStepSeconds, simulation_);
-        simulation_.update(kFixedStepSeconds);
-        fixedStepAccumulator_ -= kFixedStepSeconds;
-        state.transitionSimulatedSeconds += kFixedStepSeconds;
+
+    const double target = state.transitionTargetSimulatedSeconds;
+    const double remaining = target - state.transitionSimulatedSeconds;
+
+    if (remaining <= 0.0) {
+        state.transitionSimulatedSeconds = target;
+        fixedStepAccumulator_ = 0.0;
+        finishTransition(transitionBaseline_);
+        return;
     }
 
-    if (state.transitionSimulatedSeconds >= state.transitionTargetSimulatedSeconds || state.transitionVisualElapsedSeconds >= 5.0) {
+    const double simulatedDelta =
+        std::min(remaining, static_cast<double>(frameTime) * state.transitionPlaybackScale);
+
+    fixedStepAccumulator_ += simulatedDelta;
+
+    while (fixedStepAccumulator_ > 0.0) {
+        const double stepRemaining = target - state.transitionSimulatedSeconds;
+
+        if (stepRemaining <= 0.0) {
+            break;
+        }
+
+        const double step = std::min({
+            kFixedStepSeconds,
+            fixedStepAccumulator_,
+            stepRemaining
+        });
+
+        if (step <= 0.0) {
+            break;
+        }
+
+        scenarioManager_.update(step, simulation_);
+        simulation_.update(step);
+
+        fixedStepAccumulator_ -= step;
+        state.transitionSimulatedSeconds += step;
+    }
+
+    if (state.transitionSimulatedSeconds >= target) {
+        state.transitionSimulatedSeconds = target;
+        fixedStepAccumulator_ = 0.0;
         finishTransition(transitionBaseline_);
     }
 }
