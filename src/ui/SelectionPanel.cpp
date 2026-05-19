@@ -7,6 +7,12 @@
 #include <algorithm>
 #include <cstdio>
 
+namespace
+{
+constexpr float kPanelPadding = 12.0f;
+constexpr float kMetricRowSpacing = 22.0f;
+}
+
 void SelectionPanel::update(UiContext&, const Simulation&)
 {
 }
@@ -77,21 +83,21 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
     float y = panel.y + 48.0f;
     std::snprintf(value, sizeof(value), "%d in-flight / %d out", incomingTraffic, outgoingTraffic);
     metricLine("Traffic", value, panel.x + 14.0f, y, {89, 196, 255, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     std::snprintf(value, sizeof(value), "%zu requests", node->queue.size());
     metricLine("Queue Depth", value, panel.x + 14.0f, y, node->queue.empty() ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     std::snprintf(value, sizeof(value), "%.0f%%", node->currentUtilization * 100.0);
     metricLine("Utilization", value, panel.x + 14.0f, y, node->currentUtilization > 0.85 ? Color{235, 86, 100, 255} : Color{230, 237, 243, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     std::snprintf(value, sizeof(value), "%d local retries", localRetries);
     metricLine("Retries", value, panel.x + 14.0f, y, localRetries > 0 ? Color{235, 86, 100, 255} : Color{139, 148, 158, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     std::snprintf(value, sizeof(value), "%.2fs local / %.2fs downstream", pressure != nullptr ? pressure->latencyContribution : 0.0, downstreamCount > 0 ? downstreamWait / downstreamCount : 0.0);
     metricLine("Latency Wait", value, panel.x + 14.0f, y, {245, 184, 76, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     metricLine("Local Pressure", pressure != nullptr ? pressureCategoryName(pressure->dominant) : "None", panel.x + 14.0f, y, {151, 111, 255, 255});
-    y += 22.0f;
+    y += kMetricRowSpacing;
     std::snprintf(value, sizeof(value), "%.0f%% across %d links", std::max(dependencyPressure, pressure != nullptr ? pressure->dependencyPressure : 0.0) * 100.0, dependencyCount);
     metricLine("Dependency", value, panel.x + 14.0f, y, dependencyPressure > 0.55 ? Color{245, 184, 76, 255} : Color{139, 148, 158, 255});
     y += 30.0f;

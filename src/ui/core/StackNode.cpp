@@ -95,10 +95,29 @@ void StackNode::layout(Rectangle bounds)
             main = remaining * std::max(0.0f, child->style().flexGrow) / flexWeight;
         }
 
+        const bool stretchCross = style_.crossAlign == Align::Stretch;
         if (axis_ == Axis::Vertical) {
-            child->layout({content.x, cursor, content.width, main});
+            const float childWidth = stretchCross || child->style().widthMode == SizeMode::Flex
+                ? content.width
+                : std::min(content.width, childSizes[i].width);
+            float childX = content.x;
+            if (!stretchCross && style_.crossAlign == Align::Center) {
+                childX += (content.width - childWidth) * 0.5f;
+            } else if (!stretchCross && style_.crossAlign == Align::End) {
+                childX += content.width - childWidth;
+            }
+            child->layout({childX, cursor, childWidth, main});
         } else {
-            child->layout({cursor, content.y, main, content.height});
+            const float childHeight = stretchCross || child->style().heightMode == SizeMode::Flex
+                ? content.height
+                : std::min(content.height, childSizes[i].height);
+            float childY = content.y;
+            if (!stretchCross && style_.crossAlign == Align::Center) {
+                childY += (content.height - childHeight) * 0.5f;
+            } else if (!stretchCross && style_.crossAlign == Align::End) {
+                childY += content.height - childHeight;
+            }
+            child->layout({cursor, childY, main, childHeight});
         }
         cursor += main + style_.gap;
     }

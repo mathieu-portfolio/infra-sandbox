@@ -110,54 +110,57 @@ void ObjectivesDropdownPanel::drawMenu(const UiContext& context, const ScenarioM
     DrawRectangleRounded({menu.x + 84.0f, menu.y + 14.0f, menu.width - 104.0f, 8.0f}, 0.5f, 8, {50, 58, 70, 220});
     DrawRectangleRounded({menu.x + 84.0f, menu.y + 14.0f, (menu.width - 104.0f) * progress, 8.0f}, 0.5f, 8, {86, 210, 151, 235});
 
+    constexpr float kSectionSpacing = 20.0f;
+    constexpr float kRowSpacing = 21.0f;
+
     float rowY = menu.y + 36.0f;
     DrawText("Active objectives", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {89, 196, 255, 255});
-    rowY += 20.0f;
+    rowY += kSectionSpacing;
     for (const auto& id : run.activeObjectiveIds) {
         const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
         if (it != scenarioManager.definition().objectives.end()) {
             drawHudDetailRow("Active", it->summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 21.0f;
+            rowY += kRowSpacing;
         }
     }
     if (!run.completedObjectiveIds.empty()) {
         DrawText("Completed", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
-        rowY += 20.0f;
+        rowY += kSectionSpacing;
         for (const auto& id : run.completedObjectiveIds) {
             const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
             if (it != scenarioManager.definition().objectives.end()) {
                 drawHudDetailRow("Done", it->summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-                rowY += 21.0f;
+                rowY += kRowSpacing;
             }
         }
     }
 
     DrawText("Failure limits", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {245, 184, 76, 255});
-    rowY += 20.0f;
+    rowY += kSectionSpacing;
     for (const auto& failure : scenarioManager.definition().failureConditions) {
         drawHudDetailRow("Limit", failure.summary, menu.x + 14.0f, rowY, menu.width - 28.0f);
-        rowY += 21.0f;
+        rowY += kRowSpacing;
     }
     if (scenarioManager.definition().failureConditions.empty()) {
         drawHudDetailRow("Limit", "No failure limits configured.", menu.x + 14.0f, rowY, menu.width - 28.0f);
-        rowY += 21.0f;
+        rowY += kRowSpacing;
     }
     DrawText("Unlocked actions", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {86, 210, 151, 255});
-    rowY += 20.0f;
+    rowY += kSectionSpacing;
     if (run.unlockedInterventions.empty()) {
         drawHudDetailRow("Action", "None yet.", menu.x + 14.0f, rowY, menu.width - 28.0f);
-        rowY += 21.0f;
+        rowY += kRowSpacing;
     }
     for (const auto mechanic : run.unlockedInterventions) {
         drawHudDetailRow("Action", std::string(MechanicRegistry::definition(mechanic).displayName), menu.x + 14.0f, rowY, menu.width - 28.0f);
-        rowY += 21.0f;
+        rowY += kRowSpacing;
     }
     if (!run.unlockedScenarioIds.empty()) {
         DrawText("Unlocked scenarios", static_cast<int>(menu.x + 14.0f), static_cast<int>(rowY + 1.0f), 12, {151, 111, 255, 255});
-        rowY += 20.0f;
+        rowY += kSectionSpacing;
         for (const auto& id : run.unlockedScenarioIds) {
             drawHudDetailRow("Scenario", id, menu.x + 14.0f, rowY, menu.width - 28.0f);
-            rowY += 21.0f;
+            rowY += kRowSpacing;
         }
     }
     if (const ScenarioPhase* phase = scenarioManager.currentPhase()) {

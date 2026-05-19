@@ -4,9 +4,15 @@
 #include "ui/core/UiPrimitives.hpp"
 
 namespace {
+constexpr float kMenuPadding = 10.0f;
+constexpr float kHeaderHeight = 34.0f;
+constexpr float kRowHeight = 25.0f;
+constexpr float kRowGap = 4.0f;
+
 Rectangle optionsRowBounds(Rectangle menu, int index)
 {
-    return {menu.x + 10.0f, menu.y + 34.0f + static_cast<float>(index) * 29.0f, menu.width - 20.0f, 25.0f};
+    const float y = menu.y + kHeaderHeight + static_cast<float>(index) * (kRowHeight + kRowGap);
+    return {menu.x + kMenuPadding, y, menu.width - kMenuPadding * 2.0f, kRowHeight};
 }
 
 void drawOptionRow(Rectangle row, const char* label, bool enabled)

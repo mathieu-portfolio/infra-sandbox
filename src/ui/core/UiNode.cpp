@@ -47,6 +47,7 @@ const UiNode* UiNode::find(const std::string& id) const
 
 const std::string& UiNode::id() const { return id_; }
 Rectangle UiNode::bounds() const { return bounds_; }
+Size UiNode::measuredSize() const { return measured_; }
 const LayoutStyle& UiNode::style() const { return style_; }
 std::vector<std::unique_ptr<UiNode>>& UiNode::children() { return children_; }
 const std::vector<std::unique_ptr<UiNode>>& UiNode::children() const { return children_; }
@@ -126,6 +127,35 @@ Rectangle UiNode::contentBounds() const
         std::max(0.0f, bounds_.width - style_.paddingLeft - style_.paddingRight),
         std::max(0.0f, bounds_.height - style_.paddingTop - style_.paddingBottom),
     };
+}
+
+LayoutStyle contentSize(float minWidth, float minHeight)
+{
+    LayoutStyle style;
+    style.widthMode = SizeMode::Content;
+    style.heightMode = SizeMode::Content;
+    style.minWidth = minWidth;
+    style.minHeight = minHeight;
+    return style;
+}
+
+LayoutStyle fixedSize(float width, float height)
+{
+    LayoutStyle style;
+    style.widthMode = SizeMode::Fixed;
+    style.heightMode = SizeMode::Fixed;
+    style.fixedWidth = width;
+    style.fixedHeight = height;
+    return style;
+}
+
+LayoutStyle fixedWidth(float width, float minHeight)
+{
+    LayoutStyle style;
+    style.widthMode = SizeMode::Fixed;
+    style.fixedWidth = width;
+    style.minHeight = minHeight;
+    return style;
 }
 
 LayoutStyle fixedHeight(float height, float minWidth)

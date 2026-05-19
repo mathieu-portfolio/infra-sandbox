@@ -67,6 +67,7 @@ public:
 
     [[nodiscard]] const std::string& id() const;
     [[nodiscard]] Rectangle bounds() const;
+    [[nodiscard]] Size measuredSize() const;
     [[nodiscard]] const LayoutStyle& style() const;
     [[nodiscard]] std::vector<std::unique_ptr<UiNode>>& children();
     [[nodiscard]] const std::vector<std::unique_ptr<UiNode>>& children() const;
@@ -86,6 +87,9 @@ protected:
     std::vector<std::unique_ptr<UiNode>> children_;
 };
 
+LayoutStyle contentSize(float minWidth = 0.0f, float minHeight = 0.0f);
+LayoutStyle fixedSize(float width, float height);
+LayoutStyle fixedWidth(float width, float minHeight = 0.0f);
 LayoutStyle fixedHeight(float height, float minWidth = 0.0f);
 LayoutStyle flex(float grow = 1.0f, float minHeight = 0.0f);
 

@@ -14,7 +14,7 @@ float textHeightForWidth(const std::string& text, float width, int fontSize, int
     }
 
     const float avgCharWidth = static_cast<float>(fontSize) * 0.56f;
-    const int charsPerLine = std::max(8, static_cast<int>(width / std::max(1.0f, avgCharWidth)));
+    const int charsPerLine = std::max(1, static_cast<int>(width / std::max(1.0f, avgCharWidth)));
     int lines = 1;
     int current = 0;
 
@@ -22,12 +22,13 @@ float textHeightForWidth(const std::string& text, float width, int fontSize, int
         if (c == '\n') {
             ++lines;
             current = 0;
-        } else {
-            ++current;
-            if (current >= charsPerLine && c == ' ') {
-                ++lines;
-                current = 0;
-            }
+            continue;
+        }
+
+        ++current;
+        if (current >= charsPerLine) {
+            ++lines;
+            current = 0;
         }
     }
 
@@ -55,23 +56,31 @@ TextBlockNode::TextBlockNode(std::string textValue, int fontSizeValue, std::stri
 
 Size TextBlockNode::measure(Size available)
 {
-    const float width = style_.widthMode == SizeMode::Fixed
-        ? style_.fixedWidth
-        : std::min(available.width, static_cast<float>(std::max(MeasureText(text.c_str(), fontSize), 1)));
-    const float height = textHeightForWidth(text, std::max(1.0f, available.width), fontSize, maxLines);
-    measured_ = clampSize({width, height});
+    const float horizontalPadding = style_.paddingLeft + style_.paddingRight;
+    const float verticalPadding = style_.paddingTop + style_.paddingBottom;
+    const float availableTextWidth = std::max(1.0f, available.width - horizontalPadding);
+    const float naturalTextWidth = static_cast<float>(std::max(MeasureText(text.c_str(), fontSize), 1));
+    const float textWidth = style_.widthMode == SizeMode::Fixed
+        ? std::max(1.0f, style_.fixedWidth - horizontalPadding)
+        : std::min(availableTextWidth, naturalTextWidth);
+    const float textHeight = textHeightForWidth(text, textWidth, fontSize, maxLines);
+    measured_ = clampSize({textWidth + horizontalPadding, textHeight + verticalPadding});
     return measured_;
 }
 
 void TextBlockNode::draw() const
 {
-    drawTextClipped(text, bounds_, fontSize, color);
+    drawTextClipped(text, contentBounds(), fontSize, color);
     UiNode::draw();
 }
 
 ButtonNode::ButtonNode(std::string textValue, int fontSizeValue, std::string id)
     : TextBlockNode(std::move(textValue), fontSizeValue, std::move(id))
 {
+    style_.paddingLeft = 14.0f;
+    style_.paddingTop = 9.0f;
+    style_.paddingRight = 14.0f;
+    style_.paddingBottom = 9.0f;
 }
 
 void ButtonNode::draw() const

@@ -23,7 +23,16 @@ Rectangle nodeBounds(const ui::UiNode& root, const char* id)
 
 Rectangle draftCardsArea(Rectangle overlay)
 {
-    return {overlay.x + 20.0f, overlay.y + 86.0f, overlay.width - 40.0f, overlay.height - 116.0f};
+    constexpr float kOverlayPadding = 20.0f;
+    constexpr float kHeaderHeight = 66.0f;
+    constexpr float kBottomPadding = 30.0f;
+
+    return {
+        overlay.x + kOverlayPadding,
+        overlay.y + kHeaderHeight + kOverlayPadding,
+        overlay.width - kOverlayPadding * 2.0f,
+        overlay.height - kHeaderHeight - kBottomPadding - kOverlayPadding
+    };
 }
 
 Rectangle draftCardBoundsFromGrid(Rectangle overlay, int index, int count)
