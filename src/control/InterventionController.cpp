@@ -113,7 +113,7 @@ Rectangle worldActionOverlayCardBounds(Rectangle overlay, int index, int count)
 
 bool worldActionRequiredBeforeNodeActions(const UiState& uiState)
 {
-    return uiState.gameplayPhase == GameplayPhase::Planning && (uiState.eventPanelVisible || (!uiState.worldActionDraft.empty() && uiState.selectedWorldActionIndex < 0));
+    return uiState.gameplayPhase == GameplayPhase::Planning && (uiState.eventPopupMode != EventPopupMode::None || (!uiState.worldActionDraft.empty() && uiState.selectedWorldActionIndex < 0));
 }
 }
 
@@ -193,7 +193,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 void InterventionController::startPlacement(const Simulation& simulation, UiState& uiState, TopologyMutationType type) const
 {
     if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPanelVisible ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
+        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
         return;
     }
     const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
@@ -281,16 +281,19 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     const int screenHeight = GetScreenHeight();
     const UiLayout layout = computeUiLayout(screenWidth, screenHeight);
     const Rectangle sidebar = layout.rightSidebar;
-    if (uiState.gameplayPhase == GameplayPhase::Planning && uiState.eventPanelVisible) {
+    if (uiState.eventPopupMode != EventPopupMode::None) {
         const Rectangle eventOverlay = EventOverlay::overlayBounds(screenWidth, screenHeight);
         if (CheckCollisionPointRec(event.mousePosition, EventOverlay::acknowledgeButtonBounds(eventOverlay))) {
+            const EventPopupMode acknowledgedMode = uiState.eventPopupMode;
+            uiState.eventPopupMode = EventPopupMode::None;
+            uiState.eventPopupEvents.clear();
             uiState.eventPanelVisible = false;
             uiState.eventPanelAcknowledged = true;
-            uiState.worldActionDraftVisible = !uiState.worldActionDraft.empty();
+            uiState.worldActionDraftVisible = acknowledgedMode == EventPopupMode::PlanningStart && !uiState.worldActionDraft.empty();
             uiState.suppressMapSelectionOnce = true;
-            uiState.latestFeedback = uiState.worldActionDraft.empty()
-                ? "Events reviewed. Queue Node Actions for this plan."
-                : "Events reviewed. Pick a World Action before selecting Node Actions.";
+            uiState.latestFeedback = acknowledgedMode == EventPopupMode::PlanningStart
+                ? (uiState.worldActionDraft.empty() ? "Event reviewed. Queue Node Actions for this plan." : "Event reviewed. Pick a World Action before selecting Node Actions.")
+                : "Event recap reviewed. Continue analysis.";
             return;
         }
         uiState.suppressMapSelectionOnce = true;
@@ -322,7 +325,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     }
     if (worldActionRequiredBeforeNodeActions(uiState) && CheckCollisionPointRec(event.mousePosition, sidebar)) {
         uiState.selectedActionIndex = -1;
-        uiState.latestFeedback = uiState.eventPanelVisible ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
+        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
         return;
     }
     const float buttonY = sidebar.y + sidebar.height - 54.0f;
@@ -434,7 +437,7 @@ void InterventionController::recordFeedback(UiState& uiState, const Simulation& 
 void InterventionController::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
 {
     if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPanelVisible ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
+        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
         return;
     }
     if (!simulation.isMechanicAllowed(command.type)) {
@@ -462,7 +465,7 @@ void InterventionController::queueMechanic(const Simulation& simulation, UiState
 void InterventionController::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
 {
     if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPanelVisible ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
+        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
         return;
     }
     const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache

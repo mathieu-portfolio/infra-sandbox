@@ -49,8 +49,10 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
         return false;
     }
 
-    if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->eventPanelVisible) {
-        context.state->latestFeedback = "Review Events before validating the plan.";
+    if (context.state->eventPopupMode != EventPopupMode::None) {
+        context.state->latestFeedback = context.state->eventPopupMode == EventPopupMode::PlanningStart
+            ? "Review the event briefing before validating the plan."
+            : "Review the simulation event recap before continuing.";
         return true;
     }
 

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <random>
 #include <set>
 #include <utility>
 
@@ -38,6 +39,9 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int phaseIndex,
     }
 
     for (std::size_t i = 0; i < definitions_.size(); ++i) {
+        if (definitions_[i].moment != EventMoment::Simulation) {
+            continue;
+        }
         if (fired_[i] && !definitions_[i].repeatable) {
             continue;
         }
@@ -57,6 +61,56 @@ void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds
     definitions_.push_back(std::move(definition));
     fired_.push_back(true);
     activate(definitions_.size() - 1, scenarioTimeSeconds, simulation);
+}
+
+std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation)
+{
+    std::vector<std::size_t> eligible;
+    double totalWeight = 0.0;
+    for (std::size_t i = 0; i < definitions_.size(); ++i) {
+        if (!eligibleForRoll(i, EventMoment::PlanningStart, scenarioTimeSeconds, phaseIndex, simulation)) {
+            continue;
+        }
+        eligible.push_back(i);
+        totalWeight += std::max(0.0, definitions_[i].weight);
+    }
+
+    if (eligible.empty() || totalWeight <= 0.0) {
+        return std::nullopt;
+    }
+
+    const std::size_t turnSalt = static_cast<std::size_t>(scenarioTimeSeconds * 1000.0);
+    std::mt19937 rng(seed_ ^ static_cast<std::uint32_t>(turnSalt + recentEvents_.size() * 7919U));
+    std::uniform_real_distribution<double> distribution(0.0, totalWeight);
+    double pick = distribution(rng);
+    for (const std::size_t index : eligible) {
+        pick -= std::max(0.0, definitions_[index].weight);
+        if (pick <= 0.0) {
+            fired_[index] = true;
+            return activate(index, scenarioTimeSeconds, simulation);
+        }
+    }
+
+    const std::size_t fallback = eligible.back();
+    fired_[fallback] = true;
+    return activate(fallback, scenarioTimeSeconds, simulation);
+}
+
+std::vector<EventLogEntry> EventManager::eventsSince(std::size_t startIndex) const
+{
+    std::vector<EventLogEntry> result;
+    if (startIndex >= recentEvents_.size()) {
+        return result;
+    }
+    for (std::size_t i = startIndex; i < recentEvents_.size(); ++i) {
+        result.push_back(recentEvents_[i]);
+    }
+    return result;
+}
+
+std::size_t EventManager::recentEventCount() const
+{
+    return recentEvents_.size();
 }
 
 void EventManager::clear()
@@ -139,6 +193,22 @@ bool EventManager::triggerMet(const EventDefinition& definition, double scenario
     return false;
 }
 
+
+bool EventManager::eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const
+{
+    if (definitionIndex >= definitions_.size()) {
+        return false;
+    }
+    const EventDefinition& definition = definitions_[definitionIndex];
+    if (definition.moment != moment) {
+        return false;
+    }
+    if (fired_[definitionIndex] && !definition.repeatable) {
+        return false;
+    }
+    return triggerMet(definition, scenarioTimeSeconds, phaseIndex, simulation);
+}
+
 double EventManager::metricValue(EventMetric metric, const Simulation& simulation) const
 {
     const auto& metrics = simulation.metrics();
@@ -159,10 +229,10 @@ double EventManager::metricValue(EventMetric metric, const Simulation& simulatio
     return 0.0;
 }
 
-void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation)
+EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation)
 {
     if (definitionIndex >= definitions_.size()) {
-        return;
+        return {};
     }
 
     EventDefinition definition = definitions_[definitionIndex];
@@ -172,16 +242,20 @@ void EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeco
         .startedAtSeconds = scenarioTimeSeconds,
         .remainingSeconds = definition.durationSeconds,
     });
-    recentEvents_.push_back({
+
+    EventLogEntry entry{
         .timeSeconds = scenarioTimeSeconds,
         .category = definition.category,
-        .name = definition.name,
+        .name = definition.name.empty() ? definition.displayName : definition.name,
+        .description = definition.description,
         .locationLabel = eventLocationLabel(definition.location),
-    });
+    };
+    recentEvents_.push_back(entry);
 
     while (recentEvents_.size() > 10) {
         recentEvents_.pop_front();
     }
+    return entry;
 }
 
 EventLocation EventManager::resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const

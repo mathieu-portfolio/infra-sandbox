@@ -28,7 +28,7 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
         if (mouseOverScreenPanel(event.mousePosition, GetScreenWidth(), GetScreenHeight())) {
             continue;
         }
-        if (state.gameplayPhase == GameplayPhase::Planning && state.eventPanelVisible) {
+        if (state.gameplayPhase == GameplayPhase::Planning && state.eventPopupMode != EventPopupMode::None) {
             continue;
         }
         if (state.gameplayPhase == GameplayPhase::Planning && !state.worldActionDraft.empty()) {

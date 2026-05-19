@@ -25,6 +25,11 @@ enum class EventCategory {
     EducationalEvent
 };
 
+enum class EventMoment {
+    PlanningStart,
+    Simulation
+};
+
 enum class EventTriggerType {
     TimeBased,
     MetricThreshold,
@@ -101,6 +106,7 @@ struct EventDefinition {
     std::string name;
     std::string description;
     EventCategory category = EventCategory::TrafficEvent;
+    EventMoment moment = EventMoment::Simulation;
     EventLocation location;
     EventTrigger trigger;
     EventEffect effect;
@@ -108,6 +114,7 @@ struct EventDefinition {
     NumericRange durationSecondsRange{10.0, 10.0};
     double intensity = 1.0;
     NumericRange intensityRange{1.0, 1.0};
+    double weight = 1.0;
     bool repeatable = false;
 };
 
@@ -136,6 +143,7 @@ struct EventLogEntry {
     double timeSeconds = 0.0;
     EventCategory category = EventCategory::TrafficEvent;
     std::string name;
+    std::string description;
     std::string locationLabel;
 };
 
@@ -144,6 +152,9 @@ public:
     void reset(std::vector<EventDefinition> definitions, std::uint32_t seed = 0);
     void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
     void inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation);
+    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
+    [[nodiscard]] std::vector<EventLogEntry> eventsSince(std::size_t startIndex) const;
+    [[nodiscard]] std::size_t recentEventCount() const;
     void clear();
 
     [[nodiscard]] const std::vector<ActiveEvent>& activeEvents() const;
@@ -159,8 +170,9 @@ private:
     };
 
     [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
+    [[nodiscard]] bool eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation) const;
     [[nodiscard]] double metricValue(EventMetric metric, const Simulation& simulation) const;
-    void activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation);
+    EventLogEntry activate(std::size_t definitionIndex, double scenarioTimeSeconds, const Simulation& simulation);
     [[nodiscard]] EventLocation resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const;
 
     std::vector<EventDefinition> definitions_;

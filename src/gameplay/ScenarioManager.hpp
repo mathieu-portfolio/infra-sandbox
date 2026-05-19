@@ -4,7 +4,9 @@
 #include "gameplay/Scenario.hpp"
 #include "simulation/Simulation.hpp"
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -16,6 +18,9 @@ public:
     void createRun(std::uint32_t seed);
     void reset();
     void update(double dt, Simulation& simulation);
+    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(const Simulation& simulation);
+    [[nodiscard]] std::size_t eventLogSize() const;
+    [[nodiscard]] std::vector<EventLogEntry> eventsSince(std::size_t startIndex) const;
     void setCalendarProgressionScale(double calendarDaysPerSimulationSecond);
 
     [[nodiscard]] const ScenarioDefinition& definition() const;

@@ -52,4 +52,5 @@ private:
     bool paused_ = false;
     double fixedStepAccumulator_ = 0.0;
     MetricsSnapshot transitionBaseline_{};
+    std::size_t transitionEventLogStart_ = 0;
 };

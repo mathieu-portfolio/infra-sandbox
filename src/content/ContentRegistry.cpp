@@ -271,6 +271,12 @@ EventCategory eventCategoryFromId(const std::string& id)
     return EventCategory::TrafficEvent;
 }
 
+EventMoment eventMomentFromId(const std::string& id)
+{
+    if (id == "planning_start" || id == "planning") return EventMoment::PlanningStart;
+    return EventMoment::Simulation;
+}
+
 EventTriggerType triggerTypeFromId(const std::string& id)
 {
     if (id == "metric_threshold") return EventTriggerType::MetricThreshold;
@@ -503,6 +509,8 @@ EventDefinition parseEvent(const Json& object)
     event.description = stringAt(object, "description");
     event.tags = stringsAt(object, "tags");
     event.category = eventCategoryFromId(stringAt(object, "category"));
+    event.moment = eventMomentFromId(stringAt(object, "moment", "simulation"));
+    event.weight = numberAt(object, "weight", event.weight);
     if (const Json* location = object.find("location"); location != nullptr && location->isObject()) {
         event.location.scope = eventLocationScopeFromId(stringAt(*location, "scope", "global"));
         event.location.region = stringAt(*location, "region");

@@ -165,6 +165,21 @@ void ScenarioManager::update(double dt, Simulation& simulation)
     updateState(simulation);
 }
 
+std::optional<EventLogEntry> ScenarioManager::rollPlanningEvent(const Simulation& simulation)
+{
+    return eventManager_.rollPlanningEvent(run_.elapsedSeconds, run_.currentPhaseIndex, simulation);
+}
+
+std::size_t ScenarioManager::eventLogSize() const
+{
+    return eventManager_.recentEventCount();
+}
+
+std::vector<EventLogEntry> ScenarioManager::eventsSince(std::size_t startIndex) const
+{
+    return eventManager_.eventsSince(startIndex);
+}
+
 void ScenarioManager::setCalendarProgressionScale(double calendarDaysPerSimulationSecond)
 {
     calendarDaysPerSimulationSecond_ = std::max(0.0, calendarDaysPerSimulationSecond);

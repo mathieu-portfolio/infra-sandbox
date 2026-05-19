@@ -137,7 +137,7 @@ void Application::handleInput()
 
     interventionController_.handleActions(events, simulation_, scenarioManager_, renderer_.uiManager().state());
     const UiState& uiState = renderer_.uiManager().state();
-    if (!(uiState.gameplayPhase == GameplayPhase::Planning && ((uiState.eventPanelVisible) || (uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty())))) {
+    if (!(uiState.eventPopupMode != EventPopupMode::None || (uiState.gameplayPhase == GameplayPhase::Planning && (uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty())))) {
         cameraController_.handleActions(events, GetFrameTime());
     }
     overlayController_.handleActions(events, renderer_.uiManager().state());
@@ -162,6 +162,8 @@ void Application::resetScenario()
     UiState& state = renderer_.uiManager().state();
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    state.eventPopupMode = EventPopupMode::None;
+    state.eventPopupEvents.clear();
     state.eventPanelVisible = false;
     state.eventPanelAcknowledged = false;
     clearWorldActionPlan();
@@ -192,6 +194,8 @@ void Application::loadScenario(std::size_t scenarioIndex)
     state.objectivesDroplistOpen = false;
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    state.eventPopupMode = EventPopupMode::None;
+    state.eventPopupEvents.clear();
     state.eventPanelVisible = false;
     state.eventPanelAcknowledged = false;
     clearWorldActionPlan();
@@ -268,14 +272,22 @@ void Application::applyUiRequests()
         if (state.gameplayPhase == GameplayPhase::Observation) {
             state.gameplayPhase = GameplayPhase::Planning;
             state.lastCapacityUsageSummary.clear();
-            generateWorldActionDraft();
-            state.eventPanelVisible = true;
+            state.eventPopupMode = EventPopupMode::None;
+            state.eventPopupEvents.clear();
+            if (auto planningEvent = scenarioManager_.rollPlanningEvent(simulation_)) {
+                state.eventPopupEvents.push_back(*planningEvent);
+                state.eventPopupMode = EventPopupMode::PlanningStart;
+                state.eventPanelVisible = true;
+            } else {
+                state.eventPanelVisible = false;
+            }
             state.eventPanelAcknowledged = false;
-            state.worldActionDraftVisible = false;
+            generateWorldActionDraft();
+            state.worldActionDraftVisible = state.eventPopupMode == EventPopupMode::None && !state.worldActionDraft.empty();
             state.latestFeedback = "Planning phase. Queue actions, then validate the plan.";
         } else if (state.gameplayPhase == GameplayPhase::Planning) {
-            if (state.eventPanelVisible) {
-                state.latestFeedback = "Review Events before validating the plan.";
+            if (state.eventPopupMode != EventPopupMode::None) {
+                state.latestFeedback = "Review the event popup before validating the plan.";
                 return;
             }
             if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
@@ -286,6 +298,10 @@ void Application::applyUiRequests()
             state.transitionPlaybackScale = 24.0;
             beginTransition();
         } else if (state.gameplayPhase == GameplayPhase::Resolution) {
+            if (state.eventPopupMode != EventPopupMode::None) {
+                state.latestFeedback = "Review the simulation event recap before continuing.";
+                return;
+            }
             state.gameplayPhase = GameplayPhase::Observation;
             state.resolutionSummaries.clear();
             state.lastCapacityUsageSummary.clear();
@@ -318,6 +334,7 @@ void Application::beginTransition()
     state.transitionVisualElapsedSeconds = 0.0;
     state.transitionSimulatedSeconds = 0.0;
     state.resolutionSummaries.clear();
+    transitionEventLogStart_ = scenarioManager_.eventLogSize();
     applyWorldActionPlan();
     state.latestFeedback = "Transition running. Simulating " + state.transitionDurationLabel + ".";
     transitionBaseline_ = simulation_.metrics();
@@ -438,12 +455,14 @@ void Application::generateWorldActionDraft()
     state.selectedWorldActionIndex = -1;
     state.hoveredWorldActionIndex = -1;
     state.worldActionCapacityBonus = {};
-    state.worldActionDraftVisible = !state.eventPanelVisible && !state.worldActionDraft.empty();
+    state.worldActionDraftVisible = state.eventPopupMode == EventPopupMode::None && !state.worldActionDraft.empty();
 }
 
 void Application::clearWorldActionPlan()
 {
     UiState& state = renderer_.uiManager().state();
+    state.eventPopupMode = EventPopupMode::None;
+    state.eventPopupEvents.clear();
     state.eventPanelVisible = false;
     state.eventPanelAcknowledged = false;
     state.worldActionDraft.clear();
@@ -475,6 +494,10 @@ void Application::finishTransition(const MetricsSnapshot& beforeMetrics)
     const MetricsSnapshot after = simulation_.metrics();
     state.gameplayPhase = GameplayPhase::Resolution;
     state.transitionActionsApplied = false;
+    state.eventPopupEvents = scenarioManager_.eventsSince(transitionEventLogStart_);
+    state.eventPopupMode = state.eventPopupEvents.empty() ? EventPopupMode::None : EventPopupMode::SimulationRecap;
+    state.eventPanelVisible = state.eventPopupMode != EventPopupMode::None;
+    state.eventPanelAcknowledged = false;
     appendResolutionSummary("Simulated " + state.transitionDurationLabel + ".");
     if (!state.lastCapacityUsageSummary.empty()) {
         appendResolutionSummary("Engineering capacity used: " + state.lastCapacityUsageSummary + ".");

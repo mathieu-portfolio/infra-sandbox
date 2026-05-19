@@ -73,7 +73,7 @@ void WorldActionOverlay::draw(const UiContext& context) const
     }
 
     const Rectangle toggle = toggleBounds(context.screenWidth);
-    if (context.state->eventPanelVisible) {
+    if (context.state->eventPopupMode != EventPopupMode::None) {
         DrawRectangleRounded(toggle, 0.28f, 8, {17, 24, 34, 210});
         DrawRectangleRoundedLines(toggle, 0.28f, 8, {70, 86, 104, 120});
         IconRegistry::instance().drawIcon("action.world_toggle", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, {139, 148, 158, 190});

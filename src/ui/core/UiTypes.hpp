@@ -30,6 +30,12 @@ enum class UiLayer {
     Count
 };
 
+enum class EventPopupMode {
+    None,
+    PlanningStart,
+    SimulationRecap
+};
+
 enum class OverlayMode {
     None,
     Flow,
@@ -142,6 +148,8 @@ struct UiState {
     double transitionPlaybackScale = 24.0;
     std::string transitionDurationLabel = "platform evolution";
     std::deque<PlannedIntervention> plannedInterventions;
+    EventPopupMode eventPopupMode = EventPopupMode::None;
+    std::vector<EventLogEntry> eventPopupEvents;
     bool eventPanelVisible = false;
     bool eventPanelAcknowledged = false;
     std::vector<WorldActionDraft> worldActionDraft;
