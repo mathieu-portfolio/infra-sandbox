@@ -61,8 +61,8 @@
     "category": "traffic",
     "location": {"scope": "global"},
     "trigger": {"type": "time", "time_seconds": 26.0},
-    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
-    "duration_seconds": 18.0,
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": {"min": 1.25, "max": 1.45}, "burst_multiplier": {"min": 1.15, "max": 1.35}},
+    "duration_seconds": {"min": 15.0, "max": 22.0},
     "tags": ["traffic"]
   },
   {
@@ -71,9 +71,9 @@
     "description": "A short-lived traffic surge increases request pressure.",
     "category": "traffic",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 40.0},
-    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
-    "duration_seconds": 18.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 36.0, "max": 44.0}},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": {"min": 1.25, "max": 1.45}, "burst_multiplier": {"min": 1.15, "max": 1.35}},
+    "duration_seconds": {"min": 15.0, "max": 22.0},
     "tags": ["traffic"]
   },
   {
@@ -82,9 +82,9 @@
     "description": "A short-lived traffic surge increases request pressure.",
     "category": "traffic",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 64.0},
-    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.35, "burst_multiplier": 1.25},
-    "duration_seconds": 18.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 58.0, "max": 68.0}},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": {"min": 1.25, "max": 1.45}, "burst_multiplier": {"min": 1.15, "max": 1.35}},
+    "duration_seconds": {"min": 15.0, "max": 22.0},
     "tags": ["traffic"]
   },
   {
@@ -93,9 +93,9 @@
     "description": "Demand increases and remains elevated for a while.",
     "category": "demand",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 76.0},
-    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.45},
-    "duration_seconds": 42.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 72.0, "max": 82.0}},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": {"min": 1.35, "max": 1.6}},
+    "duration_seconds": {"min": 36.0, "max": 48.0},
     "tags": ["traffic"]
   },
   {
@@ -104,9 +104,9 @@
     "description": "Storage latency reduces database effective capacity.",
     "category": "infrastructure",
     "location": {"scope": "node_type", "node_type": "database"},
-    "trigger": {"type": "metric_threshold", "metric": "database_queue", "threshold": 5.0, "delay_seconds": 3.0},
-    "effect": {"type": "degrade_node_capacity", "database_capacity_multiplier": 0.62},
-    "duration_seconds": 28.0,
+    "trigger": {"type": "metric_threshold", "metric": "database_queue", "threshold": 5.0, "delay_seconds": {"min": 2.0, "max": 5.0}},
+    "effect": {"type": "degrade_node_capacity", "database_capacity_multiplier": {"min": 0.55, "max": 0.7}, "latency_multiplier": {"min": 1.05, "max": 1.2}},
+    "duration_seconds": {"min": 24.0, "max": 34.0},
     "tags": ["database"]
   },
   {
@@ -115,9 +115,9 @@
     "description": "Timeouts cause retries to amplify load after a delay.",
     "category": "reliability",
     "location": {"scope": "global"},
-    "trigger": {"type": "metric_threshold", "metric": "retry_rate", "threshold": 0.5, "delay_seconds": 2.0},
-    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": 1.18, "retry_delay_multiplier": 0.75},
-    "duration_seconds": 22.0,
+    "trigger": {"type": "metric_threshold", "metric": "retry_rate", "threshold": 0.5, "delay_seconds": {"min": 1.0, "max": 3.0}},
+    "effect": {"type": "modify_traffic_rate", "traffic_multiplier": {"min": 1.12, "max": 1.25}, "retry_delay_multiplier": {"min": 0.65, "max": 0.85}},
+    "duration_seconds": {"min": 18.0, "max": 26.0},
     "tags": ["reliability"]
   },
   {
@@ -127,8 +127,8 @@
     "category": "recovery",
     "location": {"scope": "node_type", "node_type": "database"},
     "trigger": {"type": "metric_threshold", "metric": "cache_hit_rate", "threshold": 0.35},
-    "effect": {"type": "emit_feedback", "database_capacity_multiplier": 1.08},
-    "duration_seconds": 24.0,
+    "effect": {"type": "emit_feedback", "database_capacity_multiplier": {"min": 1.04, "max": 1.12}},
+    "duration_seconds": {"min": 20.0, "max": 30.0},
     "tags": ["cache"]
   },
   {
@@ -137,9 +137,9 @@
     "description": "Pressure eases temporarily as systems recover.",
     "category": "recovery",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 106.0},
-    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
-    "duration_seconds": 20.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 100.0, "max": 110.0}},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": {"min": 0.82, "max": 0.92}, "database_capacity_multiplier": {"min": 1.08, "max": 1.22}},
+    "duration_seconds": {"min": 16.0, "max": 24.0},
     "tags": ["recovery"]
   },
   {
@@ -148,9 +148,9 @@
     "description": "Pressure eases temporarily as systems recover.",
     "category": "recovery",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 116.0},
-    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
-    "duration_seconds": 20.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 112.0, "max": 120.0}},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": {"min": 0.82, "max": 0.92}, "database_capacity_multiplier": {"min": 1.08, "max": 1.22}},
+    "duration_seconds": {"min": 16.0, "max": 24.0},
     "tags": ["recovery"]
   },
   {
@@ -159,9 +159,9 @@
     "description": "Pressure eases temporarily as systems recover.",
     "category": "recovery",
     "location": {"scope": "global"},
-    "trigger": {"type": "time", "time_seconds": 120.0},
-    "effect": {"type": "emit_feedback", "traffic_multiplier": 0.88, "database_capacity_multiplier": 1.15},
-    "duration_seconds": 20.0,
+    "trigger": {"type": "time", "time_seconds": {"min": 116.0, "max": 124.0}},
+    "effect": {"type": "emit_feedback", "traffic_multiplier": {"min": 0.82, "max": 0.92}, "database_capacity_multiplier": {"min": 1.08, "max": 1.22}},
+    "duration_seconds": {"min": 16.0, "max": 24.0},
     "tags": ["recovery"]
   }
 ]

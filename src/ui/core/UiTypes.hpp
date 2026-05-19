@@ -129,6 +129,7 @@ struct WorldActionDraft {
     double pressureResistance = 0.0;
     double eventIntensityMultiplier = 1.0;
     double complexityDelta = 0.0;
+    double durationSeconds = 0.0;
 };
 
 struct UiState {

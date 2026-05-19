@@ -4,12 +4,18 @@
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/PressureAnalysis.hpp"
 
+#include <cstdint>
 #include <deque>
 #include <optional>
 #include <string>
 #include <vector>
 
 class Simulation;
+
+struct NumericRange {
+    double min = 0.0;
+    double max = 0.0;
+};
 
 enum class EventCategory {
     TrafficEvent,
@@ -65,20 +71,29 @@ struct EventLocation {
 struct EventTrigger {
     EventTriggerType type = EventTriggerType::TimeBased;
     double timeSeconds = 0.0;
+    NumericRange timeSecondsRange{0.0, 0.0};
     EventMetric metric = EventMetric::AverageLatency;
     PressureCategory pressure = PressureCategory::None;
     double threshold = 0.0;
     int phaseIndex = -1;
     double delaySeconds = 0.0;
+    NumericRange delaySecondsRange{0.0, 0.0};
 };
 
 struct EventEffect {
     EventEffectType type = EventEffectType::TrafficSpike;
     double trafficMultiplier = 1.0;
+    NumericRange trafficMultiplierRange{1.0, 1.0};
     double burstMultiplier = 1.0;
+    NumericRange burstMultiplierRange{1.0, 1.0};
     double databaseCapacityMultiplier = 1.0;
+    NumericRange databaseCapacityMultiplierRange{1.0, 1.0};
+    double latencyMultiplier = 1.0;
+    NumericRange latencyMultiplierRange{1.0, 1.0};
     double retryDelayMultiplier = 1.0;
+    NumericRange retryDelayMultiplierRange{1.0, 1.0};
     std::optional<double> databaseHeavyShare;
+    std::optional<NumericRange> databaseHeavyShareRange;
     std::vector<MechanicType> unlockMechanics;
 };
 
@@ -93,6 +108,9 @@ struct EventDefinition {
     EventTrigger trigger;
     EventEffect effect;
     double durationSeconds = 10.0;
+    NumericRange durationSecondsRange{10.0, 10.0};
+    double intensity = 1.0;
+    NumericRange intensityRange{1.0, 1.0};
     bool repeatable = false;
 };
 
@@ -106,6 +124,7 @@ struct EventModifiers {
     double trafficMultiplier = 1.0;
     double burstMultiplier = 1.0;
     double databaseCapacityMultiplier = 1.0;
+    double latencyMultiplier = 1.0;
     double retryDelayMultiplier = 1.0;
     std::optional<double> databaseHeavyShare;
     std::vector<MechanicType> unlockedMechanics;
@@ -125,7 +144,7 @@ struct EventLogEntry {
 
 class EventManager {
 public:
-    void reset(std::vector<EventDefinition> definitions);
+    void reset(std::vector<EventDefinition> definitions, std::uint32_t seed = 0);
     void update(double dt, double scenarioTimeSeconds, int phaseIndex, const Simulation& simulation);
     void inject(EventDefinition definition, double scenarioTimeSeconds, const Simulation& simulation);
     void clear();
@@ -152,6 +171,7 @@ private:
     std::vector<PendingEvent> pendingEvents_;
     std::vector<bool> fired_;
     std::deque<EventLogEntry> recentEvents_;
+    std::uint32_t seed_ = 0;
 };
 
 const char* eventCategoryName(EventCategory category);

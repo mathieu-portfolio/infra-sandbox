@@ -54,6 +54,33 @@ double numberAt(const Json& object, const std::string& key, double fallback = 0.
     return fallback;
 }
 
+NumericRange fixedRange(double value)
+{
+    return {value, value};
+}
+
+NumericRange rangeFromJson(const Json& value, double fallback)
+{
+    if (value.isNumber()) {
+        return fixedRange(value.asNumber());
+    }
+    if (value.isObject()) {
+        NumericRange range{fallback, fallback};
+        range.min = numberAt(value, "min", range.min);
+        range.max = numberAt(value, "max", range.max);
+        return range;
+    }
+    return fixedRange(fallback);
+}
+
+NumericRange rangeAt(const Json& object, const std::string& key, double fallback)
+{
+    if (const Json* value = object.find(key); value != nullptr) {
+        return rangeFromJson(*value, fallback);
+    }
+    return fixedRange(fallback);
+}
+
 bool boolAt(const Json& object, const std::string& key, bool fallback = false)
 {
     if (const Json* value = object.find(key); value != nullptr && value->isBool()) {
@@ -334,6 +361,36 @@ std::vector<T> mappedStrings(const Json& object, const std::string& key, F mappe
     return values;
 }
 
+void validateRange(const NumericRange& range, const std::string& label, ContentLoadResult& result)
+{
+    if (range.min > range.max) {
+        result.errors.push_back(label + " has invalid range min > max.");
+    }
+}
+
+void validateBurstRanges(const BurstScenario& burst, const std::string& label, ContentLoadResult& result)
+{
+    validateRange(burst.multiplierRange, label + " burst multiplier", result);
+    validateRange(burst.periodSecondsRange, label + " burst period", result);
+    validateRange(burst.durationSecondsRange, label + " burst duration", result);
+}
+
+void validateEventRanges(const EventDefinition& event, const std::string& label, ContentLoadResult& result)
+{
+    validateRange(event.trigger.timeSecondsRange, label + " trigger time_seconds", result);
+    validateRange(event.trigger.delaySecondsRange, label + " trigger delay_seconds", result);
+    validateRange(event.effect.trafficMultiplierRange, label + " traffic_multiplier", result);
+    validateRange(event.effect.burstMultiplierRange, label + " burst_multiplier", result);
+    validateRange(event.effect.databaseCapacityMultiplierRange, label + " database_capacity_multiplier", result);
+    validateRange(event.effect.latencyMultiplierRange, label + " latency_multiplier", result);
+    validateRange(event.effect.retryDelayMultiplierRange, label + " retry_delay_multiplier", result);
+    if (event.effect.databaseHeavyShareRange) {
+        validateRange(*event.effect.databaseHeavyShareRange, label + " database_heavy_share", result);
+    }
+    validateRange(event.durationSecondsRange, label + " duration_seconds", result);
+    validateRange(event.intensityRange, label + " intensity", result);
+}
+
 NetworkIdentity parseIdentity(const Json& object)
 {
     return {
@@ -354,12 +411,15 @@ GeoLocation parseGeo(const Json& object)
 
 BurstScenario parseBurst(const Json& object)
 {
-    return {
-        boolAt(object, "enabled"),
-        numberAt(object, "multiplier", 1.0),
-        numberAt(object, "period_seconds", 12.0),
-        numberAt(object, "duration_seconds", 3.0),
-    };
+    BurstScenario burst;
+    burst.enabled = boolAt(object, "enabled");
+    burst.multiplierRange = rangeAt(object, "multiplier", 1.0);
+    burst.multiplier = burst.multiplierRange.min;
+    burst.periodSecondsRange = rangeAt(object, "period_seconds", 12.0);
+    burst.periodSeconds = burst.periodSecondsRange.min;
+    burst.durationSecondsRange = rangeAt(object, "duration_seconds", 3.0);
+    burst.durationSeconds = burst.durationSecondsRange.min;
+    return burst;
 }
 
 GameplayDuration parseGameplayDuration(const Json& object, const std::string& key, GameplayDuration fallback = {})
@@ -444,6 +504,24 @@ EngineeringCapacity parseCapacityBonus(const Json& object)
     return bonus;
 }
 
+void parseCapacityBonusRanges(const Json& object, WorldActionDefinition& action)
+{
+    if (const Json* value = object.find("capacity_bonus"); value != nullptr && value->isObject()) {
+        action.frontendCapacityBonusRange = rangeAt(*value, "frontend", 0.0);
+        action.backendCapacityBonusRange = rangeAt(*value, "backend", 0.0);
+        action.infrastructureCapacityBonusRange = rangeAt(*value, "infrastructure", numberAt(*value, "infra"));
+        if (const Json* infra = value->find("infra"); infra != nullptr && value->find("infrastructure") == nullptr) {
+            action.infrastructureCapacityBonusRange = rangeFromJson(*infra, 0.0);
+        }
+        action.dataCapacityBonusRange = rangeAt(*value, "data", 0.0);
+        action.operationsCapacityBonusRange = rangeAt(*value, "operations", numberAt(*value, "ops"));
+        if (const Json* ops = value->find("ops"); ops != nullptr && value->find("operations") == nullptr) {
+            action.operationsCapacityBonusRange = rangeFromJson(*ops, 0.0);
+        }
+        action.totalCapacityBonusRange = rangeAt(*value, "total", 0.0);
+    }
+}
+
 EventDefinition parseEvent(const Json& object)
 {
     EventDefinition event;
@@ -461,25 +539,37 @@ EventDefinition parseEvent(const Json& object)
     }
     if (const Json* trigger = object.find("trigger")) {
         event.trigger.type = triggerTypeFromId(stringAt(*trigger, "type"));
-        event.trigger.timeSeconds = numberAt(*trigger, "time_seconds");
+        event.trigger.timeSecondsRange = rangeAt(*trigger, "time_seconds", event.trigger.timeSeconds);
+        event.trigger.timeSeconds = event.trigger.timeSecondsRange.min;
         event.trigger.metric = metricFromId(stringAt(*trigger, "metric"));
         event.trigger.pressure = pressureFromId(stringAt(*trigger, "pressure"));
         event.trigger.threshold = numberAt(*trigger, "threshold");
         event.trigger.phaseIndex = static_cast<int>(numberAt(*trigger, "phase_index", -1.0));
-        event.trigger.delaySeconds = numberAt(*trigger, "delay_seconds");
+        event.trigger.delaySecondsRange = rangeAt(*trigger, "delay_seconds", event.trigger.delaySeconds);
+        event.trigger.delaySeconds = event.trigger.delaySecondsRange.min;
     }
     if (const Json* effect = object.find("effect")) {
         event.effect.type = effectTypeFromId(stringAt(*effect, "type"));
-        event.effect.trafficMultiplier = numberAt(*effect, "traffic_multiplier", 1.0);
-        event.effect.burstMultiplier = numberAt(*effect, "burst_multiplier", 1.0);
-        event.effect.databaseCapacityMultiplier = numberAt(*effect, "database_capacity_multiplier", 1.0);
-        event.effect.retryDelayMultiplier = numberAt(*effect, "retry_delay_multiplier", 1.0);
-        if (const Json* share = effect->find("database_heavy_share"); share != nullptr && share->isNumber()) {
-            event.effect.databaseHeavyShare = share->asNumber();
+        event.effect.trafficMultiplierRange = rangeAt(*effect, "traffic_multiplier", event.effect.trafficMultiplier);
+        event.effect.trafficMultiplier = event.effect.trafficMultiplierRange.min;
+        event.effect.burstMultiplierRange = rangeAt(*effect, "burst_multiplier", event.effect.burstMultiplier);
+        event.effect.burstMultiplier = event.effect.burstMultiplierRange.min;
+        event.effect.databaseCapacityMultiplierRange = rangeAt(*effect, "database_capacity_multiplier", event.effect.databaseCapacityMultiplier);
+        event.effect.databaseCapacityMultiplier = event.effect.databaseCapacityMultiplierRange.min;
+        event.effect.latencyMultiplierRange = rangeAt(*effect, "latency_multiplier", event.effect.latencyMultiplier);
+        event.effect.latencyMultiplier = event.effect.latencyMultiplierRange.min;
+        event.effect.retryDelayMultiplierRange = rangeAt(*effect, "retry_delay_multiplier", event.effect.retryDelayMultiplier);
+        event.effect.retryDelayMultiplier = event.effect.retryDelayMultiplierRange.min;
+        if (const Json* share = effect->find("database_heavy_share"); share != nullptr) {
+            event.effect.databaseHeavyShareRange = rangeFromJson(*share, 0.0);
+            event.effect.databaseHeavyShare = event.effect.databaseHeavyShareRange->min;
         }
         event.effect.unlockMechanics = mappedStrings<MechanicType>(*effect, "unlock_interventions", mechanicFromId);
     }
-    event.durationSeconds = numberAt(object, "duration_seconds", 10.0);
+    event.durationSecondsRange = rangeAt(object, "duration_seconds", event.durationSeconds);
+    event.durationSeconds = event.durationSecondsRange.min;
+    event.intensityRange = rangeAt(object, "intensity", event.intensity);
+    event.intensity = event.intensityRange.min;
     event.repeatable = boolAt(object, "repeatable");
     return event;
 }
@@ -554,8 +644,10 @@ TrafficProfile parseTraffic(const Json& object)
     profile.tags = stringsAt(object, "tags");
     profile.name = profile.displayName;
     profile.type = trafficTypeFromId(stringAt(object, "type"));
-    profile.baseMultiplier = numberAt(object, "base_multiplier", 1.0);
-    profile.growthPerSecond = numberAt(object, "growth_per_second");
+    profile.baseMultiplierRange = rangeAt(object, "base_multiplier", profile.baseMultiplier);
+    profile.baseMultiplier = profile.baseMultiplierRange.min;
+    profile.growthPerSecondRange = rangeAt(object, "growth_per_second", profile.growthPerSecond);
+    profile.growthPerSecond = profile.growthPerSecondRange.min;
     return profile;
 }
 
@@ -568,10 +660,13 @@ ScenarioModifierDefinition parseModifier(const Json& object, const std::unordere
     modifier.description = stringAt(object, "description");
     modifier.tags = stringsAt(object, "tags");
     modifier.type = modifierTypeFromId(modifier.id);
-    modifier.selectionWeight = numberAt(object, "selection_weight", 1.0);
-    modifier.trafficMultiplier = numberAt(object, "traffic_multiplier", 1.0);
-    if (const Json* share = object.find("database_heavy_share"); share != nullptr && share->isNumber()) {
-        modifier.databaseHeavyShare = share->asNumber();
+    modifier.selectionWeightRange = rangeAt(object, "selection_weight", modifier.selectionWeight);
+    modifier.selectionWeight = modifier.selectionWeightRange.min;
+    modifier.trafficMultiplierRange = rangeAt(object, "traffic_multiplier", modifier.trafficMultiplier);
+    modifier.trafficMultiplier = modifier.trafficMultiplierRange.min;
+    if (const Json* share = object.find("database_heavy_share"); share != nullptr) {
+        modifier.databaseHeavyShareRange = rangeFromJson(*share, 0.0);
+        modifier.databaseHeavyShare = modifier.databaseHeavyShareRange->min;
     }
     if (const Json* burst = object.find("burst_override"); burst != nullptr && burst->isObject()) {
         modifier.burstOverride = parseBurst(*burst);
@@ -675,10 +770,13 @@ std::vector<ScenarioPhase> parsePhases(const Json& object)
             ScenarioPhase phase;
             phase.name = stringAt(entry, "display_name", stringAt(entry, "id"));
             phase.eventMessage = stringAt(entry, "event_message");
-            phase.startTimeSeconds = numberAt(entry, "start_time_seconds");
-            phase.durationSeconds = numberAt(entry, "duration_seconds", 30.0);
+            phase.startTimeSecondsRange = rangeAt(entry, "start_time_seconds", phase.startTimeSeconds);
+            phase.startTimeSeconds = phase.startTimeSecondsRange.min;
+            phase.durationSecondsRange = rangeAt(entry, "duration_seconds", phase.durationSeconds);
+            phase.durationSeconds = phase.durationSecondsRange.min;
             phase.transitionDuration = parseGameplayDuration(entry, "transition_duration", phase.transitionDuration);
-            phase.trafficMultiplier = numberAt(entry, "traffic_multiplier", 1.0);
+            phase.trafficMultiplierRange = rangeAt(entry, "traffic_multiplier", phase.trafficMultiplier);
+            phase.trafficMultiplier = phase.trafficMultiplierRange.min;
             if (const Json* burst = entry.find("burst_override"); burst != nullptr && burst->isObject()) {
                 phase.burstOverride = parseBurst(*burst);
             }
@@ -733,9 +831,15 @@ WorldActionDefinition parseWorldAction(const Json& object)
     action.iconId = stringAt(object, "icon_id", "action.generic");
     action.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
     action.capacityBonus = parseCapacityBonus(object);
-    action.pressureResistance = numberAt(object, "pressure_resistance");
-    action.eventIntensityMultiplier = numberAt(object, "event_intensity_multiplier", 1.0);
-    action.complexityDelta = numberAt(object, "complexity_delta");
+    parseCapacityBonusRanges(object, action);
+    action.pressureResistanceRange = rangeAt(object, "pressure_resistance", action.pressureResistance);
+    action.pressureResistance = action.pressureResistanceRange.min;
+    action.eventIntensityMultiplierRange = rangeAt(object, "event_intensity_multiplier", action.eventIntensityMultiplier);
+    action.eventIntensityMultiplier = action.eventIntensityMultiplierRange.min;
+    action.complexityDeltaRange = rangeAt(object, "complexity_delta", action.complexityDelta);
+    action.complexityDelta = action.complexityDeltaRange.min;
+    action.durationSecondsRange = rangeAt(object, "duration_seconds", action.durationSeconds);
+    action.durationSeconds = action.durationSecondsRange.min;
     if (const Json* intensity = object.find("intensity_range"); intensity != nullptr && intensity->isObject()) {
         action.minIntensity = numberAt(*intensity, "min", action.minIntensity);
         action.maxIntensity = numberAt(*intensity, "max", action.maxIntensity);
@@ -939,18 +1043,32 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
             }
         }
         auto parsed = parseEvent(object);
+        validateEventRanges(parsed, "Event " + parsed.id, result);
         events[parsed.id] = std::move(parsed);
     }
 
     std::unordered_map<std::string, TrafficProfile> trafficProfiles;
     for (const auto& object : loadDirectoryObjects(root / "traffic", result)) {
         auto parsed = parseTraffic(object);
+        validateRange(parsed.baseMultiplierRange, "Traffic profile " + parsed.id + " base_multiplier", result);
+        validateRange(parsed.growthPerSecondRange, "Traffic profile " + parsed.id + " growth_per_second", result);
         trafficProfiles[parsed.id] = std::move(parsed);
     }
 
     std::unordered_map<std::string, ScenarioModifierDefinition> modifiers;
     for (const auto& object : loadDirectoryObjects(root / "modifiers", result)) {
         auto parsed = parseModifier(object, events);
+        validateRange(parsed.selectionWeightRange, "Modifier " + parsed.id + " selection_weight", result);
+        validateRange(parsed.trafficMultiplierRange, "Modifier " + parsed.id + " traffic_multiplier", result);
+        if (parsed.databaseHeavyShareRange) {
+            validateRange(*parsed.databaseHeavyShareRange, "Modifier " + parsed.id + " database_heavy_share", result);
+        }
+        if (parsed.burstOverride) {
+            validateBurstRanges(*parsed.burstOverride, "Modifier " + parsed.id, result);
+        }
+        for (const auto& event : parsed.events) {
+            validateEventRanges(event, "Modifier " + parsed.id + " event " + event.id, result);
+        }
         modifiers[parsed.id] = std::move(parsed);
     }
 
@@ -1038,6 +1156,16 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         if (action.minIntensity <= 0.0 || action.maxIntensity < action.minIntensity) {
             result.errors.push_back("World action " + action.id + " has invalid intensity range.");
         }
+        validateRange(action.frontendCapacityBonusRange, "World action " + action.id + " frontend capacity_bonus", result);
+        validateRange(action.backendCapacityBonusRange, "World action " + action.id + " backend capacity_bonus", result);
+        validateRange(action.infrastructureCapacityBonusRange, "World action " + action.id + " infrastructure capacity_bonus", result);
+        validateRange(action.dataCapacityBonusRange, "World action " + action.id + " data capacity_bonus", result);
+        validateRange(action.operationsCapacityBonusRange, "World action " + action.id + " operations capacity_bonus", result);
+        validateRange(action.totalCapacityBonusRange, "World action " + action.id + " total capacity_bonus", result);
+        validateRange(action.pressureResistanceRange, "World action " + action.id + " pressure_resistance", result);
+        validateRange(action.eventIntensityMultiplierRange, "World action " + action.id + " event_intensity_multiplier", result);
+        validateRange(action.complexityDeltaRange, "World action " + action.id + " complexity_delta", result);
+        validateRange(action.durationSecondsRange, "World action " + action.id + " duration_seconds", result);
         worldActions_.push_back(std::move(action));
     }
 
@@ -1151,6 +1279,9 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         if (scenario.links.empty()) result.errors.push_back("Scenario " + scenario.id + " has no topology links.");
         if (scenario.objectives.empty()) result.errors.push_back("Scenario " + scenario.id + " has no objectives.");
         if (scenario.trafficProfile.baseMultiplier < 0.0) result.errors.push_back("Scenario " + scenario.id + " has invalid traffic multiplier.");
+        validateRange(scenario.trafficProfile.baseMultiplierRange, "Scenario " + scenario.id + " traffic base_multiplier", result);
+        validateRange(scenario.trafficProfile.growthPerSecondRange, "Scenario " + scenario.id + " traffic growth_per_second", result);
+        validateBurstRanges(scenario.bursts, "Scenario " + scenario.id, result);
         if (scenario.turnDuration.value <= 0.0 || scenario.turnDuration.simulationSeconds <= 0.0) {
             result.errors.push_back("Scenario " + scenario.id + " has invalid turn duration.");
         }
@@ -1168,9 +1299,25 @@ void ContentRegistry::validate(ContentLoadResult& result) const
             }
         }
         for (const auto& phase : scenario.phases) {
+            validateRange(phase.startTimeSecondsRange, "Scenario " + scenario.id + " phase " + phase.name + " start_time_seconds", result);
+            validateRange(phase.durationSecondsRange, "Scenario " + scenario.id + " phase " + phase.name + " duration_seconds", result);
+            validateRange(phase.trafficMultiplierRange, "Scenario " + scenario.id + " phase " + phase.name + " traffic_multiplier", result);
+            if (phase.burstOverride) {
+                validateBurstRanges(*phase.burstOverride, "Scenario " + scenario.id + " phase " + phase.name, result);
+            }
             if (phase.transitionDuration.value <= 0.0 || phase.transitionDuration.simulationSeconds <= 0.0) {
                 result.errors.push_back("Scenario " + scenario.id + " phase " + phase.name + " has invalid transition duration.");
             }
+        }
+        for (const auto& event : scenario.events) {
+            validateEventRanges(event, "Scenario " + scenario.id + " event " + event.id, result);
+        }
+        for (const auto& event : scenario.sandboxEvents) {
+            validateEventRanges(event, "Scenario " + scenario.id + " sandbox event " + event.id, result);
+        }
+        for (const auto& modifier : scenario.optionalModifiers) {
+            validateRange(modifier.selectionWeightRange, "Scenario " + scenario.id + " modifier " + modifier.id + " selection_weight", result);
+            validateRange(modifier.trafficMultiplierRange, "Scenario " + scenario.id + " modifier " + modifier.id + " traffic_multiplier", result);
         }
     }
     requireIdSet("Scenario", scenarioIds, result);
@@ -1245,6 +1392,8 @@ void ContentRegistry::loadFallbackContent()
             .tradeoffs = "Creates little immediate infrastructure change.",
             .iconId = "action.generic",
             .capacityBonus = {.backend = 1, .total = 1},
+            .backendCapacityBonusRange = {1.0, 1.0},
+            .totalCapacityBonusRange = {1.0, 1.0},
         },
     };
 }

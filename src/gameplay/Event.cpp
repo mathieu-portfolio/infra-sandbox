@@ -7,9 +7,10 @@
 #include <set>
 #include <utility>
 
-void EventManager::reset(std::vector<EventDefinition> definitions)
+void EventManager::reset(std::vector<EventDefinition> definitions, std::uint32_t seed)
 {
     definitions_ = std::move(definitions);
+    seed_ = seed;
     activeEvents_.clear();
     pendingEvents_.clear();
     fired_.assign(definitions_.size(), false);
@@ -86,6 +87,7 @@ EventModifiers EventManager::modifiers() const
         modifiers.trafficMultiplier *= effect.trafficMultiplier;
         modifiers.burstMultiplier *= effect.burstMultiplier;
         modifiers.databaseCapacityMultiplier *= effect.databaseCapacityMultiplier;
+        modifiers.latencyMultiplier *= effect.latencyMultiplier;
         modifiers.retryDelayMultiplier *= effect.retryDelayMultiplier;
         if (effect.databaseHeavyShare) {
             modifiers.databaseHeavyShare = effect.databaseHeavyShare;
@@ -203,6 +205,7 @@ EventLocation EventManager::resolvedLocation(const EventDefinition& definition, 
     }
 
     const std::size_t seed = std::hash<std::string>{}(definition.id)
+        ^ (static_cast<std::size_t>(seed_) * 0x9e3779b97f4a7c15ULL)
         ^ (static_cast<std::size_t>(scenarioTimeSeconds * 1000.0) + 0x9e3779b97f4a7c15ULL);
     return {
         .scope = EventLocationScope::Region,

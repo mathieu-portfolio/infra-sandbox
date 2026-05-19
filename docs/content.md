@@ -93,6 +93,52 @@ Shared balancing values live in `content/balancing/`. Current tuning supports `p
 
 World Actions are authored templates. During planning, the runtime drafts a small set and may vary intensity and resulting capacity bonus deterministically from the scenario/run state. Node Action cards are not procedurally mutated.
 
+## Procedural Numeric Ranges
+
+Procedural content can use either a fixed number or a range object:
+
+```json
+"traffic_multiplier": 1.25
+```
+
+```json
+"traffic_multiplier": {"min": 0.8, "max": 1.4}
+```
+
+Fixed values remain valid and are treated as `min == max`. Ranges are sampled once from the scenario/run seed when runtime content is instantiated, then stored on the active scenario, event, modifier, or World Action draft. They are not resampled during frame updates. Event `intensity` scales multiplier distance from `1.0`, so recovery multipliers below `1.0` remain recovery effects. `random_region` event locations also resolve deterministically from the run seed and activation time. Validation rejects any range where `min > max`.
+
+Range-capable fields:
+
+- events: `intensity`, `duration_seconds`, `trigger.time_seconds`, `trigger.delay_seconds`, `effect.traffic_multiplier`, `effect.burst_multiplier`, `effect.database_capacity_multiplier`, `effect.retry_delay_multiplier`, `effect.database_heavy_share`
+- traffic profiles: `base_multiplier`, `growth_per_second`
+- scenario modifiers: `selection_weight`, `traffic_multiplier`, `database_heavy_share`, and `burst_override.multiplier`, `burst_override.period_seconds`, `burst_override.duration_seconds`
+- scenario phases: `start_time_seconds`, `duration_seconds`, `traffic_multiplier`, and nested `burst_override` numeric fields
+- World Actions: `intensity_range`, `duration_seconds`, `capacity_bonus` domain values, `pressure_resistance`, `event_intensity_multiplier`, `complexity_delta`
+
+Node Actions/cards remain fixed authored data unless a future procedural field is explicitly added.
+
+Examples:
+
+```json
+{
+  "trigger": {"type": "time", "time_seconds": {"min": 36.0, "max": 44.0}},
+  "effect": {
+    "type": "modify_traffic_rate",
+    "traffic_multiplier": {"min": 1.25, "max": 1.45},
+    "burst_multiplier": {"min": 1.15, "max": 1.35}
+  },
+  "duration_seconds": {"min": 15.0, "max": 22.0}
+}
+```
+
+```json
+{
+  "capacity_bonus": {"backend": {"min": 1, "max": 2}, "total": {"min": 1, "max": 2}},
+  "pressure_resistance": {"min": 0.03, "max": 0.06},
+  "intensity_range": {"min": 0.85, "max": 1.2}
+}
+```
+
 ## Objective Chains And Rewards
 
 Scenario `objectives` may be string IDs or chain entries:
@@ -153,6 +199,7 @@ The loader reports:
 - unresolved scenario references
 - scenarios without topology, links, or objectives
 - invalid negative node or traffic numeric ranges
+- invalid procedural ranges where `min` exceeds `max`
 - invalid action numeric ranges such as negative complexity cost, negative region slot usage, or scale limits below 1
 - invalid engineering domains, negative engineering costs, or impossible scenario capacity caps
 - invalid scenario or phase durations, including non-positive gameplay values or simulation seconds

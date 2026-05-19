@@ -3,23 +3,23 @@
     "id": "mobile_refresh_wave",
     "display_name": "Mobile refresh wave",
     "description": "A mild burst of client refreshes shifts timing without changing the lesson.",
-    "selection_weight": 0.35,
-    "burst_override": {"enabled": true, "multiplier": 1.45, "period_seconds": 22.0, "duration_seconds": 3.0},
+    "selection_weight": {"min": 0.25, "max": 0.45},
+    "burst_override": {"enabled": true, "multiplier": {"min": 1.35, "max": 1.55}, "period_seconds": {"min": 20.0, "max": 24.0}, "duration_seconds": {"min": 2.5, "max": 3.5}},
     "tags": ["traffic"]
   },
   {
     "id": "read_heavy_behavior",
     "display_name": "Read-heavy behavior",
     "description": "Repeated read patterns make cache effects easier to observe.",
-    "selection_weight": 0.45,
-    "database_heavy_share": 0.72,
+    "selection_weight": {"min": 0.35, "max": 0.55},
+    "database_heavy_share": {"min": 0.66, "max": 0.78},
     "tags": ["database", "cache"]
   },
   {
     "id": "aggressive_retries",
     "display_name": "Aggressive retries",
     "description": "Retry timing varies the feedback pressure.",
-    "selection_weight": 0.3,
+    "selection_weight": {"min": 0.22, "max": 0.38},
     "events": ["retry_storm"],
     "tags": ["reliability"]
   },
@@ -27,7 +27,7 @@
     "id": "regional_traffic_spike",
     "display_name": "Regional traffic spike",
     "description": "A traffic event varies the pressure cadence.",
-    "selection_weight": 0.4,
+    "selection_weight": {"min": 0.3, "max": 0.5},
     "events": ["traffic_spike_40"],
     "tags": ["traffic", "geography"]
   },
@@ -35,7 +35,7 @@
     "id": "slow_database_window",
     "display_name": "Slow database window",
     "description": "A temporary storage slowdown varies persistence pressure.",
-    "selection_weight": 0.35,
+    "selection_weight": {"min": 0.25, "max": 0.45},
     "events": ["database_slowdown"],
     "tags": ["database"]
   }

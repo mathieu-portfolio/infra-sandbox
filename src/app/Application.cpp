@@ -81,6 +81,26 @@ double deterministicIntensity(const std::string& id, std::uint32_t seed, double 
     const double t = static_cast<double>(hash % 1000U) / 999.0;
     return minValue + (maxValue - minValue) * t;
 }
+
+double deterministicRange(const std::string& id, std::uint32_t seed, const NumericRange& range)
+{
+    return deterministicIntensity(id, seed, range.min, range.max);
+}
+
+EngineeringCapacity sampledCapacityBonus(const content::WorldActionDefinition& definition, std::uint32_t seed)
+{
+    auto sample = [&](const char* field, const NumericRange& range) {
+        return static_cast<int>(std::round(deterministicRange(definition.id + field, seed, range)));
+    };
+    return {
+        .frontend = sample(".capacity.frontend", definition.frontendCapacityBonusRange),
+        .backend = sample(".capacity.backend", definition.backendCapacityBonusRange),
+        .infrastructure = sample(".capacity.infrastructure", definition.infrastructureCapacityBonusRange),
+        .data = sample(".capacity.data", definition.dataCapacityBonusRange),
+        .operations = sample(".capacity.operations", definition.operationsCapacityBonusRange),
+        .total = sample(".capacity.total", definition.totalCapacityBonusRange),
+    };
+}
 }
 
 Application::Application()
@@ -397,7 +417,8 @@ void Application::generateWorldActionDraft()
     const std::size_t maxDraft = std::min<std::size_t>(3, candidates.size());
     for (std::size_t i = 0; i < maxDraft; ++i) {
         const auto& definition = candidates[i];
-        const double intensity = deterministicIntensity(definition.id, scenarioManager_.run().seed + static_cast<std::uint32_t>(scenarioManager_.elapsedSeconds()), definition.minIntensity, definition.maxIntensity);
+        const std::uint32_t seed = scenarioManager_.run().seed + static_cast<std::uint32_t>(scenarioManager_.elapsedSeconds());
+        const double intensity = deterministicIntensity(definition.id, seed, definition.minIntensity, definition.maxIntensity);
         state.worldActionDraft.push_back({
             .id = definition.id,
             .name = definition.displayName,
@@ -406,11 +427,12 @@ void Application::generateWorldActionDraft()
             .usefulWhen = definition.usefulWhen,
             .tradeOff = definition.tradeoffs,
             .iconId = definition.iconId,
-            .capacityBonus = scaledCapacityBonus(definition.capacityBonus, intensity),
+            .capacityBonus = scaledCapacityBonus(sampledCapacityBonus(definition, seed), intensity),
             .intensity = intensity,
-            .pressureResistance = definition.pressureResistance * intensity,
-            .eventIntensityMultiplier = definition.eventIntensityMultiplier,
-            .complexityDelta = definition.complexityDelta * intensity,
+            .pressureResistance = deterministicRange(definition.id + ".pressure_resistance", seed, definition.pressureResistanceRange) * intensity,
+            .eventIntensityMultiplier = deterministicRange(definition.id + ".event_intensity_multiplier", seed, definition.eventIntensityMultiplierRange),
+            .complexityDelta = deterministicRange(definition.id + ".complexity_delta", seed, definition.complexityDeltaRange) * intensity,
+            .durationSeconds = deterministicRange(definition.id + ".duration_seconds", seed, definition.durationSecondsRange),
         });
     }
     state.selectedWorldActionIndex = -1;

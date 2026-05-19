@@ -158,8 +158,11 @@ struct RetryScenario {
 struct BurstScenario {
     bool enabled = false;
     double multiplier = 2.2;
+    NumericRange multiplierRange{2.2, 2.2};
     double periodSeconds = 12.0;
+    NumericRange periodSecondsRange{12.0, 12.0};
     double durationSeconds = 3.0;
+    NumericRange durationSecondsRange{3.0, 3.0};
 };
 
 struct ScenarioModifierDefinition {
@@ -170,8 +173,11 @@ struct ScenarioModifierDefinition {
     std::string name;
     std::string description;
     double selectionWeight = 1.0;
+    NumericRange selectionWeightRange{1.0, 1.0};
     double trafficMultiplier = 1.0;
+    NumericRange trafficMultiplierRange{1.0, 1.0};
     std::optional<double> databaseHeavyShare;
+    std::optional<NumericRange> databaseHeavyShareRange;
     std::optional<BurstScenario> burstOverride;
     std::vector<EventDefinition> events;
 };
@@ -201,7 +207,9 @@ struct TrafficProfile {
     std::string name = "Constant";
     TrafficProfileType type = TrafficProfileType::Constant;
     double baseMultiplier = 1.0;
+    NumericRange baseMultiplierRange{1.0, 1.0};
     double growthPerSecond = 0.0;
+    NumericRange growthPerSecondRange{0.0, 0.0};
 };
 
 enum class ScenarioObjectiveType {
@@ -234,9 +242,12 @@ struct ScenarioPhase {
     std::string name;
     std::string eventMessage;
     double startTimeSeconds = 0.0;
+    NumericRange startTimeSecondsRange{0.0, 0.0};
     double durationSeconds = 30.0;
+    NumericRange durationSecondsRange{30.0, 30.0};
     GameplayDuration transitionDuration;
     double trafficMultiplier = 1.0;
+    NumericRange trafficMultiplierRange{1.0, 1.0};
     std::optional<BurstScenario> burstOverride;
     std::vector<MechanicType> unlockMechanics;
 };
