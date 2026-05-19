@@ -26,6 +26,8 @@ private:
     void handleInput();
     void resetScenario();
     void loadScenario(std::size_t scenarioIndex);
+    void resetUiStateForScenario(const std::string& feedback);
+    void beginScenarioGroundingSimulation();
     void applyPendingScenarioSelection();
     void applySandboxRequests();
     void applyUiRequests();
@@ -53,4 +55,5 @@ private:
     double fixedStepAccumulator_ = 0.0;
     MetricsSnapshot transitionBaseline_{};
     std::size_t transitionEventLogStart_ = 0;
+    bool transitionReturnsToObservation_ = false;
 };

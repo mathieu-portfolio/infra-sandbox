@@ -159,20 +159,8 @@ void Application::resetScenario()
 {
     scenarioManager_.reset();
     simulation_ = makeSimulation(scenarioManager_.definition());
-    UiState& state = renderer_.uiManager().state();
-    state.gameplayPhase = GameplayPhase::Observation;
-    state.plannedInterventions.clear();
-    state.eventPopupMode = EventPopupMode::None;
-    state.eventPopupEvents.clear();
-    state.eventPanelVisible = false;
-    state.eventPanelAcknowledged = false;
-    clearWorldActionPlan();
-    state.resolutionSummaries.clear();
-    state.lastCapacityUsageSummary.clear();
-    state.transitionActionsApplied = false;
-    state.transitionVisualElapsedSeconds = 0.0;
-    state.transitionSimulatedSeconds = 0.0;
-    fixedStepAccumulator_ = 0.0;
+    resetUiStateForScenario("Scenario reset. Running an initial simulation pass.");
+    beginScenarioGroundingSimulation();
 }
 
 void Application::loadScenario(std::size_t scenarioIndex)
@@ -185,24 +173,62 @@ void Application::loadScenario(std::size_t scenarioIndex)
     scenarioDefinition_ = scenarios[scenarioIndex];
     scenarioManager_.load(scenarioDefinition_);
     simulation_ = makeSimulation(scenarioManager_.definition());
+    resetUiStateForScenario("Scenario loaded. Running an initial simulation pass.");
+    beginScenarioGroundingSimulation();
+}
 
+void Application::resetUiStateForScenario(const std::string& feedback)
+{
     UiState& state = renderer_.uiManager().state();
-    state.selection = {};
-    state.latestFeedback.clear();
-    state.actionHistory.clear();
-    state.scenarioDroplistOpen = false;
-    state.objectivesDroplistOpen = false;
     state.gameplayPhase = GameplayPhase::Observation;
+    state.phaseAdvanceRequested = false;
+    state.transitionActionsApplied = false;
+    state.transitionVisualElapsedSeconds = 0.0;
+    state.transitionSimulatedSeconds = 0.0;
+    state.transitionTargetSimulatedSeconds = 0.0;
+    state.transitionPlaybackScale = 24.0;
+    state.transitionDurationLabel = "platform evolution";
     state.plannedInterventions.clear();
     state.eventPopupMode = EventPopupMode::None;
     state.eventPopupEvents.clear();
     state.eventPanelVisible = false;
     state.eventPanelAcknowledged = false;
-    clearWorldActionPlan();
+    state.worldActionDraft.clear();
+    state.worldActionDraftVisible = false;
+    state.selectedWorldActionIndex = -1;
+    state.hoveredWorldActionIndex = -1;
+    state.suppressMapSelectionOnce = false;
+    state.worldActionCapacityBonus = {};
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
-    state.transitionActionsApplied = false;
+    state.selection = {};
+    state.scenarioDroplistOpen = false;
+    state.objectivesDroplistOpen = false;
+    state.timelineCategoryDroplistOpen = false;
+    state.timelineFilterDroplistOpen = false;
+    state.placementActive = false;
+    state.hoveredActionIndex = -1;
+    state.selectedActionIndex = -1;
+    state.latestFeedback = feedback;
+    state.pendingVisualFeedbackEvents.clear();
+    state.actionHistory.clear();
+    state.metricsHistory.clear();
+    state.lastMetricSampleTime = -1.0;
+    transitionBaseline_ = {};
+    transitionEventLogStart_ = 0;
+    transitionReturnsToObservation_ = false;
     fixedStepAccumulator_ = 0.0;
+    simulation_.setPaused(true);
+}
+
+void Application::beginScenarioGroundingSimulation()
+{
+    UiState& state = renderer_.uiManager().state();
+    transitionReturnsToObservation_ = true;
+    state.transitionPlaybackScale = 24.0;
+    beginTransition();
+    state.transitionDurationLabel = "initial traffic warm-up";
+    state.latestFeedback = "Running initial simulation to establish traffic, queues, and pressure.";
 }
 
 void Application::applyPendingScenarioSelection()
@@ -558,6 +584,18 @@ void Application::finishTransition(const MetricsSnapshot& beforeMetrics)
     state.latestFeedback = state.resolutionSummaries.empty()
         ? "Transition complete."
         : "Transition complete. Review the resolution summary.";
+
+    if (transitionReturnsToObservation_) {
+        transitionReturnsToObservation_ = false;
+        state.gameplayPhase = GameplayPhase::Observation;
+        state.eventPopupMode = EventPopupMode::None;
+        state.eventPopupEvents.clear();
+        state.eventPanelVisible = false;
+        state.eventPanelAcknowledged = false;
+        state.resolutionSummaries.clear();
+        state.lastCapacityUsageSummary.clear();
+        state.latestFeedback = "Initial simulation complete. Inspect the live pressure before planning.";
+    }
     fixedStepAccumulator_ = 0.0;
 }
 
