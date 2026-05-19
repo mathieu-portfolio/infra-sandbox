@@ -11,6 +11,9 @@ namespace
 {
 constexpr float kPanelPadding = 12.0f;
 constexpr float kMetricRowSpacing = 22.0f;
+constexpr float kSummaryLineHeight = 16.0f;
+constexpr int kSummaryFontSize = 13;
+constexpr int kSummaryMaxLines = 4;
 }
 
 void SelectionPanel::update(UiContext&, const Simulation&)
@@ -73,7 +76,21 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
 
     const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(node->id);
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
-    const Rectangle panel{layout.worldView.x + 14.0f, layout.worldView.y + 14.0f, 364.0f, 260.0f};
+    const float panelWidth = 364.0f;
+    const float contentWidth = panelWidth - kPanelPadding * 2.0f;
+    const std::string summary = pressure != nullptr && !pressure->explanation.empty()
+        ? pressure->explanation
+        : "Inspect adjacent paths to compare local and dependency pressure.";
+    const bool hasDependencySummary = pressure != nullptr && !pressure->dependencySummary.empty();
+    const float summaryHeight = measureTextWrappedHeight(summary, contentWidth, kSummaryFontSize, kSummaryMaxLines);
+    const float dependencySummaryHeight = hasDependencySummary
+        ? measureTextWrappedHeight(pressure->dependencySummary, contentWidth, kSummaryFontSize, kSummaryMaxLines)
+        : 0.0f;
+    const float metricsTop = 48.0f;
+    const float metricsHeight = kMetricRowSpacing * 6.0f + 30.0f;
+    const float textGap = hasDependencySummary ? 10.0f : 0.0f;
+    const float panelHeight = metricsTop + metricsHeight + summaryHeight + textGap + dependencySummaryHeight + kPanelPadding;
+    const Rectangle panel{layout.worldView.x + 14.0f, layout.worldView.y + 14.0f, panelWidth, panelHeight};
     DrawRectangleRounded(panel, 0.035f, 8, {13, 17, 23, 230});
     DrawRectangleRoundedLines(panel, 0.035f, 8, {89, 196, 255, 120});
     IconRegistry::instance().drawIcon("node.selection_panel", {panel.x + 14.0f, panel.y + 14.0f, 20.0f, 20.0f}, {89, 196, 255, 255});
@@ -102,11 +119,9 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
     metricLine("Dependency", value, panel.x + 14.0f, y, dependencyPressure > 0.55 ? Color{245, 184, 76, 255} : Color{139, 148, 158, 255});
     y += 30.0f;
 
-    const std::string summary = pressure != nullptr && !pressure->explanation.empty()
-        ? pressure->explanation
-        : "Inspect adjacent paths to compare local and dependency pressure.";
-    drawTextClipped(summary, {panel.x + 14.0f, y, panel.width - 28.0f, 18.0f}, 13, {230, 237, 243, 255});
-    if (pressure != nullptr && !pressure->dependencySummary.empty()) {
-        drawTextClipped(pressure->dependencySummary, {panel.x + 14.0f, y + 22.0f, panel.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
+    drawTextWrappedClipped(summary, {panel.x + kPanelPadding, y, contentWidth, summaryHeight}, kSummaryFontSize, {230, 237, 243, 255});
+    y += summaryHeight + textGap;
+    if (hasDependencySummary) {
+        drawTextWrappedClipped(pressure->dependencySummary, {panel.x + kPanelPadding, y, contentWidth, dependencySummaryHeight}, kSummaryFontSize, {139, 148, 158, 255});
     }
 }

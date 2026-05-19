@@ -2,6 +2,7 @@
 
 #include "ui/IconRegistry.hpp"
 #include "ui/hud/HudPanelPrimitives.hpp"
+#include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
 
 #include "raylib.h"
@@ -77,6 +78,24 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     }
 
     const Vector2 mouse = GetMousePosition();
+    if (context.state->eventPopupMode != EventPopupMode::None) {
+        const EventPopupMode mode = context.state->eventPopupMode;
+        const Rectangle button = EventOverlay::acknowledgeButtonBounds(
+            context.screenWidth,
+            context.screenHeight,
+            mode,
+            context.state->eventPopupEvents);
+        if (CheckCollisionPointRec(mouse, button)) {
+            context.state->eventPopupMode = EventPopupMode::None;
+            context.state->eventPanelAcknowledged = true;
+            context.state->latestFeedback.clear();
+            if (mode == EventPopupMode::PlanningStart && !context.state->worldActionDraft.empty()) {
+                context.state->worldActionDraftVisible = true;
+            }
+            return;
+        }
+        return;
+    }
     if (scenarioDropdown_.update(context, scenarioManager, mouse)) {
         return;
     }

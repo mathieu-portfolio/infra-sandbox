@@ -7,33 +7,6 @@
 
 namespace ui {
 namespace {
-float textHeightForWidth(const std::string& text, float width, int fontSize, int maxLines)
-{
-    if (text.empty()) {
-        return static_cast<float>(fontSize);
-    }
-
-    const float avgCharWidth = static_cast<float>(fontSize) * 0.56f;
-    const int charsPerLine = std::max(1, static_cast<int>(width / std::max(1.0f, avgCharWidth)));
-    int lines = 1;
-    int current = 0;
-
-    for (char c : text) {
-        if (c == '\n') {
-            ++lines;
-            current = 0;
-            continue;
-        }
-
-        ++current;
-        if (current >= charsPerLine) {
-            ++lines;
-            current = 0;
-        }
-    }
-
-    return static_cast<float>(std::clamp(lines, 1, std::max(1, maxLines)) * fontSize);
-}
 } // namespace
 
 PanelNode::PanelNode(std::string id) : UiNode(std::move(id)) {}
@@ -63,14 +36,14 @@ Size TextBlockNode::measure(Size available)
     const float textWidth = style_.widthMode == SizeMode::Fixed
         ? std::max(1.0f, style_.fixedWidth - horizontalPadding)
         : std::min(availableTextWidth, naturalTextWidth);
-    const float textHeight = textHeightForWidth(text, textWidth, fontSize, maxLines);
+    const float textHeight = measureTextWrappedHeight(text, textWidth, fontSize, maxLines, 0.0f);
     measured_ = clampSize({textWidth + horizontalPadding, textHeight + verticalPadding});
     return measured_;
 }
 
 void TextBlockNode::draw() const
 {
-    drawTextClipped(text, contentBounds(), fontSize, color);
+    drawTextWrappedClipped(text, contentBounds(), fontSize, color, 0.0f);
     UiNode::draw();
 }
 
@@ -87,7 +60,12 @@ void ButtonNode::draw() const
 {
     DrawRectangleRounded(bounds_, radius, 8, background);
     DrawRectangleRoundedLines(bounds_, radius, 8, border);
-    TextBlockNode::draw();
+
+    const int textWidth = MeasureText(text.c_str(), fontSize);
+    const float textX = bounds_.x + (bounds_.width - static_cast<float>(textWidth)) * 0.5f;
+    const float textY = bounds_.y + (bounds_.height - static_cast<float>(fontSize)) * 0.5f;
+    DrawText(text.c_str(), static_cast<int>(textX), static_cast<int>(textY), fontSize, color);
+    UiNode::draw();
 }
 
 ScrollAreaNode::ScrollAreaNode(std::string id) : StackNode(Axis::Vertical, std::move(id))

@@ -2,13 +2,25 @@
 
 #include "content/ContentRegistry.hpp"
 #include "ui/actions/cards/NodeActionCardView.hpp"
+#include "ui/actions/EngineeringCapacityPanel.hpp"
+#include "ui/core/UiCore.hpp"
 #include "ui/RightSidebarLayout.hpp"
 #include "ui/core/UiLayout.hpp"
 
 #include <algorithm>
 #include <array>
+#include <memory>
+#include <string>
 
 namespace {
+Rectangle nodeBounds(const ui::UiNode& root, const char* id)
+{
+    if (const ui::UiNode* node = root.find(id); node != nullptr) {
+        return node->bounds();
+    }
+    return {};
+}
+
 int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
 {
     switch (domain) {
@@ -211,6 +223,65 @@ Rectangle ActionPanelModel::panelBounds(int screenWidth, int screenHeight) const
     return computeUiLayout(screenWidth, screenHeight).rightSidebar;
 }
 
+
+ActionSectionsLayout ActionPanelModel::actionSectionsLayout(const UiState& state, int screenWidth, int screenHeight) const
+{
+    const Rectangle panel = panelBounds(screenWidth, screenHeight);
+    const RightSidebarLayout layout = computeRightSidebarLayout(panel);
+
+    const float top = layout.actionHeader.y;
+    const float bottom = layout.actionList.y + layout.actionList.height;
+    const Rectangle actionArea{layout.actionHeader.x, top, layout.actionHeader.width, std::max(0.0f, bottom - top)};
+
+    auto root = ui::verticalStack("actionSections");
+    ui::LayoutStyle rootStyle;
+    rootStyle.gap = 8.0f;
+    root->style(rootStyle);
+
+    auto title = std::make_unique<ui::PanelNode>("title");
+    title->style(ui::fixedHeight(18.0f));
+    root->add(std::move(title));
+
+    auto capacity = std::make_unique<ui::PanelNode>("capacity");
+    capacity->style(ui::fixedHeight(EngineeringCapacityPanel{}.measureHeight(state)));
+    root->add(std::move(capacity));
+
+    auto filters = ui::grid(4, "filters");
+    ui::LayoutStyle filtersStyle;
+    filtersStyle.heightMode = ui::SizeMode::Fixed;
+    filtersStyle.fixedHeight = 26.0f;
+    filtersStyle.widthMode = ui::SizeMode::Flex;
+    filtersStyle.flexGrow = 1.0f;
+    filters->style(filtersStyle);
+    filters->columnGap = 10.0f;
+    filters->fixedCellHeight = 26.0f;
+    for (int i = 0; i < 4; ++i) {
+        auto filter = std::make_unique<ui::PanelNode>("filter" + std::to_string(i));
+        filter->style(ui::fixedHeight(26.0f));
+        filters->add(std::move(filter));
+    }
+    root->add(std::move(filters));
+
+    auto cards = std::make_unique<ui::PanelNode>("cards");
+    ui::LayoutStyle cardsStyle;
+    cardsStyle.heightMode = ui::SizeMode::Flex;
+    cardsStyle.flexGrow = 1.0f;
+    cards->style(cardsStyle);
+    root->add(std::move(cards));
+
+    root->measure({actionArea.width, actionArea.height});
+    root->layout(actionArea);
+
+    ActionSectionsLayout result;
+    result.title = nodeBounds(*root, "title");
+    result.capacity = nodeBounds(*root, "capacity");
+    result.actionList = nodeBounds(*root, "cards");
+    for (int i = 0; i < 4; ++i) {
+        result.filters[i] = nodeBounds(*root, ("filter" + std::to_string(i)).c_str());
+    }
+    return result;
+}
+
 std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const
 {
     std::vector<ActionCardModel> cards;
@@ -249,13 +320,13 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
         });
     }
 
-    const Rectangle panel = panelBounds(screenWidth, screenHeight);
-    const RightSidebarLayout layout = computeRightSidebarLayout(panel);
-    const float columns = layout.actionList.width >= 524.0f ? 2.0f : 1.0f;
+    const ActionSectionsLayout layout = actionSectionsLayout(state, screenWidth, screenHeight);
+    const Rectangle list = layout.actionList;
+    const float columns = list.width >= 524.0f ? 2.0f : 1.0f;
     const float cardGap = 16.0f;
-    const float cardWidth = columns > 1.0f ? (layout.actionList.width - cardGap) * 0.5f : layout.actionList.width;
-    float x = layout.actionList.x;
-    float y = layout.actionList.y;
+    const float cardWidth = columns > 1.0f ? (list.width - cardGap) * 0.5f : list.width;
+    float x = list.x;
+    float y = list.y;
     float rowHeight = 0.0f;
     const NodeActionCardView cardView;
     for (auto& card : cards) {
@@ -265,7 +336,7 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
         }
 
         const float cardHeight = cardView.measureHeight(card, cardWidth);
-        if (y + cardHeight > layout.actionList.y + layout.actionList.height) {
+        if (y + cardHeight > list.y + list.height) {
             card.bounds = {};
             continue;
         }
@@ -276,7 +347,7 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
         if (columns > 1.0f && x < layout.actionList.x + cardWidth) {
             x += cardWidth + cardGap;
         } else {
-            x = layout.actionList.x;
+            x = list.x;
             y += rowHeight + cardGap;
             rowHeight = 0.0f;
         }

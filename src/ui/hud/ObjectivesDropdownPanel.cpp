@@ -61,8 +61,31 @@ Rectangle ObjectivesDropdownPanel::menuBounds(const UiContext& context, const Sc
 {
     const Rectangle field = hudObjectivesDroplistBounds(context.screenWidth);
     const auto& run = scenarioManager.run();
-    const auto objectiveRows = run.activeObjectiveIds.size() + run.completedObjectiveIds.size() + scenarioManager.definition().failureConditions.size() + run.unlockedInterventions.size() + run.unlockedScenarioIds.size();
-    return {field.x, field.y + field.height + 8.0f, std::min(540.0f, field.width), 126.0f + static_cast<float>(objectiveRows) * 21.0f};
+
+    constexpr float kTopPaddingAndProgress = 36.0f;
+    constexpr float kBottomPadding = 16.0f;
+    constexpr float kSectionSpacing = 20.0f;
+    constexpr float kRowSpacing = 21.0f;
+
+    float height = kTopPaddingAndProgress;
+    height += kSectionSpacing + static_cast<float>(run.activeObjectiveIds.size()) * kRowSpacing;
+    if (!run.completedObjectiveIds.empty()) {
+        height += kSectionSpacing + static_cast<float>(run.completedObjectiveIds.size()) * kRowSpacing;
+    }
+    height += kSectionSpacing;
+    height += static_cast<float>(std::max<std::size_t>(1, scenarioManager.definition().failureConditions.size())) * kRowSpacing;
+    height += kSectionSpacing;
+    height += static_cast<float>(std::max<std::size_t>(1, run.unlockedInterventions.size())) * kRowSpacing;
+    if (!run.unlockedScenarioIds.empty()) {
+        height += kSectionSpacing + static_cast<float>(run.unlockedScenarioIds.size()) * kRowSpacing;
+    }
+    if (scenarioManager.currentPhase() != nullptr) {
+        height += kRowSpacing;
+    }
+    height += kBottomPadding;
+
+    const float menuTop = field.y + field.height + 8.0f;
+    return {field.x, menuTop, std::min(540.0f, field.width), height};
 }
 
 bool ObjectivesDropdownPanel::update(UiContext& context, const ScenarioManager& scenarioManager, Vector2 mouse)

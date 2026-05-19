@@ -49,12 +49,8 @@ ActionHeaderLayout computeActionHeaderLayout(Rectangle bounds)
     root->add(std::move(title));
 
     auto capacity = std::make_unique<ui::PanelNode>("capacity");
-    capacity->style(ui::fixedHeight(126.0f));
+    capacity->style(ui::fixedHeight(140.0f));
     root->add(std::move(capacity));
-
-    auto worldStatus = std::make_unique<ui::PanelNode>("worldStatus");
-    worldStatus->style(ui::fixedHeight(18.0f));
-    root->add(std::move(worldStatus));
 
     auto filters = ui::grid(4, "filters");
     ui::LayoutStyle filtersStyle;
@@ -78,7 +74,7 @@ ActionHeaderLayout computeActionHeaderLayout(Rectangle bounds)
     ActionHeaderLayout layout;
     layout.title = nodeBounds(*root, "title");
     layout.capacity = nodeBounds(*root, "capacity");
-    layout.worldStatus = nodeBounds(*root, "worldStatus");
+    layout.worldStatus = {};
     for (int i = 0; i < 4; ++i) {
         layout.filters[i] = nodeBounds(*root, ("filter" + std::to_string(i)).c_str());
     }
@@ -251,23 +247,15 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
 
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const ActionHeaderLayout actions = computeActionHeaderLayout(panel.actionHeader);
+    const ActionSectionsLayout actions = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.title.x), static_cast<int>(actions.title.y), 14, {230, 237, 243, 255});
     engineeringCapacityPanel_.draw(actions.capacity, *context.state);
-    if (context.state->gameplayPhase == GameplayPhase::Planning) {
-        const std::string worldActionLabel = context.state->eventPopupMode != EventPopupMode::None
-            ? "Review Events before selecting World Actions."
-            : context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())
-            ? "World Action: " + context.state->worldActionDraft[static_cast<std::size_t>(context.state->selectedWorldActionIndex)].name
-            : "Pick a World Action before selecting Node Actions.";
-        drawTextClipped(worldActionLabel, actions.worldStatus, 12, context.state->selectedWorldActionIndex >= 0 && context.state->eventPopupMode == EventPopupMode::None ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
-    }
     for (int i = 0; i < 4; ++i) {
         drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == 0);
     }
-    BeginScissorMode(static_cast<int>(panel.actionList.x - 2.0f), static_cast<int>(panel.actionList.y), static_cast<int>(panel.actionList.width + 4.0f), static_cast<int>(panel.actionList.height));
+    BeginScissorMode(static_cast<int>(actions.actionList.x - 2.0f), static_cast<int>(actions.actionList.y), static_cast<int>(actions.actionList.width + 4.0f), static_cast<int>(actions.actionList.height));
     if (cards.empty()) {
-        drawTextClipped("Select an API, database, cache, or queue node to see contextual actions.", {panel.actionList.x, panel.actionList.y + 4.0f, panel.actionList.width, 18.0f}, 13, {139, 148, 158, 255});
+        drawTextClipped("Select an API, database, cache, or queue node to see contextual actions.", {actions.actionList.x, actions.actionList.y + 4.0f, actions.actionList.width, 18.0f}, 13, {139, 148, 158, 255});
     }
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         const auto& card = cards[static_cast<std::size_t>(i)];

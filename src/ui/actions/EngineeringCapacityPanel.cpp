@@ -95,6 +95,31 @@ void drawCapacityRow(Rectangle row, const char* iconId, const char* label, int u
 }
 }
 
+
+float EngineeringCapacityPanel::measureHeight(const UiState& state) const
+{
+    constexpr float titleToFirstRow = 24.0f;
+    constexpr float totalRowAdvance = 22.0f;
+    constexpr float domainRowAdvance = 20.0f;
+    constexpr float rowHeight = 14.0f;
+    constexpr float bottomPadding = 4.0f;
+
+    int visibleDomains = 0;
+    for (int i = 0; i < static_cast<int>(EngineeringDomain::Count); ++i) {
+        const auto domain = static_cast<EngineeringDomain>(i);
+        if (capacityForDomain(state.engineeringCapacity, domain) > 0) {
+            ++visibleDomains;
+        }
+    }
+
+    if (visibleDomains <= 0 && state.engineeringCapacity.total <= 0) {
+        return 18.0f;
+    }
+
+    return titleToFirstRow + totalRowAdvance +
+        std::max(0, visibleDomains - 1) * domainRowAdvance + rowHeight + bottomPadding;
+}
+
 void EngineeringCapacityPanel::draw(Rectangle bounds, const UiState& state) const
 {
     const auto usage = domainUsage(state);

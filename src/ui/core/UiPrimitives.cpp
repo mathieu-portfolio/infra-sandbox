@@ -1,5 +1,7 @@
 #include "ui/core/UiPrimitives.hpp"
 
+#include <algorithm>
+
 std::string ellipsizeText(const std::string& text, int fontSize, float maxWidth)
 {
     if (MeasureText(text.c_str(), fontSize) <= maxWidth) {
@@ -17,6 +19,34 @@ std::string ellipsizeText(const std::string& text, int fontSize, float maxWidth)
     return "...";
 }
 
+float measureTextWrappedHeight(const std::string& text, float width, int fontSize, int maxLines, float lineSpacing)
+{
+    if (text.empty()) {
+        return static_cast<float>(fontSize);
+    }
+
+    const float avgCharWidth = static_cast<float>(fontSize) * 0.56f;
+    const int charsPerLine = std::max(1, static_cast<int>(width / std::max(1.0f, avgCharWidth)));
+    int lines = 1;
+    int current = 0;
+
+    for (char c : text) {
+        if (c == '\n') {
+            ++lines;
+            current = 0;
+            continue;
+        }
+        ++current;
+        if (current >= charsPerLine) {
+            ++lines;
+            current = 0;
+        }
+    }
+
+    const int visibleLines = std::clamp(lines, 1, std::max(1, maxLines));
+    return static_cast<float>(visibleLines * fontSize) + std::max(0, visibleLines - 1) * lineSpacing;
+}
+
 void drawTextClipped(const std::string& text, Rectangle bounds, int fontSize, Color color)
 {
     BeginScissorMode(
@@ -26,6 +56,66 @@ void drawTextClipped(const std::string& text, Rectangle bounds, int fontSize, Co
         static_cast<int>(bounds.height));
     const std::string visible = ellipsizeText(text, fontSize, bounds.width);
     DrawText(visible.c_str(), static_cast<int>(bounds.x), static_cast<int>(bounds.y), fontSize, color);
+    EndScissorMode();
+}
+
+
+void drawTextWrappedClipped(const std::string& text, Rectangle bounds, int fontSize, Color color, float lineSpacing)
+{
+    BeginScissorMode(
+        static_cast<int>(bounds.x),
+        static_cast<int>(bounds.y),
+        static_cast<int>(bounds.width),
+        static_cast<int>(bounds.height));
+
+    const float lineHeight = static_cast<float>(fontSize) + lineSpacing;
+    float x = bounds.x;
+    float y = bounds.y;
+    std::string line;
+    std::string word;
+
+    auto flushLine = [&]() {
+        if (line.empty() || y + static_cast<float>(fontSize) > bounds.y + bounds.height) {
+            return;
+        }
+        DrawText(line.c_str(), static_cast<int>(x), static_cast<int>(y), fontSize, color);
+        y += lineHeight;
+        line.clear();
+    };
+
+    auto pushWord = [&](const std::string& nextWord) {
+        const std::string candidate = line.empty() ? nextWord : line + " " + nextWord;
+        if (MeasureText(candidate.c_str(), fontSize) <= bounds.width) {
+            line = candidate;
+            return;
+        }
+        flushLine();
+        line = nextWord;
+    };
+
+    for (const char ch : text) {
+        if (ch == '\n') {
+            if (!word.empty()) {
+                pushWord(word);
+                word.clear();
+            }
+            flushLine();
+            continue;
+        }
+        if (ch == ' ' || ch == '\t') {
+            if (!word.empty()) {
+                pushWord(word);
+                word.clear();
+            }
+            continue;
+        }
+        word.push_back(ch);
+    }
+    if (!word.empty()) {
+        pushWord(word);
+    }
+    flushLine();
+
     EndScissorMode();
 }
 

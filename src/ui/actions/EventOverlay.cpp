@@ -42,30 +42,6 @@ Rectangle nodeBounds(const ui::UiNode& root, const std::string& id)
     return {};
 }
 
-float wrappedTextHeight(const std::string& text, float width, int fontSize, int maxLines)
-{
-    if (text.empty()) {
-        return static_cast<float>(fontSize);
-    }
-    const float avgCharWidth = static_cast<float>(fontSize) * 0.56f;
-    const int charsPerLine = std::max(1, static_cast<int>(width / std::max(1.0f, avgCharWidth)));
-    int lines = 1;
-    int current = 0;
-    for (char c : text) {
-        if (c == '\n') {
-            ++lines;
-            current = 0;
-            continue;
-        }
-        ++current;
-        if (current >= charsPerLine) {
-            ++lines;
-            current = 0;
-        }
-    }
-    return static_cast<float>(std::clamp(lines, 1, std::max(1, maxLines)) * fontSize);
-}
-
 float eventRowHeight(const EventLogEntry& event, float rowWidth, bool planning)
 {
     const std::string detail = event.description.empty()
@@ -73,7 +49,8 @@ float eventRowHeight(const EventLogEntry& event, float rowWidth, bool planning)
         : event.description;
     const float detailWidth = std::max(1.0f, rowWidth - 50.0f);
     const int maxLines = planning ? 4 : 3;
-    return std::clamp(48.0f + wrappedTextHeight(detail, detailWidth, 12, maxLines), 66.0f, planning ? 112.0f : 92.0f);
+    const float lineSpacing = planning ? 4.0f : 3.0f;
+    return std::clamp(48.0f + measureTextWrappedHeight(detail, detailWidth, 12, maxLines, lineSpacing), 66.0f, planning ? 112.0f : 92.0f);
 }
 
 void drawEventRow(Rectangle row, const EventLogEntry& event, bool planning)
@@ -198,6 +175,11 @@ Rectangle EventOverlay::acknowledgeButtonBounds(Rectangle overlay)
     return {overlay.x + overlay.width - width - 22.0f, overlay.y + overlay.height - height - 18.0f, width, height};
 }
 
+Rectangle EventOverlay::acknowledgeButtonBounds(int screenWidth, int screenHeight, EventPopupMode mode, const std::vector<EventLogEntry>& events)
+{
+    return buildEventOverlayLayout(screenWidth, screenHeight, mode, events).button;
+}
+
 void EventOverlay::draw(const UiContext& context, const ScenarioManager& scenarioManager) const
 {
     (void)scenarioManager;
@@ -241,5 +223,12 @@ void EventOverlay::draw(const UiContext& context, const ScenarioManager& scenari
 
     DrawRectangleRounded(layout.button, 0.18f, 8, {50, 58, 70, 235});
     DrawRectangleRoundedLines(layout.button, 0.18f, 8, {139, 148, 158, 150});
-    drawTextClipped(planning ? "Continue to World Actions" : "Continue to Analysis", {layout.button.x + 14.0f, layout.button.y + 8.0f, layout.button.width - 28.0f, 16.0f}, 12, {230, 237, 243, 255});
+    const char* buttonText = planning ? "Continue to World Actions" : "Continue to Analysis";
+    const int buttonTextWidth = MeasureText(buttonText, 12);
+    DrawText(
+        buttonText,
+        static_cast<int>(layout.button.x + (layout.button.width - static_cast<float>(buttonTextWidth)) * 0.5f),
+        static_cast<int>(layout.button.y + (layout.button.height - 12.0f) * 0.5f),
+        12,
+        {230, 237, 243, 255});
 }
