@@ -49,6 +49,11 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
         return false;
     }
 
+    if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->eventPanelVisible) {
+        context.state->latestFeedback = "Review Events before validating the plan.";
+        return true;
+    }
+
     if (context.state->gameplayPhase == GameplayPhase::Planning && !context.state->worldActionDraft.empty() && context.state->selectedWorldActionIndex < 0) {
         context.state->worldActionDraftVisible = true;
         context.state->latestFeedback = "Pick a World Action before validating the plan.";

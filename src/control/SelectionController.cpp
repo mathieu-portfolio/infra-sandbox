@@ -28,6 +28,9 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
         if (mouseOverScreenPanel(event.mousePosition, GetScreenWidth(), GetScreenHeight())) {
             continue;
         }
+        if (state.gameplayPhase == GameplayPhase::Planning && state.eventPanelVisible) {
+            continue;
+        }
         if (state.gameplayPhase == GameplayPhase::Planning && !state.worldActionDraft.empty()) {
             if (state.worldActionDraftVisible || CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(GetScreenWidth()))) {
                 continue;

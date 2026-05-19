@@ -153,6 +153,9 @@ void ActionPanel::update(UiContext& context, const Simulation& simulation)
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
     context.state->hoveredWorldActionIndex = -1;
+    if (context.state->eventPanelVisible) {
+        return;
+    }
     if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->worldActionDraftVisible) {
         const Rectangle overlay = WorldActionOverlay::overlayBounds(context.screenWidth, context.screenHeight);
         const int count = static_cast<int>(context.state->worldActionDraft.size());
@@ -252,10 +255,12 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.title.x), static_cast<int>(actions.title.y), 14, {230, 237, 243, 255});
     engineeringCapacityPanel_.draw(actions.capacity, *context.state);
     if (context.state->gameplayPhase == GameplayPhase::Planning) {
-        const std::string worldActionLabel = context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())
+        const std::string worldActionLabel = context.state->eventPanelVisible
+            ? "Review Events before selecting World Actions."
+            : context.state->selectedWorldActionIndex >= 0 && context.state->selectedWorldActionIndex < static_cast<int>(context.state->worldActionDraft.size())
             ? "World Action: " + context.state->worldActionDraft[static_cast<std::size_t>(context.state->selectedWorldActionIndex)].name
             : "Pick a World Action before selecting Node Actions.";
-        drawTextClipped(worldActionLabel, actions.worldStatus, 12, context.state->selectedWorldActionIndex >= 0 ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
+        drawTextClipped(worldActionLabel, actions.worldStatus, 12, context.state->selectedWorldActionIndex >= 0 && !context.state->eventPanelVisible ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
     }
     for (int i = 0; i < 4; ++i) {
         drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == 0);
@@ -316,7 +321,8 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     }
 }
 
-void ActionPanel::drawWorldActionOverlay(const UiContext& context) const
+void ActionPanel::drawPlanningOverlays(const UiContext& context, const ScenarioManager& scenarioManager) const
 {
+    eventOverlay_.draw(context, scenarioManager);
     worldActionOverlay_.draw(context);
 }

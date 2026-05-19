@@ -274,6 +274,10 @@ void Application::applyUiRequests()
             state.worldActionDraftVisible = false;
             state.latestFeedback = "Planning phase. Queue actions, then validate the plan.";
         } else if (state.gameplayPhase == GameplayPhase::Planning) {
+            if (state.eventPanelVisible) {
+                state.latestFeedback = "Review Events before validating the plan.";
+                return;
+            }
             if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
                 state.worldActionDraftVisible = true;
                 state.latestFeedback = "Pick a World Action before validating the plan.";

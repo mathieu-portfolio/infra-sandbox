@@ -142,6 +142,8 @@ struct UiState {
     double transitionPlaybackScale = 24.0;
     std::string transitionDurationLabel = "platform evolution";
     std::deque<PlannedIntervention> plannedInterventions;
+    bool eventPanelVisible = false;
+    bool eventPanelAcknowledged = false;
     std::vector<WorldActionDraft> worldActionDraft;
     bool worldActionDraftVisible = false;
     int selectedWorldActionIndex = -1;

@@ -102,7 +102,7 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     selectionPanel_.draw(context, simulation);
     debugPanel_.draw(context, simulation);
     hudPanel_.draw(context, simulation, scenarioManager);
-    actionPanel_.drawWorldActionOverlay(context);
+    actionPanel_.drawPlanningOverlays(context, scenarioManager);
 }
 
 const UiState& UiManager::state() const
