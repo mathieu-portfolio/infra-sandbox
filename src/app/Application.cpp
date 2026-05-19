@@ -1,6 +1,7 @@
 #include "app/Application.hpp"
 
 #include "content/ContentRegistry.hpp"
+#include "content/ValueSpec.hpp"
 
 #include "raylib.h"
 
@@ -75,22 +76,10 @@ EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapac
     return base;
 }
 
-double deterministicIntensity(const std::string& id, std::uint32_t seed, double minValue, double maxValue)
-{
-    const std::size_t hash = std::hash<std::string>{}(id) ^ (static_cast<std::size_t>(seed) * 0x9e3779b9U);
-    const double t = static_cast<double>(hash % 1000U) / 999.0;
-    return minValue + (maxValue - minValue) * t;
-}
-
-double deterministicRange(const std::string& id, std::uint32_t seed, const NumericRange& range)
-{
-    return deterministicIntensity(id, seed, range.min, range.max);
-}
-
 EngineeringCapacity sampledCapacityBonus(const content::WorldActionDefinition& definition, std::uint32_t seed)
 {
     auto sample = [&](const char* field, const NumericRange& range) {
-        return static_cast<int>(std::round(deterministicRange(definition.id + field, seed, range)));
+        return content::sampleRangeInt(range, seed, definition.id + field);
     };
     return {
         .frontend = sample(".capacity.frontend", definition.frontendCapacityBonusRange),
@@ -148,7 +137,7 @@ void Application::handleInput()
 
     interventionController_.handleActions(events, simulation_, scenarioManager_, renderer_.uiManager().state());
     const UiState& uiState = renderer_.uiManager().state();
-    if (!(uiState.gameplayPhase == GameplayPhase::Planning && uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty())) {
+    if (!(uiState.gameplayPhase == GameplayPhase::Planning && ((uiState.eventPanelVisible) || (uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty())))) {
         cameraController_.handleActions(events, GetFrameTime());
     }
     overlayController_.handleActions(events, renderer_.uiManager().state());
@@ -173,6 +162,8 @@ void Application::resetScenario()
     UiState& state = renderer_.uiManager().state();
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    state.eventPanelVisible = false;
+    state.eventPanelAcknowledged = false;
     clearWorldActionPlan();
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
@@ -201,6 +192,8 @@ void Application::loadScenario(std::size_t scenarioIndex)
     state.objectivesDroplistOpen = false;
     state.gameplayPhase = GameplayPhase::Observation;
     state.plannedInterventions.clear();
+    state.eventPanelVisible = false;
+    state.eventPanelAcknowledged = false;
     clearWorldActionPlan();
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
@@ -276,6 +269,9 @@ void Application::applyUiRequests()
             state.gameplayPhase = GameplayPhase::Planning;
             state.lastCapacityUsageSummary.clear();
             generateWorldActionDraft();
+            state.eventPanelVisible = true;
+            state.eventPanelAcknowledged = false;
+            state.worldActionDraftVisible = false;
             state.latestFeedback = "Planning phase. Queue actions, then validate the plan.";
         } else if (state.gameplayPhase == GameplayPhase::Planning) {
             if (!state.worldActionDraft.empty() && state.selectedWorldActionIndex < 0) {
@@ -418,7 +414,7 @@ void Application::generateWorldActionDraft()
     for (std::size_t i = 0; i < maxDraft; ++i) {
         const auto& definition = candidates[i];
         const std::uint32_t seed = scenarioManager_.run().seed + static_cast<std::uint32_t>(scenarioManager_.elapsedSeconds());
-        const double intensity = deterministicIntensity(definition.id, seed, definition.minIntensity, definition.maxIntensity);
+        const double intensity = content::sampleNumber(seed, definition.id, definition.minIntensity, definition.maxIntensity);
         state.worldActionDraft.push_back({
             .id = definition.id,
             .name = definition.displayName,
@@ -429,21 +425,23 @@ void Application::generateWorldActionDraft()
             .iconId = definition.iconId,
             .capacityBonus = scaledCapacityBonus(sampledCapacityBonus(definition, seed), intensity),
             .intensity = intensity,
-            .pressureResistance = deterministicRange(definition.id + ".pressure_resistance", seed, definition.pressureResistanceRange) * intensity,
-            .eventIntensityMultiplier = deterministicRange(definition.id + ".event_intensity_multiplier", seed, definition.eventIntensityMultiplierRange),
-            .complexityDelta = deterministicRange(definition.id + ".complexity_delta", seed, definition.complexityDeltaRange) * intensity,
-            .durationSeconds = deterministicRange(definition.id + ".duration_seconds", seed, definition.durationSecondsRange),
+            .pressureResistance = content::sampleRange(definition.pressureResistanceRange, seed, definition.id + ".pressure_resistance") * intensity,
+            .eventIntensityMultiplier = content::sampleRange(definition.eventIntensityMultiplierRange, seed, definition.id + ".event_intensity_multiplier"),
+            .complexityDelta = content::sampleRange(definition.complexityDeltaRange, seed, definition.id + ".complexity_delta") * intensity,
+            .durationSeconds = content::sampleRange(definition.durationSecondsRange, seed, definition.id + ".duration_seconds"),
         });
     }
     state.selectedWorldActionIndex = -1;
     state.hoveredWorldActionIndex = -1;
     state.worldActionCapacityBonus = {};
-    state.worldActionDraftVisible = !state.worldActionDraft.empty();
+    state.worldActionDraftVisible = !state.eventPanelVisible && !state.worldActionDraft.empty();
 }
 
 void Application::clearWorldActionPlan()
 {
     UiState& state = renderer_.uiManager().state();
+    state.eventPanelVisible = false;
+    state.eventPanelAcknowledged = false;
     state.worldActionDraft.clear();
     state.worldActionDraftVisible = false;
     state.selectedWorldActionIndex = -1;

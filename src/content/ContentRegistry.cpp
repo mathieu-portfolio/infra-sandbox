@@ -1,6 +1,7 @@
 #include "content/ContentRegistry.hpp"
 
 #include "content/Json.hpp"
+#include "content/ValueSpec.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -52,33 +53,6 @@ double numberAt(const Json& object, const std::string& key, double fallback = 0.
         return value->asNumber();
     }
     return fallback;
-}
-
-NumericRange fixedRange(double value)
-{
-    return {value, value};
-}
-
-NumericRange rangeFromJson(const Json& value, double fallback)
-{
-    if (value.isNumber()) {
-        return fixedRange(value.asNumber());
-    }
-    if (value.isObject()) {
-        NumericRange range{fallback, fallback};
-        range.min = numberAt(value, "min", range.min);
-        range.max = numberAt(value, "max", range.max);
-        return range;
-    }
-    return fixedRange(fallback);
-}
-
-NumericRange rangeAt(const Json& object, const std::string& key, double fallback)
-{
-    if (const Json* value = object.find(key); value != nullptr) {
-        return rangeFromJson(*value, fallback);
-    }
-    return fixedRange(fallback);
 }
 
 bool boolAt(const Json& object, const std::string& key, bool fallback = false)
@@ -363,9 +337,7 @@ std::vector<T> mappedStrings(const Json& object, const std::string& key, F mappe
 
 void validateRange(const NumericRange& range, const std::string& label, ContentLoadResult& result)
 {
-    if (range.min > range.max) {
-        result.errors.push_back(label + " has invalid range min > max.");
-    }
+    content::validateRange(range, label, result.errors);
 }
 
 void validateBurstRanges(const BurstScenario& burst, const std::string& label, ContentLoadResult& result)

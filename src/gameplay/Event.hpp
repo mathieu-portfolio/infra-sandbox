@@ -1,5 +1,6 @@
 #pragma once
 
+#include "content/ValueSpec.hpp"
 #include "simulation/Mechanics.hpp"
 #include "simulation/NodeDefinition.hpp"
 #include "simulation/PressureAnalysis.hpp"
@@ -12,10 +13,6 @@
 
 class Simulation;
 
-struct NumericRange {
-    double min = 0.0;
-    double max = 0.0;
-};
 
 enum class EventCategory {
     TrafficEvent,

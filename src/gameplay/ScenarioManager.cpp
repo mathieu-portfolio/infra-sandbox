@@ -1,6 +1,7 @@
 #include "gameplay/ScenarioManager.hpp"
 
 #include "content/ContentRegistry.hpp"
+#include "content/ValueSpec.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -49,16 +50,6 @@ MechanicType mechanicFromObjectiveId(const std::string& id)
     return MechanicType::ScaleUp;
 }
 
-double sampleRange(const NumericRange& range, std::uint32_t seed, const std::string& key)
-{
-    if (range.min == range.max) {
-        return range.min;
-    }
-    const std::size_t hash = std::hash<std::string>{}(key) ^ (static_cast<std::size_t>(seed) * 0x9e3779b97f4a7c15ULL);
-    const double t = static_cast<double>(hash % 100000U) / 99999.0;
-    return range.min + (range.max - range.min) * t;
-}
-
 double scaledMultiplier(double multiplier, double intensity)
 {
     return 1.0 + (multiplier - 1.0) * intensity;
@@ -66,26 +57,26 @@ double scaledMultiplier(double multiplier, double intensity)
 
 BurstScenario instantiateBurst(BurstScenario burst, std::uint32_t seed, const std::string& key)
 {
-    burst.multiplier = sampleRange(burst.multiplierRange, seed, key + ".multiplier");
-    burst.periodSeconds = sampleRange(burst.periodSecondsRange, seed, key + ".period_seconds");
-    burst.durationSeconds = sampleRange(burst.durationSecondsRange, seed, key + ".duration_seconds");
+    burst.multiplier = content::sampleRange(burst.multiplierRange, seed, key + ".multiplier");
+    burst.periodSeconds = content::sampleRange(burst.periodSecondsRange, seed, key + ".period_seconds");
+    burst.durationSeconds = content::sampleRange(burst.durationSecondsRange, seed, key + ".duration_seconds");
     return burst;
 }
 
 EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, const std::string& key)
 {
-    event.trigger.timeSeconds = sampleRange(event.trigger.timeSecondsRange, seed, key + ".trigger.time_seconds");
-    event.trigger.delaySeconds = sampleRange(event.trigger.delaySecondsRange, seed, key + ".trigger.delay_seconds");
-    event.effect.trafficMultiplier = sampleRange(event.effect.trafficMultiplierRange, seed, key + ".effect.traffic_multiplier");
-    event.effect.burstMultiplier = sampleRange(event.effect.burstMultiplierRange, seed, key + ".effect.burst_multiplier");
-    event.effect.databaseCapacityMultiplier = sampleRange(event.effect.databaseCapacityMultiplierRange, seed, key + ".effect.database_capacity_multiplier");
-    event.effect.latencyMultiplier = sampleRange(event.effect.latencyMultiplierRange, seed, key + ".effect.latency_multiplier");
-    event.effect.retryDelayMultiplier = sampleRange(event.effect.retryDelayMultiplierRange, seed, key + ".effect.retry_delay_multiplier");
+    event.trigger.timeSeconds = content::sampleRange(event.trigger.timeSecondsRange, seed, key + ".trigger.time_seconds");
+    event.trigger.delaySeconds = content::sampleRange(event.trigger.delaySecondsRange, seed, key + ".trigger.delay_seconds");
+    event.effect.trafficMultiplier = content::sampleRange(event.effect.trafficMultiplierRange, seed, key + ".effect.traffic_multiplier");
+    event.effect.burstMultiplier = content::sampleRange(event.effect.burstMultiplierRange, seed, key + ".effect.burst_multiplier");
+    event.effect.databaseCapacityMultiplier = content::sampleRange(event.effect.databaseCapacityMultiplierRange, seed, key + ".effect.database_capacity_multiplier");
+    event.effect.latencyMultiplier = content::sampleRange(event.effect.latencyMultiplierRange, seed, key + ".effect.latency_multiplier");
+    event.effect.retryDelayMultiplier = content::sampleRange(event.effect.retryDelayMultiplierRange, seed, key + ".effect.retry_delay_multiplier");
     if (event.effect.databaseHeavyShareRange) {
-        event.effect.databaseHeavyShare = sampleRange(*event.effect.databaseHeavyShareRange, seed, key + ".effect.database_heavy_share");
+        event.effect.databaseHeavyShare = content::sampleRange(*event.effect.databaseHeavyShareRange, seed, key + ".effect.database_heavy_share");
     }
-    event.durationSeconds = sampleRange(event.durationSecondsRange, seed, key + ".duration_seconds");
-    event.intensity = sampleRange(event.intensityRange, seed, key + ".intensity");
+    event.durationSeconds = content::sampleRange(event.durationSecondsRange, seed, key + ".duration_seconds");
+    event.intensity = content::sampleRange(event.intensityRange, seed, key + ".intensity");
     event.effect.trafficMultiplier = scaledMultiplier(event.effect.trafficMultiplier, event.intensity);
     event.effect.burstMultiplier = scaledMultiplier(event.effect.burstMultiplier, event.intensity);
     event.effect.databaseCapacityMultiplier = scaledMultiplier(event.effect.databaseCapacityMultiplier, event.intensity);
@@ -96,10 +87,10 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
 
 ScenarioModifierDefinition instantiateModifier(ScenarioModifierDefinition modifier, std::uint32_t seed, const std::string& key)
 {
-    modifier.selectionWeight = sampleRange(modifier.selectionWeightRange, seed, key + ".selection_weight");
-    modifier.trafficMultiplier = sampleRange(modifier.trafficMultiplierRange, seed, key + ".traffic_multiplier");
+    modifier.selectionWeight = content::sampleRange(modifier.selectionWeightRange, seed, key + ".selection_weight");
+    modifier.trafficMultiplier = content::sampleRange(modifier.trafficMultiplierRange, seed, key + ".traffic_multiplier");
     if (modifier.databaseHeavyShareRange) {
-        modifier.databaseHeavyShare = sampleRange(*modifier.databaseHeavyShareRange, seed, key + ".database_heavy_share");
+        modifier.databaseHeavyShare = content::sampleRange(*modifier.databaseHeavyShareRange, seed, key + ".database_heavy_share");
     }
     if (modifier.burstOverride) {
         modifier.burstOverride = instantiateBurst(*modifier.burstOverride, seed, key + ".burst_override");
@@ -399,15 +390,15 @@ std::string ScenarioManager::activeModifiersSummary() const
 ScenarioDefinition ScenarioManager::createActiveDefinition(std::uint32_t seed) const
 {
     ScenarioDefinition definition = scenario_;
-    definition.trafficProfile.baseMultiplier = sampleRange(definition.trafficProfile.baseMultiplierRange, seed, definition.id + ".traffic.base_multiplier");
-    definition.trafficProfile.growthPerSecond = sampleRange(definition.trafficProfile.growthPerSecondRange, seed, definition.id + ".traffic.growth_per_second");
+    definition.trafficProfile.baseMultiplier = content::sampleRange(definition.trafficProfile.baseMultiplierRange, seed, definition.id + ".traffic.base_multiplier");
+    definition.trafficProfile.growthPerSecond = content::sampleRange(definition.trafficProfile.growthPerSecondRange, seed, definition.id + ".traffic.growth_per_second");
     definition.bursts = instantiateBurst(definition.bursts, seed, definition.id + ".bursts");
     for (std::size_t i = 0; i < definition.phases.size(); ++i) {
         auto& phase = definition.phases[i];
         const std::string key = definition.id + ".phases." + std::to_string(i);
-        phase.startTimeSeconds = sampleRange(phase.startTimeSecondsRange, seed, key + ".start_time_seconds");
-        phase.durationSeconds = sampleRange(phase.durationSecondsRange, seed, key + ".duration_seconds");
-        phase.trafficMultiplier = sampleRange(phase.trafficMultiplierRange, seed, key + ".traffic_multiplier");
+        phase.startTimeSeconds = content::sampleRange(phase.startTimeSecondsRange, seed, key + ".start_time_seconds");
+        phase.durationSeconds = content::sampleRange(phase.durationSecondsRange, seed, key + ".duration_seconds");
+        phase.trafficMultiplier = content::sampleRange(phase.trafficMultiplierRange, seed, key + ".traffic_multiplier");
         if (phase.burstOverride) {
             phase.burstOverride = instantiateBurst(*phase.burstOverride, seed, key + ".burst_override");
         }
