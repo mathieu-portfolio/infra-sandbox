@@ -95,9 +95,30 @@ void Application::loadScenario(std::size_t scenarioIndex)
     gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
 }
 
+void Application::loadScenario(const std::string& scenarioId)
+{
+    if (!session_.loadScenario(scenarioId)) {
+        return;
+    }
+
+    UiState& state = renderer_.uiManager().state();
+    resetUiStateForScenario(state, "Scenario loaded. Running an initial simulation pass.");
+    gameplayPhaseController_.reset();
+    session_.simulation().setPaused(true);
+    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+}
+
 void Application::applyPendingScenarioSelection()
 {
     UiState& state = renderer_.uiManager().state();
+    if (!state.requestedScenarioId.empty()) {
+        const std::string scenarioId = state.requestedScenarioId;
+        state.requestedScenarioId.clear();
+        state.requestedScenarioIndex = -1;
+        loadScenario(scenarioId);
+        return;
+    }
+
     if (state.requestedScenarioIndex < 0) {
         return;
     }

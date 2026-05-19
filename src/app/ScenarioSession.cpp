@@ -3,6 +3,7 @@
 #include "content/ContentRegistry.hpp"
 
 #include <vector>
+#include <algorithm>
 
 ScenarioSession::ScenarioSession()
     : scenarioDefinition_(Scenario::createDefault()),
@@ -30,6 +31,22 @@ bool ScenarioSession::loadScenario(std::size_t scenarioIndex)
     }
 
     scenarioDefinition_ = scenarios[scenarioIndex];
+    scenarioManager_.load(scenarioDefinition_);
+    simulation_ = makeSimulation(scenarioManager_.definition());
+    return true;
+}
+
+bool ScenarioSession::loadScenario(const std::string& scenarioId)
+{
+    const std::vector<ScenarioDefinition> scenarios = ScenarioRegistry::createAll();
+    const auto it = std::find_if(scenarios.begin(), scenarios.end(), [&](const ScenarioDefinition& scenario) {
+        return scenario.id == scenarioId;
+    });
+    if (it == scenarios.end()) {
+        return false;
+    }
+
+    scenarioDefinition_ = *it;
     scenarioManager_.load(scenarioDefinition_);
     simulation_ = makeSimulation(scenarioManager_.definition());
     return true;

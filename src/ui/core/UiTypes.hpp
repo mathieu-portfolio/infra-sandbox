@@ -185,6 +185,7 @@ struct UiState {
     bool scenarioDroplistOpen = false;
     bool objectivesDroplistOpen = false;
     int requestedScenarioIndex = -1;
+    std::string requestedScenarioId;
     bool timelineCategoryDroplistOpen = false;
     bool timelineFilterDroplistOpen = false;
     TimelineCategory timelineCategory = TimelineCategory::All;

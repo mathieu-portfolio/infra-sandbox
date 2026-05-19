@@ -47,6 +47,17 @@ std::string stringAt(const Json& object, const std::string& key, const std::stri
     return fallback;
 }
 
+ContentPackMetadata parsePackMetadata(const Json& object)
+{
+    return {
+        .id = stringAt(object, "id"),
+        .displayName = stringAt(object, "display_name"),
+        .description = stringAt(object, "description"),
+        .version = stringAt(object, "version"),
+        .author = stringAt(object, "author"),
+    };
+}
+
 double numberAt(const Json& object, const std::string& key, double fallback = 0.0)
 {
     if (const Json* value = object.find(key); value != nullptr && value->isNumber()) {
@@ -940,6 +951,12 @@ void requireIdSet(const std::string& domain, const std::vector<std::string>& ids
         }
     }
 }
+
+bool isNodeActionObject(const Json& object)
+{
+    const std::string kind = stringAt(object, "kind");
+    return kind == "mechanic" || kind == "topology_mutation" || !stringAt(object, "mechanic").empty() || !stringAt(object, "mutation").empty();
+}
 }
 
 ContentRegistry& ContentRegistry::instance()
@@ -966,18 +983,35 @@ ContentLoadResult ContentRegistry::loadFromDisk(const std::filesystem::path& roo
     }
     loadedFromContent_ = true;
     loadErrors_.clear();
+    currentPackPath_ = root;
     result.loaded = true;
     return result;
 }
 
-ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& root)
+void ContentRegistry::clearLoadedContent()
 {
-    ContentLoadResult result;
+    packMetadata_ = {};
+    currentPackPath_.clear();
     progressionTiers_.clear();
     scenarios_.clear();
     interventions_.clear();
     worldActions_.clear();
     simulationConfig_ = SimulationConfig{};
+    loadedFromContent_ = false;
+}
+
+ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& root)
+{
+    ContentLoadResult result;
+    clearLoadedContent();
+
+    const Json metadata = loadJsonFile(root / "pack.json", result);
+    if (metadata.isObject()) {
+        packMetadata_ = parsePackMetadata(metadata);
+        if (packMetadata_.id.empty()) result.errors.push_back("Content pack is missing required id.");
+        if (packMetadata_.displayName.empty()) result.errors.push_back("Content pack " + packMetadata_.id + " is missing display_name.");
+        if (packMetadata_.version.empty()) result.errors.push_back("Content pack " + packMetadata_.id + " is missing version.");
+    }
 
     for (const auto& object : loadOptionalDirectoryObjects(root / "balancing", result)) {
         applyPressureAnalysisConfig(simulationConfig_, object);
@@ -1077,7 +1111,10 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         progressionTiers_.push_back(std::move(tier));
     }
 
-    for (const auto& object : loadDirectoryObjects(root / "interventions", result)) {
+    for (const auto& object : loadDirectoryObjects(root / "actions", result)) {
+        if (!isNodeActionObject(object)) {
+            continue;
+        }
         const std::string mechanic = stringAt(object, "mechanic");
         if (!knownMechanicId(mechanic)) {
             result.errors.push_back("Intervention " + stringAt(object, "id") + " has invalid mechanic id: " + mechanic);
@@ -1127,7 +1164,10 @@ ContentLoadResult ContentRegistry::loadInternal(const std::filesystem::path& roo
         interventions_.push_back(parseIntervention(object));
     }
 
-    for (const auto& object : loadOptionalDirectoryObjects(root / "world_actions", result)) {
+    for (const auto& object : loadOptionalDirectoryObjects(root / "actions", result)) {
+        if (isNodeActionObject(object)) {
+            continue;
+        }
         WorldActionDefinition action = parseWorldAction(object);
         if (action.capacityBonus.frontend < 0 || action.capacityBonus.backend < 0 || action.capacityBonus.infrastructure < 0
             || action.capacityBonus.data < 0 || action.capacityBonus.operations < 0 || action.capacityBonus.total < 0) {
@@ -1317,8 +1357,8 @@ void ContentRegistry::validate(ContentLoadResult& result) const
 
 void ContentRegistry::loadFallbackContent()
 {
+    clearLoadedContent();
     loadedFromContent_ = false;
-    simulationConfig_ = SimulationConfig{};
     progressionTiers_ = {{
         .id = "fallback",
         .displayName = "Fallback",
@@ -1378,6 +1418,8 @@ void ContentRegistry::loadFallbackContent()
     };
 }
 
+const ContentPackMetadata& ContentRegistry::packMetadata() const { return packMetadata_; }
+const std::filesystem::path& ContentRegistry::currentPackPath() const { return currentPackPath_; }
 const std::vector<ProgressionTierDefinition>& ContentRegistry::progressionTiers() const { return progressionTiers_; }
 
 const ProgressionTierDefinition& ContentRegistry::progressionTier(ProgressionTier tier) const
@@ -1402,24 +1444,29 @@ const SimulationConfig& ContentRegistry::simulationConfig() const { return simul
 const std::vector<std::string>& ContentRegistry::loadErrors() const { return loadErrors_; }
 bool ContentRegistry::loadedFromContent() const { return loadedFromContent_; }
 
+ContentLoadResult ContentManager::loadPack(const std::filesystem::path& path)
+{
+    return ContentRegistry::instance().loadFromDisk(path);
+}
+
 ContentLoadResult ContentManager::loadDefaultContent()
 {
     std::vector<std::filesystem::path> candidates;
 #ifdef INFRA_CONTENT_DIR
-    candidates.emplace_back(INFRA_CONTENT_DIR);
+    candidates.emplace_back(std::filesystem::path(INFRA_CONTENT_DIR) / "packs" / "vanilla");
 #endif
-    candidates.emplace_back("content");
-    candidates.emplace_back("../content");
-    candidates.emplace_back("../../content");
-    candidates.emplace_back("../../../content");
+    candidates.emplace_back(std::filesystem::path("content") / "packs" / "vanilla");
+    candidates.emplace_back(std::filesystem::path("../content") / "packs" / "vanilla");
+    candidates.emplace_back(std::filesystem::path("../../content") / "packs" / "vanilla");
+    candidates.emplace_back(std::filesystem::path("../../../content") / "packs" / "vanilla");
 
     for (const auto& candidate : candidates) {
-        if (std::filesystem::exists(candidate)) {
-            return ContentRegistry::instance().loadFromDisk(candidate);
+        if (std::filesystem::exists(candidate / "pack.json")) {
+            return loadPack(candidate);
         }
     }
     ContentLoadResult result;
-    result.errors.push_back("No content directory found.");
+    result.errors.push_back("No default content pack found.");
     ContentRegistry::instance().loadFallbackContent();
     return result;
 }

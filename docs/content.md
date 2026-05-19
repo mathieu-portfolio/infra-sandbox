@@ -1,17 +1,18 @@
 # Content System
 
-Gameplay metadata lives under `content/`. C++ still owns simulation, evaluation, and execution logic; JSON defines static configuration.
+Gameplay metadata lives under content packs in `content/packs/`. C++ still owns simulation, evaluation, and execution logic; JSON defines static configuration. The default pack is `content/packs/vanilla/`.
 
 ## Folders
 
+- `pack.json`: pack id, display name, description, version, and author.
 - `progression/`: progression tier definitions.
 - `scenarios/`: scenario definitions and references to reusable content.
 - `topology/`: topology templates with nodes, links, regions, geography, and optional network identity metadata.
 - `objectives/`: reusable objective and failure-limit definitions.
 - `events/`: reusable event definitions.
 - `modifiers/`: reusable scenario modifiers.
-- `interventions/`: Node Action metadata for mechanics and topology mutations.
-- `world_actions/`: authored World Action templates used for planning drafts.
+- `actions/node_actions.json`: Node Action metadata for mechanics and topology mutations.
+- `actions/world_actions.json`: authored World Action templates used for planning drafts.
 - `traffic/`: reusable traffic profile definitions.
 - `balancing/`: shared gameplay tuning such as pressure thresholds, interpretation text, and history windows.
 
@@ -74,7 +75,7 @@ Scenario and phase durations define player-facing time progression. Raw simulati
 
 Phases can override the turn duration with `transition_duration`. Supported units are `seconds`, `minutes`, `days`, `months`, and `years`. `simulation_seconds` controls accelerated playback length; `value`, `unit`, and `label` control gameplay presentation and calendar advancement.
 
-Sandbox scenarios can expose manual lab injections through `sandbox_events`. These reference normal event definitions from `content/events/`; the sandbox only chooses when to inject them.
+Sandbox scenarios can expose manual lab injections through `sandbox_events`. These reference normal event definitions from the pack's `events/` folder; the sandbox only chooses when to inject them.
 
 Events may include a `location` block. Omitted location defaults to global:
 
@@ -89,7 +90,7 @@ Supported scopes are:
 - `random_region`: resolves to one available topology region when the event activates. Optional `regions` can constrain the candidate list.
 - `node_type`: effect applies only to matching node types, for example `{"scope": "node_type", "node_type": "database"}`.
 
-Shared balancing values live in `content/balancing/`. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
+Shared balancing values live in each pack's `balancing/` folder. Current tuning supports `pressure_analysis.thresholds`, `pressure_analysis.weights`, `pressure_analysis.history`, and `pressure_analysis.text`. These values configure the existing `PressureAnalysisSystem`; they do not replace pressure-analysis logic.
 
 World Actions are authored templates. During planning, the runtime drafts a small set and may vary intensity and resulting capacity bonus deterministically from the scenario/run state. Node Action cards are not procedurally mutated.
 
@@ -208,16 +209,16 @@ Load errors are emitted through raylib logs and displayed in the debug UI. If co
 
 ## Adding a Scenario
 
-1. Add or reuse a topology template in `content/topology/`.
-2. Add or reuse a traffic profile in `content/traffic/`.
-3. Add objective and failure-limit references from `content/objectives/`.
-4. Add scenario JSON under `content/scenarios/`.
+1. Add or reuse a topology template in the pack's `topology/`.
+2. Add or reuse a traffic profile in the pack's `traffic/`.
+3. Add objective and failure-limit references from the pack's `objectives/`.
+4. Add scenario JSON under the pack's `scenarios/`.
 5. Reference actions, events, and modifiers by ID.
 6. Run the app or tests and check the debug UI for content errors.
 
 ## Adding a Node Action
 
-Add an entry in `content/interventions/` with:
+Add an entry in the pack's `actions/node_actions.json` with:
 
 - `kind`: `mechanic` or `topology_mutation`
 - `mechanic`: existing C++ mechanic ID
@@ -243,7 +244,7 @@ The JSON controls action-card metadata, preview wording, engineering domain cost
 
 ## Adding a World Action
 
-Add an entry in `content/world_actions/` with:
+Add an entry in the pack's `actions/world_actions.json` with:
 
 - `display_name`
 - `description`

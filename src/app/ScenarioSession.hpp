@@ -12,6 +12,7 @@ public:
 
     void reset();
     bool loadScenario(std::size_t scenarioIndex);
+    bool loadScenario(const std::string& scenarioId);
     void regenerateSimulation();
 
     const ScenarioDefinition& definition() const;

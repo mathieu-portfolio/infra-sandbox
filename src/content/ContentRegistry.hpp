@@ -12,6 +12,14 @@
 
 namespace content {
 
+struct ContentPackMetadata {
+    std::string id;
+    std::string displayName;
+    std::string description;
+    std::string version;
+    std::string author;
+};
+
 enum class InterventionKind {
     Mechanic,
     TopologyMutation
@@ -86,6 +94,8 @@ public:
     [[nodiscard]] ContentLoadResult loadFromDisk(const std::filesystem::path& root);
     void loadFallbackContent();
 
+    [[nodiscard]] const ContentPackMetadata& packMetadata() const;
+    [[nodiscard]] const std::filesystem::path& currentPackPath() const;
     [[nodiscard]] const std::vector<ProgressionTierDefinition>& progressionTiers() const;
     [[nodiscard]] const ProgressionTierDefinition& progressionTier(ProgressionTier tier) const;
     [[nodiscard]] const std::vector<ScenarioDefinition>& scenarios() const;
@@ -98,8 +108,11 @@ public:
 
 private:
     ContentLoadResult loadInternal(const std::filesystem::path& root);
+    void clearLoadedContent();
     void validate(ContentLoadResult& result) const;
 
+    ContentPackMetadata packMetadata_;
+    std::filesystem::path currentPackPath_;
     std::vector<ProgressionTierDefinition> progressionTiers_;
     std::vector<ScenarioDefinition> scenarios_;
     std::vector<InterventionDefinition> interventions_;
@@ -111,6 +124,7 @@ private:
 
 class ContentManager {
 public:
+    [[nodiscard]] static ContentLoadResult loadPack(const std::filesystem::path& path);
     [[nodiscard]] static ContentLoadResult loadDefaultContent();
 };
 

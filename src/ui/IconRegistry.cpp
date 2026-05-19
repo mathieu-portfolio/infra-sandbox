@@ -1,5 +1,6 @@
 #include "ui/IconRegistry.hpp"
 
+#include "content/ContentRegistry.hpp"
 #include "content/Json.hpp"
 
 #include <algorithm>
@@ -134,7 +135,10 @@ void IconRegistry::ensureConfigLoaded()
         return;
     }
     configLoaded_ = true;
-    loadConfig("content/ui/icons.json");
+    const auto& packPath = content::ContentRegistry::instance().currentPackPath();
+    if (!packPath.empty()) {
+        loadConfig((packPath / "ui" / "icons.json").string());
+    }
 }
 
 void IconRegistry::loadConfig(const std::string& path)

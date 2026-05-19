@@ -28,6 +28,8 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.selection = {};
     state.scenarioDroplistOpen = false;
     state.objectivesDroplistOpen = false;
+    state.requestedScenarioIndex = -1;
+    state.requestedScenarioId.clear();
     state.timelineCategoryDroplistOpen = false;
     state.timelineFilterDroplistOpen = false;
     state.placementActive = false;

@@ -10,11 +10,11 @@
 #include <vector>
 
 namespace {
-int scenarioIndexForName(const std::string& name)
+int scenarioIndexForId(const std::string& id)
 {
     const auto scenarios = ScenarioRegistry::createAll();
     for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
-        if (scenarios[static_cast<std::size_t>(i)].name == name) {
+        if (scenarios[static_cast<std::size_t>(i)].id == id) {
             return i;
         }
     }
@@ -251,13 +251,13 @@ bool ScenarioDropdownPanel::update(UiContext& context, const ScenarioManager& sc
 
     const Rectangle menu = menuBounds(context);
     const auto scenarios = ScenarioRegistry::createAll();
-    const int currentIndex = scenarioIndexForName(scenarioManager.staticDefinition().name);
+    const int currentIndex = scenarioIndexForId(scenarioManager.staticDefinition().id);
     for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
         if (!CheckCollisionPointRec(mouse, scenarioRowBounds(menu, i))) {
             continue;
         }
         if (i != currentIndex && scenarioManager.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)])) {
-            context.state->requestedScenarioIndex = i;
+            context.state->requestedScenarioId = scenarios[static_cast<std::size_t>(i)].id;
         }
         context.state->scenarioDroplistOpen = false;
         return true;
@@ -284,7 +284,7 @@ void ScenarioDropdownPanel::drawMenu(const UiContext& context, const ScenarioMan
     }
 
     const auto scenarios = ScenarioRegistry::createAll();
-    const int currentIndex = scenarioIndexForName(scenarioManager.staticDefinition().name);
+    const int currentIndex = scenarioIndexForId(scenarioManager.staticDefinition().id);
     const Rectangle menu = menuBounds(context);
     const Vector2 mouse = GetMousePosition();
 

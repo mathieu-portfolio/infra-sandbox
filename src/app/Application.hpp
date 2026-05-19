@@ -14,6 +14,7 @@
 #include "rendering/Renderer.hpp"
 
 #include <cstddef>
+#include <string>
 
 class Application {
 public:
@@ -26,6 +27,7 @@ private:
     void handleInput();
     void resetScenario();
     void loadScenario(std::size_t scenarioIndex);
+    void loadScenario(const std::string& scenarioId);
     void applyPendingScenarioSelection();
     void applySandboxRequests();
     void applyUiRequests();
