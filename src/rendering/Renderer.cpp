@@ -243,7 +243,10 @@ void Renderer::drawNodes(const Simulation& simulation, const CameraController& c
             const float radius = 28.0f + static_cast<float>(node.requestRatePerSecond) * 2.0f + trafficPulse * 8.0f;
             DrawCircleV(center, radius + 12.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 35});
             DrawCircleV(center, radius, {definitionColor.r, definitionColor.g, definitionColor.b, 115});
-            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, {152, 195, 255, 220});
+            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, healthColor);
+            if (node.stressScore > 0.08) {
+                DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius + 8.0f + static_cast<float>(node.stressScore) * 8.0f, {245, 184, 76, static_cast<unsigned char>(90 + node.stressScore * 130.0)});
+            }
         } else if (definition.renderStyle == NodeRenderStyle::AccelerationCache) {
             const Rectangle rect{center.x - 42.0f, center.y - 28.0f, 84.0f, 56.0f};
             const Color cacheColor = simulation.cacheEnabled() ? Color{86, 210, 151, 255} : Color{90, 107, 126, 180};

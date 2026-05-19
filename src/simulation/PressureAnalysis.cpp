@@ -101,11 +101,11 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
         pressure.queueGrowthPerSecond = dt > 0.0
             ? (static_cast<double>(node.queue.size()) - previousDepth) / dt
             : 0.0;
-        pressure.queuePressure = clamp01(static_cast<double>(node.queue.size()) / std::max(1.0, node.processingCapacityPerSecond * config_.queueCapacityWindow));
-        pressure.computePressure = node.currentUtilization;
-        pressure.latencyContribution = node.averageQueueWaitSeconds + node.currentUtilization * 0.35;
-        pressure.timeoutContribution = clamp01(metrics.timeoutRatePerSecond / config_.timeoutRateScale) * pressure.queuePressure;
-        pressure.retryContribution = clamp01(metrics.retryRatePerSecond / config_.retryRateScale) * std::max(pressure.queuePressure, node.type == NodeType::Database ? config_.databaseRetryFloor : config_.processorRetryFloor);
+        pressure.queuePressure = std::max(node.queuePressure, clamp01(static_cast<double>(node.queue.size()) / std::max(1.0, node.processingCapacityPerSecond * config_.queueCapacityWindow)));
+        pressure.computePressure = std::max(node.currentUtilization, node.stressScore);
+        pressure.latencyContribution = std::max(node.latencyPressure, clamp01(node.averageQueueWaitSeconds + node.currentUtilization * 0.35));
+        pressure.timeoutContribution = std::max(node.timeoutPressure, clamp01(metrics.timeoutRatePerSecond / config_.timeoutRateScale) * pressure.queuePressure);
+        pressure.retryContribution = std::max(node.retryPressure, clamp01(metrics.retryRatePerSecond / config_.retryRateScale) * std::max(pressure.queuePressure, node.type == NodeType::Database ? config_.databaseRetryFloor : config_.processorRetryFloor));
         double downstreamPressure = 0.0;
         int downstreamCount = 0;
         for (const auto& link : graph.links()) {
@@ -113,12 +113,12 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
                 continue;
             }
             if (const Node* target = graph.node(link.targetNodeId)) {
-                downstreamPressure += clamp01(static_cast<double>(target->queue.size()) / std::max(1.0, target->processingCapacityPerSecond * config_.queueCapacityWindow));
+                downstreamPressure += std::max(target->queuePressure, target->stressScore);
                 ++downstreamCount;
             }
         }
         pressure.dependencyPressure = downstreamCount > 0 ? downstreamPressure / downstreamCount : 0.0;
-        pressure.instability = std::max({pressure.queuePressure, pressure.computePressure, pressure.timeoutContribution, pressure.retryContribution});
+        pressure.instability = std::max({pressure.queuePressure, pressure.computePressure, pressure.timeoutContribution, pressure.retryContribution, node.stressScore});
         pressure.dominant = dominantFor(node, metrics, pressure, config_);
         pressure.explanation = explanationFor(node, metrics, pressure, config_);
         if (pressure.dependencyPressure > config_.dependencyPressureThreshold) {

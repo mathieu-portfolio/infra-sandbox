@@ -24,7 +24,7 @@ void Simulation::update(double dt)
     updateRetryWaits();
     updateLinks(dt);
     updateProcessors(dt);
-    updateNodeHealth();
+    updateNodeHealth(dt);
     updateMetricsNodeStates();
 
     metrics_.setSimulationSpeed(simulationSpeed_);
@@ -530,6 +530,7 @@ void Simulation::createRequest(Node& clientNode, Link& link)
 
     link.inFlightRequests.push_back(request.id);
     requests_.emplace(request.id, request);
+    clientNode.recentGenerated += 1.0;
     metrics_.recordGenerated();
 }
 
@@ -552,6 +553,9 @@ void Simulation::retryRequest(Request& request)
     request.transitProgress = 0.0;
     request.servedFromCache = false;
     link->inFlightRequests.push_back(request.id);
+    if (Node* source = graph_.node(request.sourceNodeId)) {
+        source->recentRetries += 1.0;
+    }
     metrics_.recordRetry();
 }
 
@@ -612,7 +616,9 @@ void Simulation::updateProcessors(double dt)
         updateTimeouts(node);
 
         const auto startedWithQueueDepth = node.queue.size();
-        node.processingAccumulator += node.processingCapacityPerSecond * dt;
+        const double availableProcessingBudget = std::max(0.0, node.processingCapacityPerSecond * dt);
+        double consumedProcessingBudget = 0.0;
+        node.processingAccumulator += availableProcessingBudget;
 
         while (!node.queue.empty()) {
             const auto requestId = node.queue.front();
@@ -624,12 +630,32 @@ void Simulation::updateProcessors(double dt)
 
             Request& request = requestIt->second;
             const double cost = processingCost(request, node);
-            if (node.processingAccumulator < cost) {
+
+            // Model response/finalization work explicitly for API requests that
+            // complete at the API during this processing pass. This keeps API
+            // utilization visible for lightweight responses and cache hits even
+            // though the client response leg is not represented as a separate
+            // network hop in the topology.
+            double completionCost = 0.0;
+            if (node.type == NodeType::ApiService && request.routeStage == RequestRouteStage::ApiIngress) {
+                const bool lightweightCompletesAtApi = request.type == RequestType::Lightweight;
+                const bool cacheHitCompletesAtApi = request.type == RequestType::DatabaseHeavy
+                    && request.cacheable
+                    && cacheEnabled_
+                    && cacheHit(request.cacheKey);
+                if (lightweightCompletesAtApi || cacheHitCompletesAtApi) {
+                    completionCost = scenario_.requestTypes.apiCostReturn;
+                }
+            }
+
+            const double totalCost = cost + completionCost;
+            if (node.processingAccumulator < totalCost) {
                 break;
             }
 
             node.queue.pop_front();
-            node.processingAccumulator -= cost;
+            node.processingAccumulator -= totalCost;
+            consumedProcessingBudget += totalCost;
 
             if (requestTimedOut(request)) {
                 timeOutRequest(request);
@@ -639,10 +665,17 @@ void Simulation::updateProcessors(double dt)
             completeRequest(request, node);
         }
 
-        const double pressure = node.processingCapacityPerSecond > 0.0
-            ? static_cast<double>(startedWithQueueDepth) / node.processingCapacityPerSecond
-            : 1.0;
-        node.currentUtilization = std::clamp(pressure, 0.0, 1.0);
+        (void)startedWithQueueDepth;
+
+        // Utilization is measured from work consumed over a rolling window, not
+        // from queue depth. Queue depth is reported separately as queuePressure.
+        constexpr double kUtilizationWindowSeconds = 3.0;
+        const double decay = std::exp(-std::max(0.0, dt) / kUtilizationWindowSeconds);
+        node.recentWorkConsumed = node.recentWorkConsumed * decay + consumedProcessingBudget;
+        node.recentWorkCapacity = node.recentWorkCapacity * decay + availableProcessingBudget;
+        node.currentUtilization = node.recentWorkCapacity > 0.0
+            ? std::clamp(node.recentWorkConsumed / node.recentWorkCapacity, 0.0, 1.0)
+            : 0.0;
     }
 }
 
@@ -725,6 +758,9 @@ void Simulation::completeRequest(Request& request, Node& node)
     request.state = RequestState::Completed;
     request.completedTime = timeSeconds_;
     request.stateEnteredTime = timeSeconds_;
+    if (Node* source = graph_.node(request.sourceNodeId)) {
+        source->recentCompleted += 1.0;
+    }
     metrics_.recordProcessed(timeSeconds_ - request.creationTime);
 }
 
@@ -744,6 +780,9 @@ void Simulation::timeOutRequest(Request& request)
         const double localizedRetryDelayMultiplier = source != nullptr ? localizedRetryDelayMultiplierFor(*source) : 1.0;
         request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier;
         request.stateEnteredTime = timeSeconds_;
+        if (Node* mutableSource = graph_.node(request.sourceNodeId)) {
+            mutableSource->recentTimedOut += 1.0;
+        }
         metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
         return;
     }
@@ -752,6 +791,9 @@ void Simulation::timeOutRequest(Request& request)
     request.currentLinkId = -1;
     request.completedTime = timeSeconds_;
     request.stateEnteredTime = timeSeconds_;
+    if (Node* source = graph_.node(request.sourceNodeId)) {
+        source->recentTimedOut += 1.0;
+    }
     metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
 }
 
@@ -764,6 +806,9 @@ void Simulation::routeFromApi(Request& request)
         request.state = RequestState::Completed;
         request.completedTime = timeSeconds_;
         request.stateEnteredTime = timeSeconds_;
+        if (Node* source = graph_.node(request.sourceNodeId)) {
+            source->recentCompleted += 1.0;
+        }
         metrics_.recordProcessed(timeSeconds_ - request.creationTime);
         return;
     }
@@ -777,6 +822,9 @@ void Simulation::routeFromApi(Request& request)
                 request.state = RequestState::Completed;
                 request.completedTime = timeSeconds_;
                 request.stateEnteredTime = timeSeconds_;
+                if (Node* source = graph_.node(request.sourceNodeId)) {
+                    source->recentCompleted += 1.0;
+                }
                 metrics_.recordProcessed(timeSeconds_ - request.creationTime);
                 return;
             }
@@ -809,6 +857,9 @@ void Simulation::routeFromApi(Request& request)
     request.state = RequestState::Completed;
     request.completedTime = timeSeconds_;
     request.stateEnteredTime = timeSeconds_;
+    if (Node* source = graph_.node(request.sourceNodeId)) {
+        source->recentCompleted += 1.0;
+    }
     metrics_.recordProcessed(timeSeconds_ - request.creationTime);
 }
 
@@ -825,6 +876,9 @@ void Simulation::routeFromDatabase(Request& request)
     request.state = RequestState::Completed;
     request.completedTime = timeSeconds_;
     request.stateEnteredTime = timeSeconds_;
+    if (Node* source = graph_.node(request.sourceNodeId)) {
+        source->recentCompleted += 1.0;
+    }
     metrics_.recordProcessed(timeSeconds_ - request.creationTime);
 }
 
@@ -965,21 +1019,102 @@ void Simulation::expireCacheEntries()
         cacheEntries_.end());
 }
 
-void Simulation::updateNodeHealth()
+void Simulation::updateNodeHealth(double dt)
 {
+    constexpr double kWindowSeconds = 4.0;
+    const double smoothing = 1.0 - std::exp(-std::max(0.0, dt) / 2.5);
+    const double decay = std::exp(-std::max(0.0, dt) / kWindowSeconds);
+
+    auto smooth = [smoothing](double current, double measured) {
+        return current + (measured - current) * std::clamp(smoothing, 0.0, 1.0);
+    };
+
     for (auto& node : graph_.nodes()) {
-        if (!node.isProcessor()) {
-            node.health = HealthState::Healthy;
-            continue;
+        const double recentAttempts = std::max(1.0, node.recentCompleted + node.recentTimedOut);
+        const double measuredTimeoutPressure = std::clamp(node.recentTimedOut / recentAttempts, 0.0, 1.0);
+        const double measuredRetryPressure = std::clamp(node.recentRetries / std::max(1.0, node.recentGenerated), 0.0, 1.0);
+
+        if (node.isProcessor()) {
+            const double safeCapacity = std::max(1.0, node.processingCapacityPerSecond);
+            const double queueFailureDepth = std::max(1.0, safeCapacity * std::max(1.0, scenario_.requestTimeoutSeconds) * 0.75);
+            const double measuredQueuePressure = std::clamp(static_cast<double>(node.queue.size()) / queueFailureDepth, 0.0, 1.0);
+            const double measuredLatencyPressure = std::clamp(node.averageQueueWaitSeconds / std::max(0.25, scenario_.requestTimeoutSeconds), 0.0, 1.0);
+            const double measuredStress = std::clamp(
+                node.currentUtilization * 0.32
+                    + measuredQueuePressure * 0.28
+                    + measuredLatencyPressure * 0.18
+                    + measuredTimeoutPressure * 0.14
+                    + measuredRetryPressure * 0.08,
+                0.0,
+                1.0);
+
+            node.queuePressure = smooth(node.queuePressure, measuredQueuePressure);
+            node.latencyPressure = smooth(node.latencyPressure, measuredLatencyPressure);
+            node.timeoutPressure = smooth(node.timeoutPressure, measuredTimeoutPressure);
+            node.retryPressure = smooth(node.retryPressure, measuredRetryPressure);
+            node.stressScore = smooth(node.stressScore, measuredStress);
+            node.healthScore = smooth(node.healthScore, 1.0 - measuredStress);
+            node.experienceScore = node.healthScore;
+            node.reliabilityScore = smooth(node.reliabilityScore, 1.0 - std::max(measuredTimeoutPressure, measuredRetryPressure * 0.65));
+        } else if (NodeRegistry::generatesRequests(node.type)) {
+            int outstanding = 0;
+            double waitSum = 0.0;
+            for (const auto& [id, request] : requests_) {
+                (void)id;
+                if (request.sourceNodeId != node.id) {
+                    continue;
+                }
+                if (request.state == RequestState::Completed || request.state == RequestState::TimedOut) {
+                    continue;
+                }
+                ++outstanding;
+                waitSum += std::max(0.0, timeSeconds_ - request.creationTime);
+            }
+
+            const double expectedRecentDemand = std::max(1.0, node.recentGenerated);
+            const double measuredQueuePressure = std::clamp(static_cast<double>(outstanding) / (expectedRecentDemand * 2.5), 0.0, 1.0);
+            const double measuredLatencyPressure = outstanding > 0
+                ? std::clamp((waitSum / outstanding) / std::max(0.25, scenario_.requestTimeoutSeconds), 0.0, 1.0)
+                : 0.0;
+            const double measuredStress = std::clamp(
+                measuredLatencyPressure * 0.34
+                    + measuredTimeoutPressure * 0.30
+                    + measuredRetryPressure * 0.22
+                    + measuredQueuePressure * 0.14,
+                0.0,
+                1.0);
+
+            node.queuePressure = smooth(node.queuePressure, measuredQueuePressure);
+            node.latencyPressure = smooth(node.latencyPressure, measuredLatencyPressure);
+            node.timeoutPressure = smooth(node.timeoutPressure, measuredTimeoutPressure);
+            node.retryPressure = smooth(node.retryPressure, measuredRetryPressure);
+            node.stressScore = smooth(node.stressScore, measuredStress);
+            node.experienceScore = smooth(node.experienceScore, 1.0 - measuredStress);
+            node.healthScore = node.experienceScore;
+            node.reliabilityScore = smooth(node.reliabilityScore, 1.0 - std::max(measuredTimeoutPressure, measuredRetryPressure * 0.75));
+            node.currentUtilization = 0.0;
+        } else {
+            const double measuredStress = std::max(measuredTimeoutPressure, measuredRetryPressure);
+            node.timeoutPressure = smooth(node.timeoutPressure, measuredTimeoutPressure);
+            node.retryPressure = smooth(node.retryPressure, measuredRetryPressure);
+            node.stressScore = smooth(node.stressScore, measuredStress);
+            node.healthScore = smooth(node.healthScore, 1.0 - measuredStress);
+            node.experienceScore = node.healthScore;
+            node.reliabilityScore = smooth(node.reliabilityScore, 1.0 - measuredStress);
         }
 
-        if (node.queue.size() > static_cast<std::size_t>(node.processingCapacityPerSecond * scenario_.requestTimeoutSeconds * 0.75)) {
+        if (node.healthScore < 0.45 || node.timeoutPressure > 0.35) {
             node.health = HealthState::Failing;
-        } else if (node.currentUtilization > 0.85 || node.queue.size() > static_cast<std::size_t>(node.processingCapacityPerSecond)) {
+        } else if (node.healthScore < 0.72 || node.stressScore > 0.45 || node.retryPressure > 0.18) {
             node.health = HealthState::Saturated;
         } else {
             node.health = HealthState::Healthy;
         }
+
+        node.recentGenerated *= decay;
+        node.recentCompleted *= decay;
+        node.recentTimedOut *= decay;
+        node.recentRetries *= decay;
     }
 }
 

@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace {
 
@@ -130,12 +131,55 @@ void drawFilterPill(Rectangle bounds, const std::string& label, bool active)
 
 void drawMetricBar(Rectangle bounds, const char* label, double value, Color color)
 {
-    drawTextClipped(label, {bounds.x, bounds.y, 92.0f, 16.0f}, 13, {185, 195, 210, 255});
-    DrawRectangleRounded({bounds.x + 102.0f, bounds.y + 5.0f, bounds.width - 154.0f, 5.0f}, 0.5f, 6, {45, 55, 68, 255});
-    DrawRectangleRounded({bounds.x + 102.0f, bounds.y + 5.0f, (bounds.width - 154.0f) * static_cast<float>(std::clamp(value, 0.0, 1.0)), 5.0f}, 0.5f, 6, color);
+    constexpr float kLabelWidth = 56.0f;
+    constexpr float kValueWidth = 38.0f;
+    const float barX = bounds.x + kLabelWidth + 8.0f;
+    const float barWidth = std::max(0.0f, bounds.width - kLabelWidth - kValueWidth - 18.0f);
+
+    DrawText(label, static_cast<int>(bounds.x), static_cast<int>(bounds.y), 13, {185, 195, 210, 255});
+    DrawRectangleRounded({barX, bounds.y + 5.0f, barWidth, 5.0f}, 0.5f, 6, {45, 55, 68, 255});
+    DrawRectangleRounded({barX, bounds.y + 5.0f, barWidth * static_cast<float>(std::clamp(value, 0.0, 1.0)), 5.0f}, 0.5f, 6, color);
     char text[24];
     std::snprintf(text, sizeof(text), "%.0f%%", value * 100.0);
-    DrawText(text, static_cast<int>(bounds.x + bounds.width - 42.0f), static_cast<int>(bounds.y - 1.0f), 13, {230, 237, 243, 255});
+    DrawText(text, static_cast<int>(bounds.x + bounds.width - kValueWidth), static_cast<int>(bounds.y - 1.0f), 13, {230, 237, 243, 255});
+}
+
+struct PressureRow {
+    PressureCategory category = PressureCategory::None;
+    double value = 0.0;
+};
+
+std::vector<PressureRow> primaryPressureRows(const NodePressure* pressure)
+{
+    std::vector<PressureRow> rows;
+    if (pressure == nullptr || pressure->dominant == PressureCategory::None) {
+        return rows;
+    }
+
+    rows.push_back({pressure->dominant, std::max({pressure->queuePressure, pressure->computePressure, pressure->latencyContribution, pressure->timeoutContribution, pressure->retryContribution, pressure->dependencyPressure, pressure->instability})});
+
+    auto addIfDistinct = [&](PressureCategory category, double value) {
+        if (category == PressureCategory::None || value <= 0.08) {
+            return;
+        }
+        for (const auto& row : rows) {
+            if (row.category == category) {
+                return;
+            }
+        }
+        rows.push_back({category, value});
+    };
+
+    addIfDistinct(PressureCategory::QueuePressure, pressure->queuePressure);
+    addIfDistinct(PressureCategory::LatencyPressure, pressure->latencyContribution);
+    addIfDistinct(PressureCategory::RetryPressure, pressure->retryContribution);
+    addIfDistinct(PressureCategory::FailurePressure, pressure->timeoutContribution);
+    addIfDistinct(PressureCategory::PersistencePressure, pressure->dependencyPressure);
+
+    if (rows.size() > 3) {
+        rows.resize(3);
+    }
+    return rows;
 }
 }
 
@@ -224,25 +268,33 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
         actions_ui::drawWrappedTextClipped(std::string("This ") + std::string(nodeDef.displayName) + " handles local request flow and participates in the dependency path.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, 68.0f}, 13, {205, 213, 224, 255});
         actions_ui::drawWrappedTextClipped(selectedPressure != nullptr && !selectedPressure->explanation.empty() ? selectedPressure->explanation : "Watch traffic, queue depth, and dependency pressure before committing changes.", {description.x + 16.0f, description.y + 122.0f, description.width - 32.0f, description.height - 134.0f}, 12, {166, 176, 192, 255});
     } else {
-        actions_ui::drawWrappedTextClipped("Select an infrastructure node to see its role, health, pressures, and contextual actions.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, description.height - 58.0f}, 13, {205, 213, 224, 255});
+        actions_ui::drawWrappedTextClipped("Select an infrastructure node to inspect its role, local telemetry, pressure sources, and contextual actions.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, description.height - 58.0f}, 13, {205, 213, 224, 255});
     }
 
     DrawRectangleRounded(status, 0.035f, 8, {18, 24, 34, 230});
     DrawRectangleRoundedLines(status, 0.035f, 8, {70, 86, 104, 110});
-    const double overall = actions_ui::overallPressure(selectedPressure, selected);
-    drawTextClipped("HEALTH", {status.x + 14.0f, status.y + 15.0f, 80.0f, 16.0f}, 14, {205, 213, 224, 255});
-    drawTextClipped(actions_ui::pressureSeverity(overall), {status.x + status.width - 78.0f, status.y + 15.0f, 64.0f, 16.0f}, 13, actions_ui::pressureColor(overall));
-    drawMetricBar({status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, 18.0f}, "Utilization", selected != nullptr ? selected->currentUtilization : 0.0, actions_ui::pressureColor(selected != nullptr ? selected->currentUtilization : 0.0));
-    drawMetricBar({status.x + 14.0f, status.y + 78.0f, status.width - 28.0f, 18.0f}, "Queue", selectedPressure != nullptr ? selectedPressure->queuePressure : 0.0, actions_ui::pressureColor(selectedPressure != nullptr ? selectedPressure->queuePressure : 0.0));
-    drawMetricBar({status.x + 14.0f, status.y + 108.0f, status.width - 28.0f, 18.0f}, "Latency", selectedPressure != nullptr ? selectedPressure->latencyContribution : 0.0, actions_ui::pressureColor(selectedPressure != nullptr ? selectedPressure->latencyContribution : 0.0));
-    DrawText("PRIMARY PRESSURES", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 138.0f), 11, {166, 176, 192, 255});
-    const PressureCategory pressures[] = {selectedPressure != nullptr ? selectedPressure->dominant : PressureCategory::None, PressureCategory::QueuePressure, PressureCategory::PersistencePressure};
-    const double pressureValues[] = {overall, selectedPressure != nullptr ? selectedPressure->queuePressure : 0.0, selectedPressure != nullptr ? selectedPressure->dependencyPressure : 0.0};
-    for (int i = 0; i < 3; ++i) {
-        const float y = status.y + 156.0f + static_cast<float>(i) * 16.0f;
-        DrawCircle(static_cast<int>(status.x + 18.0f), static_cast<int>(y + 6.0f), 4.0f, actions_ui::pressureColor(pressureValues[i]));
-        drawTextClipped(pressureCategoryName(pressures[i]), {status.x + 28.0f, y, status.width - 100.0f, 12.0f}, 11, {230, 237, 243, 255});
-        drawTextClipped(actions_ui::pressureSeverity(pressureValues[i]), {status.x + status.width - 66.0f, y, 52.0f, 12.0f}, 11, actions_ui::pressureColor(pressureValues[i]));
+    if (selected == nullptr) {
+        DrawText("TELEMETRY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
+        actions_ui::drawWrappedTextClipped("No node selected. Telemetry and pressure details are intentionally empty until a concrete node is inspected.", {status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, status.height - 62.0f}, 13, {139, 148, 158, 255});
+    } else {
+        const double overall = actions_ui::overallPressure(selectedPressure, selected);
+        DrawText("TELEMETRY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
+        drawTextClipped(actions_ui::pressureSeverity(overall), {status.x + status.width - 78.0f, status.y + 15.0f, 64.0f, 16.0f}, 13, actions_ui::pressureColor(overall));
+        drawMetricBar({status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, 18.0f}, "Util", selected->currentUtilization, actions_ui::pressureColor(selected->currentUtilization));
+        drawMetricBar({status.x + 14.0f, status.y + 78.0f, status.width - 28.0f, 18.0f}, "Queue", selected->queuePressure, actions_ui::pressureColor(selected->queuePressure));
+        drawMetricBar({status.x + 14.0f, status.y + 108.0f, status.width - 28.0f, 18.0f}, "Errors", std::max(selected->timeoutPressure, selected->retryPressure), actions_ui::pressureColor(std::max(selected->timeoutPressure, selected->retryPressure)));
+        DrawText("PRIMARY PRESSURES", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 138.0f), 11, {166, 176, 192, 255});
+        const auto rows = primaryPressureRows(selectedPressure);
+        if (rows.empty()) {
+            actions_ui::drawWrappedTextClipped("No primary pressure detected. Local load is currently below the diagnostic thresholds.", {status.x + 14.0f, status.y + 156.0f, status.width - 28.0f, 42.0f}, 12, {139, 148, 158, 255});
+        } else {
+            for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+                const float y = status.y + 156.0f + static_cast<float>(i) * 16.0f;
+                DrawCircle(static_cast<int>(status.x + 18.0f), static_cast<int>(y + 6.0f), 4.0f, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
+                drawTextClipped(pressureCategoryName(rows[static_cast<std::size_t>(i)].category), {status.x + 28.0f, y, status.width - 100.0f, 12.0f}, 11, {230, 237, 243, 255});
+                drawTextClipped(actions_ui::pressureSeverity(rows[static_cast<std::size_t>(i)].value), {status.x + status.width - 66.0f, y, 52.0f, 12.0f}, 11, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
+            }
+        }
     }
 
     const ActionPanelModel model;
