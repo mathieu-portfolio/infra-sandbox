@@ -1,4 +1,4 @@
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 
 #include "content/ContentRegistry.hpp"
 #include "content/parsing/Json.hpp"

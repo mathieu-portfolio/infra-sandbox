@@ -1,4 +1,4 @@
-#include "ui/RightSidebarLayout.hpp"
+#include "ui/layout/RightSidebarLayout.hpp"
 
 #include <algorithm>
 

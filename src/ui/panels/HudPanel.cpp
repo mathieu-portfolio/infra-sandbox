@@ -1,6 +1,6 @@
-#include "ui/HudPanel.hpp"
+#include "ui/panels/HudPanel.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/hud/HudPanelPrimitives.hpp"
 #include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"

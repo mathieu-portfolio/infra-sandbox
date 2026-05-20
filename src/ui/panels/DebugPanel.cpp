@@ -1,4 +1,4 @@
-#include "ui/DebugPanel.hpp"
+#include "ui/panels/DebugPanel.hpp"
 
 #include "content/ContentRegistry.hpp"
 

@@ -1,6 +1,6 @@
 #include "ui/actions/EventOverlay.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/actions/ActionText.hpp"
 #include "ui/core/UiCore.hpp"
 #include "ui/core/UiLayout.hpp"

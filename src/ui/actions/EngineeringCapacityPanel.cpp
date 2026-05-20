@@ -1,6 +1,6 @@
 #include "ui/actions/EngineeringCapacityPanel.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiPrimitives.hpp"
 
 #include <algorithm>

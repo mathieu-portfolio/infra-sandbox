@@ -1,6 +1,6 @@
 #include "ui/UiManager.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 
 #include "raylib.h"
 

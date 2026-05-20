@@ -4,7 +4,7 @@
 #include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/actions/EngineeringCapacityPanel.hpp"
 #include "ui/core/UiCore.hpp"
-#include "ui/RightSidebarLayout.hpp"
+#include "ui/layout/RightSidebarLayout.hpp"
 #include "ui/core/UiLayout.hpp"
 
 #include <algorithm>

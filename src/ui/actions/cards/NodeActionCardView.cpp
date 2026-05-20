@@ -2,7 +2,7 @@
 
 #include "ui/actions/cards/ActionCardCommon.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiPrimitives.hpp"
 
 #include "raylib.h"

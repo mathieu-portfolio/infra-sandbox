@@ -1,6 +1,6 @@
-#include "ui/TimelinePanel.hpp"
+#include "ui/panels/TimelinePanel.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/UiPrimitives.hpp"
 

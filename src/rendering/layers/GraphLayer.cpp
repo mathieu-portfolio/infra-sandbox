@@ -1,7 +1,7 @@
 #include "rendering/Renderer.hpp"
 
 #include "rendering/layers/RendererLayerUtils.hpp"
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 
 #include "raylib.h"
 

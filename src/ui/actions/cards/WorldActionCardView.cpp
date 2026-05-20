@@ -1,6 +1,6 @@
 #include "ui/actions/cards/WorldActionCardView.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiPrimitives.hpp"
 #include "ui/actions/ActionText.hpp"
 

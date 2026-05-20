@@ -1,6 +1,6 @@
 #include "ui/hud/ObjectivesDropdownPanel.hpp"
 
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 #include "ui/hud/HudPanelPrimitives.hpp"
 #include "ui/core/UiCore.hpp"
 #include "ui/core/UiPrimitives.hpp"

@@ -4,7 +4,7 @@
 #include "rendering/viewmodels/RenderFrameView.hpp"
 #include "simulation/topology/Geography.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
-#include "ui/IconRegistry.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 
 #include "raylib.h"
 
