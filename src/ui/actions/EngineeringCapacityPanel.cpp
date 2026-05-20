@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <vector>
 
 namespace {
 int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
@@ -23,23 +24,22 @@ int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain dom
 std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> domainUsage(const UiState& state)
 {
     std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> usage{};
-    for (const auto& planned : state.plannedInterventions) {
-        for (const auto& cost : planned.engineeringCosts) {
+    auto addCosts = [&usage](const std::vector<EngineeringCost>& costs) {
+        for (const auto& cost : costs) {
             usage[static_cast<std::size_t>(cost.domain)] += cost.amount;
         }
+    };
+    for (const auto& planned : state.plannedInterventions) {
+        addCosts(planned.engineeringCosts);
     }
+    addCosts(state.hoveredActionEngineeringCosts);
     return usage;
 }
 
-int totalUsage(const UiState& state)
+int distributedCapacity(const EngineeringCapacity& capacity)
 {
-    int total = 0;
-    for (const auto& planned : state.plannedInterventions) {
-        for (const auto& cost : planned.engineeringCosts) {
-            total += cost.amount;
-        }
-    }
-    return total;
+    return std::max(0, capacity.frontend) + std::max(0, capacity.backend) + std::max(0, capacity.infrastructure)
+        + std::max(0, capacity.data) + std::max(0, capacity.operations);
 }
 
 const char* shortDomainName(EngineeringDomain domain)
@@ -68,7 +68,7 @@ const char* domainIcon(EngineeringDomain domain)
     return "engineering.total";
 }
 
-void drawCapacitySquares(Vector2 pos, int used, int max)
+void drawCapacitySquares(Vector2 pos, int used, int max, bool usedMeansFilled)
 {
     constexpr float size = 10.0f;
     constexpr float gap = 4.0f;
@@ -77,13 +77,13 @@ void drawCapacitySquares(Vector2 pos, int used, int max)
 
     for (int i = 0; i < safeMax; ++i) {
         const Rectangle square{pos.x + static_cast<float>(i) * (size + gap), pos.y, size, size};
-        const bool filled = i < safeUsed;
-        DrawRectangleRounded(square, 0.25f, 4, filled ? Color{145, 109, 255, 255} : Color{44, 52, 64, 255});
-        DrawRectangleRoundedLines(square, 0.25f, 4, filled ? Color{189, 135, 255, 255} : Color{70, 86, 104, 120});
+        const bool active = usedMeansFilled ? i < safeUsed : i >= safeUsed;
+        DrawRectangleRounded(square, 0.25f, 4, active ? Color{145, 109, 255, 255} : Color{44, 52, 64, 255});
+        DrawRectangleRoundedLines(square, 0.25f, 4, active ? Color{189, 135, 255, 255} : Color{70, 86, 104, 120});
     }
 }
 
-void drawCapacityRow(Rectangle row, const char* iconId, const char* label, int used, int max, Color labelColor)
+void drawCapacityRow(Rectangle row, const char* iconId, const char* label, int used, int max, Color labelColor, bool usedMeansFilled)
 {
     if (max <= 0) {
         return;
@@ -91,7 +91,7 @@ void drawCapacityRow(Rectangle row, const char* iconId, const char* label, int u
 
     IconRegistry::instance().drawIcon(iconId, {row.x, row.y - 1.0f, 14.0f, 14.0f}, {139, 148, 158, 255});
     drawTextClipped(label, {row.x + 20.0f, row.y - 1.0f, 52.0f, 14.0f}, 11, labelColor);
-    drawCapacitySquares({row.x + 78.0f, row.y}, used, max);
+    drawCapacitySquares({row.x + 78.0f, row.y}, used, max, usedMeansFilled);
 }
 }
 
@@ -127,7 +127,7 @@ void EngineeringCapacityPanel::draw(Rectangle bounds, const UiState& state) cons
     drawTextClipped("ENGINEERING CAPACITY", {bounds.x, bounds.y, bounds.width, 14.0f}, 11, {139, 148, 158, 255});
 
     float y = bounds.y + 24.0f;
-    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "engineering.total", "Total", totalUsage(state), state.engineeringCapacity.total, {230, 237, 243, 255});
+    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "engineering.total", "Total", distributedCapacity(state.engineeringCapacity), state.engineeringCapacity.total, {230, 237, 243, 255}, true);
     y += 22.0f;
 
     for (int i = 0; i < static_cast<int>(EngineeringDomain::Count); ++i) {
@@ -137,7 +137,7 @@ void EngineeringCapacityPanel::draw(Rectangle bounds, const UiState& state) cons
             continue;
         }
 
-        drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, domainIcon(domain), shortDomainName(domain), usage[static_cast<std::size_t>(domain)], cap, {185, 195, 210, 255});
+        drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, domainIcon(domain), shortDomainName(domain), usage[static_cast<std::size_t>(domain)], cap, {185, 195, 210, 255}, false);
         y += 20.0f;
     }
 }

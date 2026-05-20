@@ -87,6 +87,39 @@ float drawPointSection(
 }
 }
 
+const char* domainShort(EngineeringDomain domain)
+{
+    switch (domain) {
+    case EngineeringDomain::Frontend: return "FE";
+    case EngineeringDomain::Backend: return "BE";
+    case EngineeringDomain::Infrastructure: return "INF";
+    case EngineeringDomain::Data: return "DATA";
+    case EngineeringDomain::Operations: return "OPS";
+    case EngineeringDomain::Count: break;
+    }
+    return "";
+}
+
+std::string engineeringCostLabel(const std::vector<EngineeringCost>& costs)
+{
+    if (costs.empty()) {
+        return "No AP";
+    }
+    std::string label;
+    for (const auto& cost : costs) {
+        if (cost.amount <= 0) {
+            continue;
+        }
+        if (!label.empty()) {
+            label += "  ";
+        }
+        label += domainShort(cost.domain);
+        label += " ";
+        label += std::to_string(cost.amount);
+    }
+    return label.empty() ? "No AP" : label;
+}
+
 float NodeActionCardView::measureHeight(const ActionCardModel& card, float width) const
 {
     const float contentWidth = std::max(80.0f, width - kPad * 2.0f);
@@ -167,6 +200,6 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
         {52, 43, 91, 230},
         {205, 190, 255, 255});
 
-    const std::string price = std::to_string(actions_ui::cards::actionPointCost(card.engineeringCosts)) + " AP";
-    drawTextClipped(price, {card.bounds.x + card.bounds.width - 64.0f, footerY + 2.0f, 52.0f, 16.0f}, 13, {86, 210, 151, 255});
+    const std::string price = engineeringCostLabel(card.engineeringCosts);
+    drawTextClipped(price, {card.bounds.x + card.bounds.width - 142.0f, footerY + 2.0f, 130.0f, 16.0f}, 12, {86, 210, 151, 255});
 }

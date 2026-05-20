@@ -753,31 +753,6 @@ std::vector<NodeScenario> parseNodes(const Json& topology)
     return nodes;
 }
 
-std::vector<ProceduralLocationRule> parseProceduralLocationRules(const Json& object)
-{
-    std::vector<ProceduralLocationRule> rules;
-    const Json* value = object.find("procedural_location_regions");
-    if (value == nullptr || !value->isObject()) {
-        return rules;
-    }
-    for (const auto& [nodeId, regions] : value->asObject()) {
-        if (!regions.isArray()) {
-            continue;
-        }
-        ProceduralLocationRule rule;
-        rule.nodeId = nodeId;
-        for (const auto& region : regions.asArray()) {
-            if (region.isString()) {
-                rule.regions.push_back(region.asString());
-            }
-        }
-        if (!rule.nodeId.empty() && !rule.regions.empty()) {
-            rules.push_back(std::move(rule));
-        }
-    }
-    return rules;
-}
-
 std::vector<LinkScenario> parseLinks(const Json& topology, const std::vector<NodeScenario>& nodes)
 {
     std::unordered_map<std::string, int> nodeIndexes;
@@ -821,7 +796,20 @@ void applyScenarioOverrides(ScenarioDefinition& scenario, const Json& object)
     }
     scenario.proceduralLocations = boolAt(object, "procedural_locations", scenario.proceduralLocations);
     scenario.proceduralLocationJitterDegrees = numberAt(object, "procedural_location_jitter_degrees", scenario.proceduralLocationJitterDegrees);
-    scenario.proceduralLocationRules = parseProceduralLocationRules(object);
+    if (const Json* regions = object.find("procedural_location_regions"); regions != nullptr && regions->isObject()) {
+        for (const auto& [nodeId, regionList] : regions->asObject()) {
+            if (!regionList.isArray()) {
+                continue;
+            }
+            auto& destinations = scenario.proceduralLocationRegions[nodeId];
+            destinations.clear();
+            for (const auto& region : regionList.asArray()) {
+                if (region.isString()) {
+                    destinations.push_back(region.asString());
+                }
+            }
+        }
+    }
     if (const Json* requestTypes = object.find("request_types"); requestTypes != nullptr && requestTypes->isObject()) {
         scenario.requestTypes.lightweightShare = numberAt(*requestTypes, "lightweight_share", scenario.requestTypes.lightweightShare);
         scenario.requestTypes.databaseHeavyCacheableShare = numberAt(*requestTypes, "database_heavy_cacheable_share", scenario.requestTypes.databaseHeavyCacheableShare);
@@ -1301,10 +1289,6 @@ ContentLoadResult ContentRegistry::loadInternal(const std::vector<std::filesyste
             continue;
         }
         WorldActionDefinition action = parseWorldAction(object);
-        if (action.capacityBonus.frontend < 0 || action.capacityBonus.backend < 0 || action.capacityBonus.infrastructure < 0
-            || action.capacityBonus.data < 0 || action.capacityBonus.operations < 0 || action.capacityBonus.total < 0) {
-            result.errors.push_back("World action " + action.id + " has invalid negative capacity bonus.");
-        }
         if (action.minIntensity <= 0.0 || action.maxIntensity < action.minIntensity) {
             result.errors.push_back("World action " + action.id + " has invalid intensity range.");
         }
@@ -1442,8 +1426,8 @@ void ContentRegistry::validate(ContentLoadResult& result) const
             result.errors.push_back("Scenario " + scenario.id + " has invalid engineering capacity.");
         }
         const int summedCapacity = capacity.frontend + capacity.backend + capacity.infrastructure + capacity.data + capacity.operations;
-        if (capacity.total > summedCapacity) {
-            result.errors.push_back("Scenario " + scenario.id + " total engineering capacity exceeds the sum of domain capacities.");
+        if (summedCapacity > capacity.total) {
+            result.errors.push_back("Scenario " + scenario.id + " distributes more engineering capacity than its total capacity allows.");
         }
         for (const auto& node : scenario.nodes) {
             if (node.requestRatePerSecond < 0.0 || node.processingCapacityPerSecond < 0.0) {
@@ -1546,9 +1530,8 @@ void ContentRegistry::loadFallbackContent()
             .usefulWhen = "Backend work is constraining local actions.",
             .tradeoffs = "Creates little immediate infrastructure change.",
             .iconId = "action.generic",
-            .capacityBonus = {.backend = 1, .total = 1},
+            .capacityBonus = {.backend = 1},
             .backendCapacityBonusRange = {1.0, 1.0},
-            .totalCapacityBonusRange = {1.0, 1.0},
         },
     };
 }

@@ -10,6 +10,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 enum class ProgressionTier {
@@ -60,7 +61,7 @@ struct EngineeringCapacity {
     int infrastructure = 1;
     int data = 1;
     int operations = 1;
-    int total = 4;
+    int total = 8;
 };
 
 struct EngineeringCost {
@@ -271,11 +272,6 @@ struct LinkScenario {
     double bandwidthPerSecond = 100.0;
 };
 
-struct ProceduralLocationRule {
-    std::string nodeId;
-    std::vector<std::string> regions;
-};
-
 struct ScenarioDefinition {
     std::string id;
     std::string displayName;
@@ -315,7 +311,7 @@ struct ScenarioDefinition {
     double requestTimeoutSeconds = 5.5;
     bool proceduralLocations = false;
     double proceduralLocationJitterDegrees = 6.0;
-    std::vector<ProceduralLocationRule> proceduralLocationRules;
+    std::unordered_map<std::string, std::vector<std::string>> proceduralLocationRegions;
 };
 
 struct ScenarioRun {

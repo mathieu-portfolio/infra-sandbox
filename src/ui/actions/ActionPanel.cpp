@@ -189,6 +189,7 @@ void ActionPanel::update(UiContext& context, const Simulation& simulation)
         return;
     }
     context.state->hoveredActionIndex = -1;
+    context.state->hoveredActionEngineeringCosts.clear();
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
@@ -209,6 +210,7 @@ void ActionPanel::update(UiContext& context, const Simulation& simulation)
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         if (CheckCollisionPointRec(mouse, cards[static_cast<std::size_t>(i)].bounds)) {
             context.state->hoveredActionIndex = i;
+            context.state->hoveredActionEngineeringCosts = cards[static_cast<std::size_t>(i)].engineeringCosts;
             return;
         }
     }

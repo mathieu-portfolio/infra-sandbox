@@ -45,7 +45,7 @@
       "infrastructure": 1,
       "data": 2,
       "operations": 1,
-      "total": 3
+      "total": 9
     },
     "starting_actions": [
       "throttle_traffic"
@@ -127,63 +127,19 @@
     "node_overrides": [
       {
         "id": "eu_api",
-        "processing_capacity_per_second": 4.2,
-        "geo": {
-          "latitude": 50.1,
-          "longitude": 8.7,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 4.2
       },
       {
         "id": "eu_database",
-        "processing_capacity_per_second": 2.4,
-        "geo": {
-          "latitude": 50.4,
-          "longitude": 8.5,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 2.4
       },
       {
         "id": "eu_queue",
-        "processing_capacity_per_second": 3.2,
-        "geo": {
-          "latitude": 49.6,
-          "longitude": 9.5,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 3.2
       },
       {
         "id": "eu_worker",
-        "processing_capacity_per_second": 2.3,
-        "geo": {
-          "latitude": 50.6,
-          "longitude": 10.2,
-          "region": "Europe"
-        }
-      },
-      {
-        "id": "eu_users",
-        "geo": {
-          "latitude": 53.1,
-          "longitude": 4.7,
-          "region": "Europe"
-        }
-      },
-      {
-        "id": "na_users",
-        "geo": {
-          "latitude": 37.0,
-          "longitude": -93.35,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "eu_cache",
-        "geo": {
-          "latitude": 50.9,
-          "longitude": 9.9,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 2.3
       }
     ],
     "request_types": [
@@ -250,7 +206,7 @@
       "infrastructure": 2,
       "data": 2,
       "operations": 1,
-      "total": 3
+      "total": 9
     },
     "starting_actions": [
       "enable_cache",
@@ -333,54 +289,15 @@
     "node_overrides": [
       {
         "id": "eu_database",
-        "processing_capacity_per_second": 2.5,
-        "geo": {
-          "latitude": 1.65,
-          "longitude": 103.6,
-          "region": "AsiaPacific"
-        }
+        "processing_capacity_per_second": 2.5
       },
       {
         "id": "eu_read_replica",
-        "processing_capacity_per_second": 2.1,
-        "geo": {
-          "latitude": 38.5,
-          "longitude": -96.35,
-          "region": "NorthAmerica"
-        }
+        "processing_capacity_per_second": 2.1
       },
       {
         "id": "na_cache",
-        "processing_capacity_per_second": 3.8,
-        "geo": {
-          "latitude": 40.3,
-          "longitude": -97.15,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "eu_users",
-        "geo": {
-          "latitude": 4.35,
-          "longitude": 99.8,
-          "region": "AsiaPacific"
-        }
-      },
-      {
-        "id": "na_users",
-        "geo": {
-          "latitude": 37.0,
-          "longitude": -93.35,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "eu_api",
-        "geo": {
-          "latitude": 1.35,
-          "longitude": 103.8,
-          "region": "AsiaPacific"
-        }
+        "processing_capacity_per_second": 3.8
       }
     ],
     "request_types": [
@@ -447,7 +364,7 @@
       "infrastructure": 2,
       "data": 3,
       "operations": 1,
-      "total": 3
+      "total": 10
     },
     "starting_actions": [
       "add_read_replica",
@@ -530,53 +447,11 @@
     "node_overrides": [
       {
         "id": "eu_database",
-        "processing_capacity_per_second": 2.35,
-        "geo": {
-          "latitude": 50.4,
-          "longitude": 8.5,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 2.35
       },
       {
         "id": "eu_read_replica",
-        "processing_capacity_per_second": 2.6,
-        "geo": {
-          "latitude": 0.35,
-          "longitude": 105.8,
-          "region": "AsiaPacific"
-        }
-      },
-      {
-        "id": "eu_users",
-        "geo": {
-          "latitude": 42.5,
-          "longitude": -102.35,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "na_users",
-        "geo": {
-          "latitude": -1.15,
-          "longitude": 108.8,
-          "region": "AsiaPacific"
-        }
-      },
-      {
-        "id": "na_cache",
-        "geo": {
-          "latitude": 2.15,
-          "longitude": 105.0,
-          "region": "AsiaPacific"
-        }
-      },
-      {
-        "id": "eu_api",
-        "geo": {
-          "latitude": 50.1,
-          "longitude": 8.7,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 2.6
       }
     ],
     "request_types": [
@@ -644,7 +519,7 @@
       "infrastructure": 2,
       "data": 2,
       "operations": 2,
-      "total": 4
+      "total": 11
     },
     "starting_actions": [
       "add_queue",
@@ -726,63 +601,19 @@
     "node_overrides": [
       {
         "id": "eu_api",
-        "processing_capacity_per_second": 4.4,
-        "geo": {
-          "latitude": 39.5,
-          "longitude": -98.35,
-          "region": "NorthAmerica"
-        }
+        "processing_capacity_per_second": 4.4
       },
       {
         "id": "eu_queue",
-        "processing_capacity_per_second": 2.8,
-        "geo": {
-          "latitude": 39.0,
-          "longitude": -97.55,
-          "region": "NorthAmerica"
-        }
+        "processing_capacity_per_second": 2.8
       },
       {
         "id": "eu_database",
-        "processing_capacity_per_second": 2.5,
-        "geo": {
-          "latitude": 39.8,
-          "longitude": -98.55,
-          "region": "NorthAmerica"
-        }
+        "processing_capacity_per_second": 2.5
       },
       {
         "id": "eu_worker",
-        "processing_capacity_per_second": 2.3,
-        "geo": {
-          "latitude": 40.0,
-          "longitude": -96.85,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "eu_users",
-        "geo": {
-          "latitude": 42.5,
-          "longitude": -102.35,
-          "region": "NorthAmerica"
-        }
-      },
-      {
-        "id": "na_users",
-        "geo": {
-          "latitude": -26.05,
-          "longitude": -41.63,
-          "region": "SouthAmerica"
-        }
-      },
-      {
-        "id": "eu_cache",
-        "geo": {
-          "latitude": 40.3,
-          "longitude": -97.15,
-          "region": "NorthAmerica"
-        }
+        "processing_capacity_per_second": 2.3
       }
     ],
     "request_types": [
@@ -849,7 +680,7 @@
       "infrastructure": 2,
       "data": 3,
       "operations": 2,
-      "total": 4
+      "total": 11
     },
     "starting_actions": [
       "add_read_replica",
@@ -932,54 +763,15 @@
     "node_overrides": [
       {
         "id": "eu_database",
-        "processing_capacity_per_second": 2.45,
-        "geo": {
-          "latitude": -0.99,
-          "longitude": 36.62,
-          "region": "Africa"
-        }
+        "processing_capacity_per_second": 2.45
       },
       {
         "id": "eu_read_replica",
-        "processing_capacity_per_second": 2.3,
-        "geo": {
-          "latitude": 49.1,
-          "longitude": 10.7,
-          "region": "Europe"
-        }
+        "processing_capacity_per_second": 2.3
       },
       {
         "id": "na_cache",
-        "processing_capacity_per_second": 4.0,
-        "geo": {
-          "latitude": 50.9,
-          "longitude": 9.9,
-          "region": "Europe"
-        }
-      },
-      {
-        "id": "eu_users",
-        "geo": {
-          "latitude": 1.71,
-          "longitude": 32.82,
-          "region": "Africa"
-        }
-      },
-      {
-        "id": "na_users",
-        "geo": {
-          "latitude": 47.6,
-          "longitude": 13.7,
-          "region": "Europe"
-        }
-      },
-      {
-        "id": "eu_api",
-        "geo": {
-          "latitude": -1.29,
-          "longitude": 36.82,
-          "region": "Africa"
-        }
+        "processing_capacity_per_second": 4.0
       }
     ],
     "request_types": [
@@ -1046,7 +838,7 @@
       "infrastructure": 2,
       "data": 3,
       "operations": 2,
-      "total": 5
+      "total": 12
     },
     "starting_actions": [
       "throttle_traffic",
@@ -1175,56 +967,45 @@
     "procedural_locations": true,
     "procedural_location_jitter_degrees": 3.0,
     "procedural_location_regions": {
-      "eu_users": [
-        "NorthAmerica",
-        "Europe",
-        "AsiaPacific",
-        "SouthAmerica",
-        "Africa",
-        "Oceania"
-      ],
-      "na_users": [
-        "NorthAmerica",
-        "Europe",
-        "AsiaPacific",
-        "SouthAmerica",
-        "Africa",
-        "Oceania"
-      ],
       "eu_api": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "eu_queue": [
-        "Europe",
         "NorthAmerica",
-        "AsiaPacific",
-        "Africa",
-        "SouthAmerica"
-      ],
-      "eu_worker": [
         "Europe",
-        "NorthAmerica",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
-      ],
-      "eu_cache": [
-        "Europe",
-        "NorthAmerica",
-        "AsiaPacific",
-        "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "eu_database": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
+      ],
+      "eu_cache": [
+        "NorthAmerica",
+        "Europe",
+        "AsiaPacific",
+        "SouthAmerica",
+        "Africa",
+        "Oceania"
+      ],
+      "eu_worker": [
+        "NorthAmerica",
+        "Europe",
+        "AsiaPacific",
+        "SouthAmerica",
+        "Africa",
+        "Oceania"
       ]
     }
   }

@@ -51,21 +51,9 @@ std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomai
     return usage;
 }
 
-int plannedTotalUsage(const UiState& state)
-{
-    int total = 0;
-    for (const auto& planned : state.plannedInterventions) {
-        for (const auto& cost : planned.engineeringCosts) {
-            total += cost.amount;
-        }
-    }
-    return total;
-}
-
 bool exceedsEngineeringCapacity(const UiState& state, const std::vector<EngineeringCost>& costs, std::string& reason)
 {
     const auto usage = plannedDomainUsage(state);
-    int total = plannedTotalUsage(state);
     for (const auto& cost : costs) {
         const int next = usage[static_cast<std::size_t>(cost.domain)] + cost.amount;
         const int cap = capacityForDomain(state.engineeringCapacity, cost.domain);
@@ -73,11 +61,6 @@ bool exceedsEngineeringCapacity(const UiState& state, const std::vector<Engineer
             reason = std::string("Insufficient ") + engineeringDomainName(cost.domain) + " capacity this turn.";
             return true;
         }
-        total += cost.amount;
-    }
-    if (total > state.engineeringCapacity.total) {
-        reason = "Shared engineering capacity is fully allocated this turn.";
-        return true;
     }
     return false;
 }

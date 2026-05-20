@@ -53,7 +53,7 @@
       "infrastructure": 3,
       "data": 2,
       "operations": 2,
-      "total": 8
+      "total": 13
     },
     "starting_actions": [
       "scale_up",
@@ -167,38 +167,60 @@
         "Oceania"
       ],
       "eu_api": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "eu_api_secondary": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "eu_database": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "eu_cache": [
-        "Europe",
         "NorthAmerica",
+        "Europe",
         "AsiaPacific",
+        "SouthAmerica",
         "Africa",
-        "SouthAmerica"
+        "Oceania"
       ],
       "na_cache": [
         "NorthAmerica",
         "Europe",
         "AsiaPacific",
-        "SouthAmerica"
+        "SouthAmerica",
+        "Africa",
+        "Oceania"
+      ],
+      "eu_queue": [
+        "NorthAmerica",
+        "Europe",
+        "AsiaPacific",
+        "SouthAmerica",
+        "Africa",
+        "Oceania"
+      ],
+      "eu_worker": [
+        "NorthAmerica",
+        "Europe",
+        "AsiaPacific",
+        "SouthAmerica",
+        "Africa",
+        "Oceania"
       ]
     }
   },
@@ -244,7 +266,7 @@
       "infrastructure": 1,
       "data": 1,
       "operations": 1,
-      "total": 2
+      "total": 7
     },
     "starting_actions": [
       "scale_up"
@@ -275,8 +297,8 @@
         "id": "eu_api",
         "processing_capacity_per_second": 4.2,
         "geo": {
-          "latitude": 50.1,
-          "longitude": 8.7,
+          "latitude": 50.11,
+          "longitude": 8.68,
           "region": "Europe"
         }
       },
@@ -284,32 +306,32 @@
         "id": "eu_database",
         "processing_capacity_per_second": 3.4,
         "geo": {
-          "latitude": 50.4,
-          "longitude": 8.5,
+          "latitude": 50.12,
+          "longitude": 8.67,
           "region": "Europe"
         }
       },
       {
         "id": "eu_users",
         "geo": {
-          "latitude": 53.1,
-          "longitude": 4.7,
+          "latitude": 52.52,
+          "longitude": 13.4,
           "region": "Europe"
         }
       },
       {
         "id": "na_users",
         "geo": {
-          "latitude": 37.0,
-          "longitude": -93.35,
+          "latitude": 37.77,
+          "longitude": -122.42,
           "region": "NorthAmerica"
         }
       },
       {
         "id": "na_cache",
         "geo": {
-          "latitude": 40.3,
-          "longitude": -97.15,
+          "latitude": 39.1,
+          "longitude": -94.58,
           "region": "NorthAmerica"
         }
       }
@@ -391,7 +413,7 @@
       "infrastructure": 1,
       "data": 1,
       "operations": 1,
-      "total": 3
+      "total": 8
     },
     "starting_actions": [],
     "unlockable_actions": [
@@ -450,41 +472,41 @@
         "id": "eu_api",
         "processing_capacity_per_second": 3.7,
         "geo": {
-          "latitude": 39.5,
-          "longitude": -98.35,
-          "region": "NorthAmerica"
+          "latitude": 53.35,
+          "longitude": -6.26,
+          "region": "Europe"
         }
       },
       {
         "id": "eu_users",
         "geo": {
-          "latitude": 42.5,
-          "longitude": -102.35,
-          "region": "NorthAmerica"
+          "latitude": 48.85,
+          "longitude": 2.35,
+          "region": "Europe"
         }
       },
       {
         "id": "na_users",
         "geo": {
-          "latitude": 47.6,
-          "longitude": 13.7,
-          "region": "Europe"
+          "latitude": 40.71,
+          "longitude": -74.01,
+          "region": "NorthAmerica"
         }
       },
       {
         "id": "eu_database",
         "geo": {
-          "latitude": 39.8,
-          "longitude": -98.55,
-          "region": "NorthAmerica"
+          "latitude": 53.34,
+          "longitude": -6.25,
+          "region": "Europe"
         }
       },
       {
         "id": "na_cache",
         "geo": {
-          "latitude": 50.9,
-          "longitude": 9.9,
-          "region": "Europe"
+          "latitude": 41.88,
+          "longitude": -87.63,
+          "region": "NorthAmerica"
         }
       }
     ],
@@ -603,7 +625,7 @@
       "infrastructure": 1,
       "data": 2,
       "operations": 1,
-      "total": 4
+      "total": 9
     },
     "starting_actions": [],
     "unlockable_actions": [
@@ -681,8 +703,8 @@
         "id": "eu_api",
         "processing_capacity_per_second": 8.0,
         "geo": {
-          "latitude": 50.1,
-          "longitude": 8.7,
+          "latitude": 52.52,
+          "longitude": 13.4,
           "region": "Europe"
         }
       },
@@ -690,32 +712,32 @@
         "id": "eu_database",
         "processing_capacity_per_second": 1.8,
         "geo": {
-          "latitude": 50.4,
-          "longitude": 8.5,
+          "latitude": 50.08,
+          "longitude": 14.44,
           "region": "Europe"
         }
       },
       {
         "id": "eu_users",
         "geo": {
-          "latitude": 1.71,
-          "longitude": 32.82,
-          "region": "Africa"
+          "latitude": 52.23,
+          "longitude": 21.01,
+          "region": "Europe"
         }
       },
       {
         "id": "na_users",
         "geo": {
-          "latitude": 37.0,
-          "longitude": -93.35,
+          "latitude": 43.65,
+          "longitude": -79.38,
           "region": "NorthAmerica"
         }
       },
       {
         "id": "na_cache",
         "geo": {
-          "latitude": 40.3,
-          "longitude": -97.15,
+          "latitude": 39.95,
+          "longitude": -75.16,
           "region": "NorthAmerica"
         }
       }
@@ -826,7 +848,7 @@
       "infrastructure": 1,
       "data": 1,
       "operations": 2,
-      "total": 4
+      "total": 9
     },
     "starting_actions": [
       "scale_up",
@@ -879,41 +901,41 @@
         "id": "eu_api",
         "processing_capacity_per_second": 4.2,
         "geo": {
-          "latitude": 1.35,
-          "longitude": 103.8,
-          "region": "AsiaPacific"
+          "latitude": 52.37,
+          "longitude": 4.9,
+          "region": "Europe"
         }
       },
       {
         "id": "eu_users",
         "geo": {
-          "latitude": 4.35,
-          "longitude": 99.8,
-          "region": "AsiaPacific"
+          "latitude": 51.5,
+          "longitude": -0.12,
+          "region": "Europe"
         }
       },
       {
         "id": "na_users",
         "geo": {
-          "latitude": 47.6,
-          "longitude": 13.7,
-          "region": "Europe"
+          "latitude": 41.88,
+          "longitude": -87.63,
+          "region": "NorthAmerica"
         }
       },
       {
         "id": "eu_database",
         "geo": {
-          "latitude": 1.65,
-          "longitude": 103.6,
-          "region": "AsiaPacific"
+          "latitude": 50.11,
+          "longitude": 8.68,
+          "region": "Europe"
         }
       },
       {
         "id": "na_cache",
         "geo": {
-          "latitude": 50.9,
-          "longitude": 9.9,
-          "region": "Europe"
+          "latitude": 32.78,
+          "longitude": -96.8,
+          "region": "NorthAmerica"
         }
       }
     ],
@@ -1034,7 +1056,7 @@
       "infrastructure": 2,
       "data": 1,
       "operations": 1,
-      "total": 4
+      "total": 9
     },
     "starting_actions": [
       "scale_up",
@@ -1076,17 +1098,17 @@
         "id": "na_users",
         "request_rate_per_second": 5.0,
         "geo": {
-          "latitude": 47.6,
-          "longitude": 13.7,
-          "region": "Europe"
+          "latitude": 34.05,
+          "longitude": -118.24,
+          "region": "NorthAmerica"
         }
       },
       {
         "id": "eu_api",
         "processing_capacity_per_second": 5.0,
         "geo": {
-          "latitude": 50.1,
-          "longitude": 8.7,
+          "latitude": 50.11,
+          "longitude": 8.68,
           "region": "Europe"
         }
       },
@@ -1094,25 +1116,25 @@
         "id": "eu_database",
         "processing_capacity_per_second": 2.8,
         "geo": {
-          "latitude": 50.4,
-          "longitude": 8.5,
+          "latitude": 50.12,
+          "longitude": 8.67,
           "region": "Europe"
         }
       },
       {
         "id": "eu_users",
         "geo": {
-          "latitude": 42.5,
-          "longitude": -102.35,
-          "region": "NorthAmerica"
+          "latitude": 48.85,
+          "longitude": 2.35,
+          "region": "Europe"
         }
       },
       {
         "id": "na_cache",
         "geo": {
-          "latitude": 50.9,
-          "longitude": 9.9,
-          "region": "Europe"
+          "latitude": 40.71,
+          "longitude": -74.01,
+          "region": "NorthAmerica"
         }
       }
     ],

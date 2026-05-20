@@ -208,6 +208,7 @@ struct UiState {
     TopologyMutationType activeMutation = TopologyMutationType::AddCache;
     int placementCandidateIndex = 0;
     int hoveredActionIndex = -1;
+    std::vector<EngineeringCost> hoveredActionEngineeringCosts;
     int selectedActionIndex = -1;
     std::string latestFeedback;
     std::vector<VisualFeedbackEvent> pendingVisualFeedbackEvents;

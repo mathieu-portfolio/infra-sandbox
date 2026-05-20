@@ -4,11 +4,10 @@
 #include "content/ValueSpec.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
-#include <optional>
 #include <random>
 #include <sstream>
-#include <string_view>
 #include <utility>
 
 namespace {
@@ -91,25 +90,73 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
 }
 
 
-const ProceduralLocationRule* proceduralLocationRuleFor(const ScenarioDefinition& definition, std::string_view nodeId)
+std::string regionDisplayName(const std::string& region)
 {
-    const auto it = std::find_if(
-        definition.proceduralLocationRules.begin(),
-        definition.proceduralLocationRules.end(),
-        [nodeId](const ProceduralLocationRule& rule) { return rule.nodeId == nodeId; });
-    return it != definition.proceduralLocationRules.end() ? &(*it) : nullptr;
+    if (region == "NorthAmerica") return "North America";
+    if (region == "AsiaPacific") return "Asia Pacific";
+    if (region == "SouthAmerica") return "South America";
+    return region.empty() ? "Regional" : region;
 }
 
-std::optional<GeoLocation> regionCenterByName(std::string_view regionName)
+std::string roleDisplayName(const NodeScenario& node)
 {
-    const auto& regions = GeographicRegistry::definitions();
-    const auto it = std::find_if(regions.begin(), regions.end(), [regionName](const RegionDefinition& region) {
-        return region.name == regionName;
-    });
-    if (it == regions.end()) {
-        return std::nullopt;
+    switch (node.type) {
+    case NodeType::ClientCluster:
+        return "users";
+    case NodeType::ApiService:
+        return node.id.find("secondary") != std::string::npos ? "API secondary" : "API cluster";
+    case NodeType::Database:
+        return "database";
+    case NodeType::Cache:
+        return "cache";
+    case NodeType::QueueBroker:
+        return "queue";
+    case NodeType::Worker:
+        return "worker";
+    case NodeType::LoadBalancer:
+        return "load balancer";
+    default:
+        break;
     }
-    return it->center;
+    return "node";
+}
+
+const RegionDefinition* findRegionDefinition(const std::string& region)
+{
+    const auto& definitions = GeographicRegistry::definitions();
+    const auto it = std::find_if(definitions.begin(), definitions.end(), [&region](const RegionDefinition& definition) {
+        return std::string(definition.name) == region;
+    });
+    return it != definitions.end() ? &(*it) : nullptr;
+}
+
+GeoLocation chooseProceduralBaseLocation(
+    const ScenarioDefinition& definition,
+    const NodeScenario& node,
+    std::uint32_t seed,
+    const std::string& key)
+{
+    std::vector<std::string> candidateRegions;
+    if (const auto it = definition.proceduralLocationRegions.find(node.id); it != definition.proceduralLocationRegions.end()) {
+        candidateRegions = it->second;
+    } else if (node.geoLocation && !node.geoLocation->regionName.empty()) {
+        candidateRegions.push_back(node.geoLocation->regionName);
+    }
+
+    if (candidateRegions.empty()) {
+        for (const auto& definition : GeographicRegistry::definitions()) {
+            candidateRegions.emplace_back(definition.name);
+        }
+    }
+
+    const int index = std::clamp(
+        static_cast<int>(content::sampleNumber(seed, key + ".region", 0.0, static_cast<double>(candidateRegions.size()))),
+        0,
+        static_cast<int>(candidateRegions.size()) - 1);
+    if (const RegionDefinition* region = findRegionDefinition(candidateRegions[static_cast<std::size_t>(index)])) {
+        return region->center;
+    }
+    return node.geoLocation.value_or(GeoLocation{});
 }
 
 void applyProceduralLocations(ScenarioDefinition& definition, std::uint32_t seed)
@@ -120,28 +167,19 @@ void applyProceduralLocations(ScenarioDefinition& definition, std::uint32_t seed
 
     const double jitter = std::max(0.0, definition.proceduralLocationJitterDegrees);
     for (auto& node : definition.nodes) {
-        if (!node.geoLocation) {
-            continue;
-        }
         const std::string key = definition.id + ".locations." + node.id;
-        if (const ProceduralLocationRule* rule = proceduralLocationRuleFor(definition, node.id);
-            rule != nullptr && !rule->regions.empty()) {
-            const std::size_t selectedIndex = std::min(
-                rule->regions.size() - 1,
-                static_cast<std::size_t>(content::sampleUnitInterval(seed, key + ".region") * rule->regions.size()));
-            if (auto regionCenter = regionCenterByName(rule->regions[selectedIndex])) {
-                node.geoLocation = *regionCenter;
-            }
-        }
-        node.geoLocation->latitude = std::clamp(
-            node.geoLocation->latitude + content::sampleNumber(seed, key + ".lat", -jitter, jitter),
+        GeoLocation location = chooseProceduralBaseLocation(definition, node, seed, key);
+        location.latitude = std::clamp(
+            location.latitude + content::sampleNumber(seed, key + ".lat", -jitter, jitter),
             -70.0,
             70.0);
-        node.geoLocation->longitude = std::clamp(
-            node.geoLocation->longitude + content::sampleNumber(seed, key + ".lon", -jitter * 1.8, jitter * 1.8),
+        location.longitude = std::clamp(
+            location.longitude + content::sampleNumber(seed, key + ".lon", -jitter * 1.8, jitter * 1.8),
             -175.0,
             175.0);
-        node.position = MapProjection::projectEquirectangular(*node.geoLocation);
+        node.geoLocation = location;
+        node.name = regionDisplayName(location.regionName) + " " + roleDisplayName(node);
+        node.position = MapProjection::projectEquirectangular(location);
     }
 }
 

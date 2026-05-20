@@ -20,15 +20,24 @@ constexpr float kDraftMinDescriptionHeight = 54.0f;
 constexpr float kDraftMinDetailHeight = 38.0f;
 constexpr float kDraftLineSpacing = 3.0f;
 
+std::string signedCapacityPart(const char* label, int value)
+{
+    if (value == 0) {
+        return {};
+    }
+    return std::string(label) + (value > 0 ? " +" : " ") + std::to_string(value) + " ";
+}
+
 std::string capacityBonusLabel(const EngineeringCapacity& bonus, bool verbose)
 {
     std::string text;
-    if (bonus.backend > 0) text += std::string(verbose ? "Backend" : "Back") + " +" + std::to_string(bonus.backend) + " ";
-    if (bonus.infrastructure > 0) text += "Infra +" + std::to_string(bonus.infrastructure) + " ";
-    if (bonus.operations > 0) text += "Ops +" + std::to_string(bonus.operations) + " ";
-    if (bonus.data > 0) text += "Data +" + std::to_string(bonus.data) + " ";
-    if (verbose && bonus.frontend > 0) text += "Frontend +" + std::to_string(bonus.frontend) + " ";
-    if (text.empty() && bonus.total > 0) text = "Total +" + std::to_string(bonus.total);
+    if (verbose) text += signedCapacityPart("Frontend", bonus.frontend);
+    else text += signedCapacityPart("Front", bonus.frontend);
+    text += signedCapacityPart(verbose ? "Backend" : "Back", bonus.backend);
+    text += signedCapacityPart("Infra", bonus.infrastructure);
+    text += signedCapacityPart("Ops", bonus.operations);
+    text += signedCapacityPart("Data", bonus.data);
+    text += signedCapacityPart("Total", bonus.total);
     return text;
 }
 

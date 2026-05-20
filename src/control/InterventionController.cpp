@@ -52,21 +52,38 @@ std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomai
     return usage;
 }
 
-int plannedTotalUsage(const UiState& uiState)
+EngineeringCapacity addCapacityPreview(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
-    int total = 0;
-    for (const auto& planned : uiState.plannedInterventions) {
-        for (const auto& cost : planned.engineeringCosts) {
-            total += cost.amount;
-        }
+    base.frontend += bonus.frontend;
+    base.backend += bonus.backend;
+    base.infrastructure += bonus.infrastructure;
+    base.data += bonus.data;
+    base.operations += bonus.operations;
+    base.total += bonus.total;
+    return base;
+}
+
+int distributedCapacity(const EngineeringCapacity& capacity)
+{
+    return capacity.frontend + capacity.backend + capacity.infrastructure + capacity.data + capacity.operations;
+}
+
+bool validCapacityDistribution(const EngineeringCapacity& capacity, std::string& reason)
+{
+    if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0) {
+        reason = "This world action would reduce one specialty below zero capacity.";
+        return false;
     }
-    return total;
+    if (distributedCapacity(capacity) > capacity.total) {
+        reason = "This world action would exceed the scenario total capacity.";
+        return false;
+    }
+    return true;
 }
 
 bool canQueueEngineeringCosts(const UiState& uiState, const std::vector<EngineeringCost>& costs, std::string& reason)
 {
     const auto usage = plannedDomainUsage(uiState);
-    int total = plannedTotalUsage(uiState);
     for (const auto& cost : costs) {
         const int next = usage[static_cast<std::size_t>(cost.domain)] + cost.amount;
         const int cap = capacityForDomain(uiState.engineeringCapacity, cost.domain);
@@ -74,11 +91,6 @@ bool canQueueEngineeringCosts(const UiState& uiState, const std::vector<Engineer
             reason = std::string("Insufficient ") + engineeringDomainName(cost.domain) + " capacity this turn.";
             return false;
         }
-        total += cost.amount;
-    }
-    if (total > uiState.engineeringCapacity.total) {
-        reason = "Shared engineering capacity is fully allocated this turn.";
-        return false;
     }
     return true;
 }
@@ -377,6 +389,23 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             for (int i = 0; i < count; ++i) {
                 if (!CheckCollisionPointRec(event.mousePosition, worldActionOverlayCardBounds(overlay, i, count))) {
                     continue;
+                }
+                EngineeringCapacity currentBase = uiState.engineeringCapacity;
+                if (uiState.selectedWorldActionIndex < 0 && uiState.hoveredWorldActionIndex == i) {
+                    const EngineeringCapacity& hoverBonus = uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus;
+                    currentBase.frontend -= hoverBonus.frontend;
+                    currentBase.backend -= hoverBonus.backend;
+                    currentBase.infrastructure -= hoverBonus.infrastructure;
+                    currentBase.data -= hoverBonus.data;
+                    currentBase.operations -= hoverBonus.operations;
+                    currentBase.total -= hoverBonus.total;
+                }
+                const EngineeringCapacity selectedCapacity = addCapacityPreview(currentBase, uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus);
+                std::string capacityReason;
+                if (!validCapacityDistribution(selectedCapacity, capacityReason)) {
+                    uiState.latestFeedback = capacityReason;
+                    uiState.suppressMapSelectionOnce = true;
+                    return;
                 }
                 uiState.selectedWorldActionIndex = i;
                 uiState.worldActionCapacityBonus = uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus;

@@ -4,17 +4,19 @@
 
 #include "raylib.h"
 
+#include <algorithm>
+#include <cstddef>
 #include <string>
 
 namespace {
 EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
-    base.frontend += bonus.frontend;
-    base.backend += bonus.backend;
-    base.infrastructure += bonus.infrastructure;
-    base.data += bonus.data;
-    base.operations += bonus.operations;
-    base.total += bonus.total;
+    base.frontend = std::max(0, base.frontend + bonus.frontend);
+    base.backend = std::max(0, base.backend + bonus.backend);
+    base.infrastructure = std::max(0, base.infrastructure + bonus.infrastructure);
+    base.data = std::max(0, base.data + bonus.data);
+    base.operations = std::max(0, base.operations + bonus.operations);
+    base.total = std::max(0, base.total + bonus.total);
     return base;
 }
 }
@@ -23,7 +25,12 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
-    state_.engineeringCapacity = addCapacity(scenarioManager.definition().engineeringCapacity, state_.worldActionCapacityBonus);
+    EngineeringCapacity previewBonus = state_.worldActionCapacityBonus;
+    if (state_.selectedWorldActionIndex < 0 && state_.hoveredWorldActionIndex >= 0
+        && state_.hoveredWorldActionIndex < static_cast<int>(state_.worldActionDraft.size())) {
+        previewBonus = state_.worldActionDraft[static_cast<std::size_t>(state_.hoveredWorldActionIndex)].capacityBonus;
+    }
+    state_.engineeringCapacity = addCapacity(scenarioManager.definition().engineeringCapacity, previewBonus);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager, packManager);
