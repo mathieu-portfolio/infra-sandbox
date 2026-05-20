@@ -7,6 +7,7 @@
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
 #include "rendering/VisualFeedbackSystem.hpp"
+#include "rendering/viewmodels/RenderFrameView.hpp"
 #include "simulation/core/Simulation.hpp"
 #include "ui/UiManager.hpp"
 
@@ -18,14 +19,14 @@ public:
     void releaseResources();
 
 private:
-    void drawLinks(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawDependencyHighlights(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawNodes(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawRequests(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawQueueBars(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawClusters(const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawLabels(const Simulation& simulation, const CameraController& camera, const GeoLayoutFrame& layout);
-    void drawMutationPreview(const Simulation& simulation, const CameraController& camera) const;
+    void drawLinks(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawDependencyHighlights(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawNodes(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawRequests(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawQueueBars(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawClusters(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawLabels(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawMutationPreview(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera) const;
 
 public:
     [[nodiscard]] UiManager& uiManager();

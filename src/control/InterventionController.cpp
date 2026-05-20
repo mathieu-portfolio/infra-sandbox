@@ -50,6 +50,49 @@ bool canUseMapPlacementClick(const UiState& uiState, Vector2 mousePosition, cons
     }
     return CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight));
 }
+
+int hoveredPlacementCandidateIndex(const Simulation& simulation, TopologyMutationType type, const CameraController& camera, Vector2 mousePosition, int screenWidth, int screenHeight)
+{
+    if (!CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight))) {
+        return -1;
+    }
+
+    const PlacementCandidateGenerator generator;
+    const auto candidates = generator.generate(simulation, type);
+    if (candidates.empty()) {
+        return -1;
+    }
+
+    int bestIndex = -1;
+    float bestDistanceSquared = 1.0e12f;
+    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
+        const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
+        const Vector2 center = worldToScreen(world, screenWidth, screenHeight, camera);
+        const float dx = mousePosition.x - center.x;
+        const float dy = mousePosition.y - center.y;
+        const float distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < bestDistanceSquared) {
+            bestDistanceSquared = distanceSquared;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
+}
+
+void confirmHoveredPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera, Vector2 mousePosition)
+{
+    const PlacementCandidateGenerator candidateGenerator;
+    const auto candidates = candidateGenerator.generate(simulation, uiState.activeMutation);
+    const int index = hoveredPlacementCandidateIndex(simulation, uiState.activeMutation, camera, mousePosition, GetScreenWidth(), GetScreenHeight());
+    if (index < 0 || index >= static_cast<int>(candidates.size())) {
+        uiState.latestFeedback = "Hover a map region and click to place the selected node.";
+        return;
+    }
+
+    const gameplay::actions::ActionPlacementService placementService;
+    placementService.confirmPlacement(simulation, scenarioManager, uiState, candidates[static_cast<std::size_t>(index)]);
+}
+
 }
 
 void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera)
@@ -64,7 +107,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
         if (event.action == InputAction::Select) {
             if (canUseMapPlacementClick(uiState, event.mousePosition, camera, GetScreenWidth(), GetScreenHeight())) {
-                placementService.confirmHoveredPlacement(simulation, scenarioManager, uiState, camera, event.mousePosition);
+                confirmHoveredPlacement(simulation, scenarioManager, uiState, camera, event.mousePosition);
                 uiState.suppressMapSelectionOnce = true;
             } else {
                 handleActionPanelClick(event, simulation, scenarioManager, uiState);
