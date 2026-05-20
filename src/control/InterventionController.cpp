@@ -1,121 +1,17 @@
 #include "control/InterventionController.hpp"
 
-#include "content/ContentRegistry.hpp"
+#include "gameplay/actions/ActionFeedback.hpp"
+#include "gameplay/actions/ActionPlacementService.hpp"
+#include "gameplay/actions/ActionQueue.hpp"
+#include "gameplay/actions/ActionRules.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "rendering/RenderPrimitives.hpp"
 
 #include <algorithm>
-#include <array>
-#include <cstdio>
-#include <string>
 
 namespace {
-const content::InterventionDefinition* interventionFor(MechanicType mechanic)
-{
-    for (const auto& definition : content::ContentRegistry::instance().interventions()) {
-        if (definition.mechanic == mechanic) {
-            return &definition;
-        }
-    }
-    return nullptr;
-}
-
-int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain domain)
-{
-    switch (domain) {
-    case EngineeringDomain::Frontend:
-        return capacity.frontend;
-    case EngineeringDomain::Backend:
-        return capacity.backend;
-    case EngineeringDomain::Infrastructure:
-        return capacity.infrastructure;
-    case EngineeringDomain::Data:
-        return capacity.data;
-    case EngineeringDomain::Operations:
-        return capacity.operations;
-    case EngineeringDomain::Count:
-        break;
-    }
-    return 0;
-}
-
-const EngineeringCapacity& effectivePlanningCapacity(const UiState& uiState)
-{
-    return uiState.engineeringCapacityPreviewVisible && uiState.selectedWorldActionIndex >= 0
-        ? uiState.previewEngineeringCapacity
-        : uiState.engineeringCapacity;
-}
-
-std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomainUsage(const UiState& uiState)
-{
-    std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> usage{};
-    for (const auto& planned : uiState.plannedInterventions) {
-        for (const auto& cost : planned.engineeringCosts) {
-            usage[static_cast<std::size_t>(cost.domain)] += cost.amount;
-        }
-    }
-    return usage;
-}
-
-EngineeringCapacity addCapacityPreview(EngineeringCapacity base, const EngineeringCapacity& bonus)
-{
-    base.frontend += bonus.frontend;
-    base.backend += bonus.backend;
-    base.infrastructure += bonus.infrastructure;
-    base.data += bonus.data;
-    base.operations += bonus.operations;
-    base.total += bonus.total;
-    return base;
-}
-
-bool validCapacityDistribution(const EngineeringCapacity& capacity, std::string& reason)
-{
-    if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0) {
-        reason = "This world action would reduce one specialty below zero capacity.";
-        return false;
-    }
-    if (capacity.total < 0) {
-        reason = "This world action would reduce the turn budget below zero.";
-        return false;
-    }
-    return true;
-}
-
-bool canQueueEngineeringCosts(const UiState& uiState, const std::vector<EngineeringCost>& costs, std::string& reason)
-{
-    const auto usage = plannedDomainUsage(uiState);
-    const EngineeringCapacity& capacity = effectivePlanningCapacity(uiState);
-    int plannedTotal = 0;
-    int addedTotal = 0;
-    for (const int used : usage) {
-        plannedTotal += used;
-    }
-    for (const auto& cost : costs) {
-        addedTotal += cost.amount;
-        const int next = usage[static_cast<std::size_t>(cost.domain)] + cost.amount;
-        const int cap = capacityForDomain(capacity, cost.domain);
-        if (next > cap) {
-            reason = std::string("Insufficient ") + engineeringDomainName(cost.domain) + " capacity this turn.";
-            return false;
-        }
-    }
-    if (plannedTotal + addedTotal > capacity.total) {
-        reason = "Insufficient turn budget.";
-        return false;
-    }
-    return true;
-}
-
-std::vector<EngineeringCost> engineeringCostsFor(MechanicType mechanic)
-{
-    if (const auto* definition = interventionFor(mechanic)) {
-        return definition->engineeringCosts;
-    }
-    return {};
-}
-
 Rectangle worldActionToggleBounds(int screenWidth)
 {
     return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
@@ -137,45 +33,11 @@ Rectangle worldActionOverlayCardBounds(Rectangle overlay, int index, int count)
     return {contentX + static_cast<float>(index) * (width + gap), overlay.y + 86.0f, width, overlay.height - 116.0f};
 }
 
-bool worldActionRequiredBeforeNodeActions(const UiState& uiState)
-{
-    return uiState.gameplayPhase == GameplayPhase::Planning && (uiState.eventPopupMode != EventPopupMode::None || (!uiState.worldActionDraft.empty() && uiState.selectedWorldActionIndex < 0));
-}
-
-
 Rectangle mapBounds(const CameraController& camera, int screenWidth, int screenHeight)
 {
     const Vector2 topLeft = worldToScreen({-MapProjection::worldWidth * 0.5f, -MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
     const Vector2 bottomRight = worldToScreen({MapProjection::worldWidth * 0.5f, MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
     return {topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y};
-}
-
-int hoveredPlacementCandidateIndex(const Simulation& simulation, TopologyMutationType type, const CameraController& camera, Vector2 mousePosition, int screenWidth, int screenHeight)
-{
-    if (!CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight))) {
-        return -1;
-    }
-
-    const PlacementCandidateGenerator generator;
-    const auto candidates = generator.generate(simulation, type);
-    if (candidates.empty()) {
-        return -1;
-    }
-
-    int bestIndex = -1;
-    float bestDistanceSquared = 1.0e12f;
-    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
-        const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
-        const Vector2 center = worldToScreen(world, screenWidth, screenHeight, camera);
-        const float dx = mousePosition.x - center.x;
-        const float dy = mousePosition.y - center.y;
-        const float distanceSquared = dx * dx + dy * dy;
-        if (distanceSquared < bestDistanceSquared) {
-            bestDistanceSquared = distanceSquared;
-            bestIndex = i;
-        }
-    }
-    return bestIndex;
 }
 
 bool canUseMapPlacementClick(const UiState& uiState, Vector2 mousePosition, const CameraController& camera, int screenWidth, int screenHeight)
@@ -192,6 +54,9 @@ bool canUseMapPlacementClick(const UiState& uiState, Vector2 mousePosition, cons
 
 void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera)
 {
+    const gameplay::actions::ActionQueue actionQueue;
+    const gameplay::actions::ActionPlacementService placementService;
+
     for (const auto& event : events) {
         if (event.phase != InputPhase::Pressed) {
             continue;
@@ -199,7 +64,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
         if (event.action == InputAction::Select) {
             if (canUseMapPlacementClick(uiState, event.mousePosition, camera, GetScreenWidth(), GetScreenHeight())) {
-                confirmHoveredPlacement(simulation, scenarioManager, uiState, camera, event.mousePosition);
+                placementService.confirmHoveredPlacement(simulation, scenarioManager, uiState, camera, event.mousePosition);
                 uiState.suppressMapSelectionOnce = true;
             } else {
                 handleActionPanelClick(event, simulation, scenarioManager, uiState);
@@ -209,28 +74,28 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
         switch (event.action) {
         case InputAction::ScaleUp:
-            queueMechanic(simulation, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ScaleUp, -1, 1.5}, "Scale Up", "API service");
             break;
         case InputAction::ScaleOut:
-            mechanicExecutor_.execute(simulation, {MechanicType::ScaleOut});
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ScaleOut}, "Scale Out", "API service");
             break;
         case InputAction::AddCache:
-            startPlacement(simulation, uiState, TopologyMutationType::AddCache);
+            placementService.startPlacement(simulation, uiState, TopologyMutationType::AddCache);
             break;
         case InputAction::AddReadReplica:
-            startPlacement(simulation, uiState, TopologyMutationType::AddReadReplica);
+            placementService.startPlacement(simulation, uiState, TopologyMutationType::AddReadReplica);
             break;
         case InputAction::AddQueue:
-            startPlacement(simulation, uiState, TopologyMutationType::AddQueue);
+            placementService.startPlacement(simulation, uiState, TopologyMutationType::AddQueue);
             break;
         case InputAction::AddRegionalCache:
-            startPlacement(simulation, uiState, TopologyMutationType::AddRegionalCache);
+            placementService.startPlacement(simulation, uiState, TopologyMutationType::AddRegionalCache);
             break;
         case InputAction::NextPlacementCandidate:
-            moveCandidate(simulation, uiState, 1);
+            placementService.moveCandidate(simulation, uiState, 1);
             break;
         case InputAction::PreviousPlacementCandidate:
-            moveCandidate(simulation, uiState, -1);
+            placementService.moveCandidate(simulation, uiState, -1);
             break;
         case InputAction::ConfirmPlacement:
             uiState.latestFeedback = "Hover a map region and click to place the selected node.";
@@ -239,13 +104,13 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             uiState.placementActive = false;
             break;
         case InputAction::ToggleCache:
-            queueMechanic(simulation, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
             break;
         case InputAction::ClearCache:
-            queueMechanic(simulation, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ClearCache}, "Clear Cache", "Cache");
             break;
         case InputAction::ToggleRetries:
-            queueMechanic(simulation, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ToggleRetries}, "Toggle Retries", "Retry policy");
             break;
         case InputAction::ToggleTrafficBurst:
             simulation.toggleBurstMode();
@@ -254,110 +119,18 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             simulation.resetProcessingCapacity();
             break;
         case InputAction::EnableTracing:
-            queueMechanic(simulation, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::EnableTracing}, "Enable Tracing", "Observability");
             break;
         case InputAction::ThrottleTrafficUp:
-            queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, 1.0}, "Increase Traffic", "Demand");
             break;
         case InputAction::ThrottleTrafficDown:
-            queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
+            actionQueue.queueMechanic(simulation, uiState, {MechanicType::ThrottleTraffic, -1, -1.0}, "Decrease Traffic", "Demand");
             break;
         default:
             break;
         }
     }
-}
-
-void InterventionController::startPlacement(const Simulation& simulation, UiState& uiState, TopologyMutationType type) const
-{
-    if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
-        return;
-    }
-    const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
-        : type == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
-        : type == TopologyMutationType::AddQueue ? MechanicType::AddQueue
-        : MechanicType::AddRegionalCache;
-    if (!simulation.isMechanicAllowed(mechanic)) {
-        return;
-    }
-    if (const auto* intervention = interventionFor(mechanic); intervention != nullptr && !simulation.hasAnyRegionCapacity(intervention->regionSlotUsage)) {
-        uiState.latestFeedback = "No regional deployment slots are available for this action.";
-        return;
-    }
-    const std::vector<EngineeringCost> costs = engineeringCostsFor(mechanic);
-    std::string capacityReason;
-    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
-        uiState.latestFeedback = capacityReason;
-        return;
-    }
-    uiState.placementActive = true;
-    uiState.activeMutation = type;
-    uiState.placementCandidateIndex = 0;
-    uiState.latestFeedback = std::string(topologyMutationName(type)) + " selected. Hover the map to preview a region, then click to queue placement.";
-}
-
-void InterventionController::moveCandidate(const Simulation& simulation, UiState& uiState, int delta) const
-{
-    if (!uiState.placementActive) {
-        return;
-    }
-    const auto candidates = candidateGenerator_.generate(simulation, uiState.activeMutation);
-    if (candidates.empty()) {
-        uiState.placementCandidateIndex = 0;
-        return;
-    }
-    const int count = static_cast<int>(candidates.size());
-    uiState.placementCandidateIndex = (uiState.placementCandidateIndex + delta + count) % count;
-}
-
-void InterventionController::confirmPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const PlacementOption& option) const
-{
-    if (!uiState.placementActive) {
-        return;
-    }
-
-    MutationPreview preview = mutationValidator_.preview(simulation, uiState.activeMutation, option);
-    const MechanicType mechanic = uiState.activeMutation == TopologyMutationType::AddCache ? MechanicType::AddCache
-        : uiState.activeMutation == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
-        : uiState.activeMutation == TopologyMutationType::AddQueue ? MechanicType::AddQueue
-        : MechanicType::AddRegionalCache;
-    if (const auto* intervention = interventionFor(mechanic)) {
-        preview.mutation.complexityCost = intervention->complexityCost;
-        preview.mutation.regionSlotUsage = intervention->regionSlotUsage;
-        if (!simulation.canUseRegionSlots(preview.mutation.placement.location.regionName, intervention->regionSlotUsage)) {
-            uiState.latestFeedback = preview.mutation.placement.displayName + " has no free deployment slots for this action.";
-            return;
-        }
-    }
-    if (!preview.valid) {
-        uiState.latestFeedback = preview.validationMessage.empty() ? "This node cannot be placed here." : preview.validationMessage;
-        return;
-    }
-
-    std::string feedback = std::string(topologyMutationName(uiState.activeMutation)) + " queued in " + option.displayName + ". Resolve the turn to see consequences.";
-    if (const auto* intervention = interventionFor(mechanic); intervention != nullptr) {
-        if (!intervention->positiveEffects.empty()) {
-            feedback = intervention->positiveEffects.front() + ".";
-        }
-        if (!intervention->pressureShifts.empty()) {
-            feedback += " " + intervention->pressureShifts.front() + ".";
-        }
-    }
-    queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), option.displayName, feedback);
-    uiState.placementActive = false;
-    (void)scenarioManager;
-}
-
-void InterventionController::confirmHoveredPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera, Vector2 mousePosition) const
-{
-    const auto candidates = candidateGenerator_.generate(simulation, uiState.activeMutation);
-    const int index = hoveredPlacementCandidateIndex(simulation, uiState.activeMutation, camera, mousePosition, GetScreenWidth(), GetScreenHeight());
-    if (index < 0 || index >= static_cast<int>(candidates.size())) {
-        uiState.latestFeedback = "Hover a map region and click to place the selected node.";
-        return;
-    }
-    confirmPlacement(simulation, scenarioManager, uiState, candidates[static_cast<std::size_t>(index)]);
 }
 
 void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
@@ -368,6 +141,9 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     const int screenHeight = GetScreenHeight();
     const UiLayout layout = computeUiLayout(screenWidth, screenHeight);
     const Rectangle sidebar = layout.rightSidebar;
+    const gameplay::actions::ActionQueue actionQueue;
+    const gameplay::actions::ActionPlacementService placementService;
+
     if (uiState.eventPopupMode != EventPopupMode::None) {
         const Rectangle eventOverlay = EventOverlay::overlayBounds(screenWidth, screenHeight);
         if (CheckCollisionPointRec(event.mousePosition, EventOverlay::acknowledgeButtonBounds(eventOverlay))) {
@@ -386,10 +162,12 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
         uiState.suppressMapSelectionOnce = true;
         return;
     }
+
     if (uiState.gameplayPhase != GameplayPhase::Planning) {
         uiState.latestFeedback = "Actions are locked until the next planning phase.";
         return;
     }
+
     if (uiState.gameplayPhase == GameplayPhase::Planning && !uiState.worldActionDraft.empty()) {
         if (CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(screenWidth))) {
             uiState.worldActionDraftVisible = !uiState.worldActionDraftVisible;
@@ -403,11 +181,11 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
                 if (!CheckCollisionPointRec(event.mousePosition, worldActionOverlayCardBounds(overlay, i, count))) {
                     continue;
                 }
-                const EngineeringCapacity selectedCapacity = addCapacityPreview(
+                const EngineeringCapacity selectedCapacity = gameplay::actions::addCapacityPreview(
                     scenarioManager.definition().engineeringCapacity,
                     uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus);
                 std::string capacityReason;
-                if (!validCapacityDistribution(selectedCapacity, capacityReason)) {
+                if (!gameplay::actions::validCapacityDistribution(selectedCapacity, capacityReason)) {
                     uiState.latestFeedback = capacityReason;
                     uiState.suppressMapSelectionOnce = true;
                     return;
@@ -423,11 +201,13 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             return;
         }
     }
-    if (worldActionRequiredBeforeNodeActions(uiState) && CheckCollisionPointRec(event.mousePosition, sidebar)) {
+
+    if (gameplay::actions::worldActionRequiredBeforeNodeActions(uiState) && CheckCollisionPointRec(event.mousePosition, sidebar)) {
         uiState.selectedActionIndex = -1;
-        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
+        uiState.latestFeedback = gameplay::actions::nodeActionGateMessage(uiState);
         return;
     }
+
     const float buttonY = sidebar.y + sidebar.height - 54.0f;
     const Rectangle actionButton{sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f};
     if (CheckCollisionPointRec(event.mousePosition, actionButton)) {
@@ -439,9 +219,9 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             const auto& card = cards[static_cast<std::size_t>(uiState.selectedActionIndex)];
             if (card.available && card.kind == ActionCardKind::Mechanic) {
                 const double amount = card.mechanic == MechanicType::ThrottleTraffic ? -1.0 : 1.5;
-                queueMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
+                actionQueue.queueMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
             } else if (card.available && card.kind == ActionCardKind::TopologyMutation) {
-                startPlacement(simulation, uiState, card.mutation);
+                placementService.startPlacement(simulation, uiState, card.mutation);
             }
         }
         return;
@@ -450,11 +230,11 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     const Rectangle preview{sidebar.x + 10.0f, buttonY - UiTheme::gap - 170.0f, sidebar.width - 20.0f, 170.0f};
     if (uiState.placementActive) {
         if (CheckCollisionPointRec(event.mousePosition, {preview.x + 14.0f, preview.y + 116.0f, 28.0f, 24.0f})) {
-            moveCandidate(simulation, uiState, -1);
+            placementService.moveCandidate(simulation, uiState, -1);
             return;
         }
         if (CheckCollisionPointRec(event.mousePosition, {preview.x + preview.width - 42.0f, preview.y + 116.0f, 28.0f, 24.0f})) {
-            moveCandidate(simulation, uiState, 1);
+            placementService.moveCandidate(simulation, uiState, 1);
             return;
         }
     }
@@ -476,7 +256,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             uiState.latestFeedback = card.name + " selected. Use the action button to apply.";
             break;
         case ActionCardKind::TopologyMutation:
-            startPlacement(simulation, uiState, card.mutation);
+            placementService.startPlacement(simulation, uiState, card.mutation);
             break;
         case ActionCardKind::ConfirmPreview:
             uiState.latestFeedback = "Hover the map, then click a region to place this node.";
@@ -488,105 +268,4 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
         }
         return;
     }
-}
-
-void InterventionController::executeMechanic(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
-{
-    const auto before = simulation.metrics();
-    mechanicExecutor_.execute(simulation, command);
-    scenarioManager.notifyActionTriggered(command.type);
-    uiState.pendingVisualFeedbackEvents.push_back({
-        .kind = command.type == MechanicType::ThrottleTraffic ? VisualFeedbackKind::TrafficShift : VisualFeedbackKind::ActionAcknowledged,
-        .targetNodeId = command.targetId,
-        .mechanic = command.type,
-        .label = actionName,
-    });
-
-    std::string message = actionName + " applied.";
-    if (const auto* intervention = interventionFor(command.type); intervention != nullptr && !intervention->positiveEffects.empty()) {
-        message = intervention->positiveEffects.front() + ".";
-        if (!intervention->pressureShifts.empty()) {
-            message += " " + intervention->pressureShifts.front() + ".";
-        }
-    } else if (command.type == MechanicType::ScaleUp) {
-        message = "API capacity increased. Watch queue depth and utilization.";
-    } else if (command.type == MechanicType::ToggleRetries) {
-        message = "Retry policy changed. Watch timeout rate and retry amplification.";
-    } else if (command.type == MechanicType::ClearCache) {
-        message = "Cache cleared. Repeated reads may warm it again.";
-    } else if (command.type == MechanicType::EnableCache) {
-        message = "Cache behavior toggled. Watch cache hit rate and DB pressure.";
-    }
-
-    uiState.latestFeedback = message;
-    uiState.actionHistory.push_back({simulation.timeSeconds(), std::move(actionName), std::move(target), message, before, true, false, 4.0});
-    while (uiState.actionHistory.size() > 8) {
-        uiState.actionHistory.pop_front();
-    }
-}
-
-void InterventionController::recordFeedback(UiState& uiState, const Simulation& simulation, std::string actionName, std::string target, std::string message) const
-{
-    uiState.latestFeedback = message;
-    uiState.actionHistory.push_back({simulation.timeSeconds(), std::move(actionName), std::move(target), message, simulation.metrics(), true, false, 4.0});
-    while (uiState.actionHistory.size() > 8) {
-        uiState.actionHistory.pop_front();
-    }
-}
-
-void InterventionController::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
-{
-    if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
-        return;
-    }
-    if (!simulation.isMechanicAllowed(command.type)) {
-        uiState.latestFeedback = "This action is not available in the current scenario.";
-        return;
-    }
-    const std::vector<EngineeringCost> costs = engineeringCostsFor(command.type);
-    std::string capacityReason;
-    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
-        uiState.latestFeedback = capacityReason;
-        return;
-    }
-    uiState.gameplayPhase = GameplayPhase::Planning;
-    uiState.plannedInterventions.push_back({
-        .kind = PlannedInterventionKind::Mechanic,
-        .command = command,
-        .actionName = std::move(actionName),
-        .target = std::move(target),
-        .preview = "Queued for the next turn.",
-        .engineeringCosts = costs,
-    });
-    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
-}
-
-void InterventionController::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
-{
-    if (worldActionRequiredBeforeNodeActions(uiState)) {
-        uiState.latestFeedback = uiState.eventPopupMode != EventPopupMode::None ? "Review Events before selecting World or Node Actions." : "Pick a World Action before selecting Node Actions.";
-        return;
-    }
-    const MechanicType mechanic = type == TopologyMutationType::AddCache ? MechanicType::AddCache
-        : type == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
-        : type == TopologyMutationType::AddQueue ? MechanicType::AddQueue
-        : MechanicType::AddRegionalCache;
-    const std::vector<EngineeringCost> costs = engineeringCostsFor(mechanic);
-    std::string capacityReason;
-    if (!canQueueEngineeringCosts(uiState, costs, capacityReason)) {
-        uiState.latestFeedback = capacityReason;
-        return;
-    }
-    uiState.gameplayPhase = GameplayPhase::Planning;
-    uiState.plannedInterventions.push_back({
-        .kind = PlannedInterventionKind::TopologyMutation,
-        .mutation = mutation,
-        .mutationType = type,
-        .actionName = std::move(actionName),
-        .target = std::move(target),
-        .preview = std::move(preview),
-        .engineeringCosts = costs,
-    });
-    uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
 }
