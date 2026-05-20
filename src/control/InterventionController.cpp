@@ -390,17 +390,9 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
                 if (!CheckCollisionPointRec(event.mousePosition, worldActionOverlayCardBounds(overlay, i, count))) {
                     continue;
                 }
-                EngineeringCapacity currentBase = uiState.engineeringCapacity;
-                if (uiState.selectedWorldActionIndex < 0 && uiState.hoveredWorldActionIndex == i) {
-                    const EngineeringCapacity& hoverBonus = uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus;
-                    currentBase.frontend -= hoverBonus.frontend;
-                    currentBase.backend -= hoverBonus.backend;
-                    currentBase.infrastructure -= hoverBonus.infrastructure;
-                    currentBase.data -= hoverBonus.data;
-                    currentBase.operations -= hoverBonus.operations;
-                    currentBase.total -= hoverBonus.total;
-                }
-                const EngineeringCapacity selectedCapacity = addCapacityPreview(currentBase, uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus);
+                const EngineeringCapacity selectedCapacity = addCapacityPreview(
+                    scenarioManager.definition().engineeringCapacity,
+                    uiState.worldActionDraft[static_cast<std::size_t>(i)].capacityBonus);
                 std::string capacityReason;
                 if (!validCapacityDistribution(selectedCapacity, capacityReason)) {
                     uiState.latestFeedback = capacityReason;

@@ -9,7 +9,7 @@
 #include <string>
 
 namespace {
-EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapacity& bonus)
+EngineeringCapacity displayCapacityWithBonus(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
     base.frontend = std::max(0, base.frontend + bonus.frontend);
     base.backend = std::max(0, base.backend + bonus.backend);
@@ -19,18 +19,29 @@ EngineeringCapacity addCapacity(EngineeringCapacity base, const EngineeringCapac
     base.total = std::max(0, base.total + bonus.total);
     return base;
 }
+
+EngineeringCapacity activeCapacityBonus(const UiState& state)
+{
+    if (state.selectedWorldActionIndex >= 0
+        && state.selectedWorldActionIndex < static_cast<int>(state.worldActionDraft.size())) {
+        return state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)].capacityBonus;
+    }
+    if (state.hoveredWorldActionIndex >= 0
+        && state.hoveredWorldActionIndex < static_cast<int>(state.worldActionDraft.size())) {
+        return state.worldActionDraft[static_cast<std::size_t>(state.hoveredWorldActionIndex)].capacityBonus;
+    }
+    return {};
+}
 }
 
 void UiManager::update(const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager, bool paused)
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
-    EngineeringCapacity previewBonus = state_.worldActionCapacityBonus;
-    if (state_.selectedWorldActionIndex < 0 && state_.hoveredWorldActionIndex >= 0
-        && state_.hoveredWorldActionIndex < static_cast<int>(state_.worldActionDraft.size())) {
-        previewBonus = state_.worldActionDraft[static_cast<std::size_t>(state_.hoveredWorldActionIndex)].capacityBonus;
-    }
-    state_.engineeringCapacity = addCapacity(scenarioManager.definition().engineeringCapacity, previewBonus);
+    // Always rebuild the visible planning capacity from the scenario baseline.
+    // This avoids carrying stale UI state between the initial turn, hover previews,
+    // and the first selected World Action.
+    state_.engineeringCapacity = displayCapacityWithBonus(scenarioManager.definition().engineeringCapacity, activeCapacityBonus(state_));
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager, packManager);
