@@ -19,7 +19,7 @@ public:
     void reset();
     void beginTurn();
     void update(double dt, Simulation& simulation);
-    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(const Simulation& simulation);
+    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(Simulation& simulation);
     [[nodiscard]] std::size_t eventLogSize() const;
     [[nodiscard]] std::vector<EventLogEntry> eventsSince(std::size_t startIndex) const;
     void setCalendarProgressionScale(double calendarDaysPerSimulationSecond);
@@ -49,7 +49,7 @@ public:
     void setSandboxLatencyMultiplier(double multiplier);
     void setSandboxQueueBuildup(bool enabled);
     void setSandboxSeed(std::uint32_t seed);
-    void injectSandboxEvent(const std::string& id, const Simulation& simulation);
+    void injectSandboxEvent(const std::string& id, Simulation& simulation);
     void clearSandboxEvents();
 
 private:

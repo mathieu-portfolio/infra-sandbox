@@ -308,6 +308,22 @@ TEST(GeographyTests, DefaultScenarioBuildsGeographicTopology)
     EXPECT_GT(simulation.graph().links().front().geographicLatencyContributionSeconds, 0.0);
 }
 
+TEST(GeographyTests, RegionalDemandEventCanAddNewDemandArea)
+{
+    Simulation simulation(Scenario::createDefault());
+    const auto nodeCount = simulation.graph().nodes().size();
+    const auto linkCount = simulation.graph().links().size();
+
+    ASSERT_TRUE(simulation.addRegionalDemandSource({.scope = EventLocationScope::Region, .region = "Africa"}, 1.25));
+
+    EXPECT_EQ(simulation.graph().nodes().size(), nodeCount + 1);
+    EXPECT_EQ(simulation.graph().links().size(), linkCount + 1);
+    const Node& node = simulation.graph().nodes().back();
+    EXPECT_EQ(node.type, NodeType::ClientCluster);
+    EXPECT_EQ(node.geoLocation.regionName, "Africa");
+    EXPECT_DOUBLE_EQ(node.requestRatePerSecond, 1.25);
+}
+
 ScenarioDefinition saturatedScenario()
 {
     ScenarioDefinition scenario;

@@ -5,7 +5,21 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
+#include <optional>
 #include <utility>
+
+namespace {
+std::optional<GeoLocation> regionCenter(const std::string& regionName)
+{
+    for (const auto& definition : GeographicRegistry::definitions()) {
+        if (definition.name == regionName) {
+            return definition.center;
+        }
+    }
+    return std::nullopt;
+}
+}
 
 
 void Simulation::adjustClientRequestRates(double deltaPerSecond)
@@ -136,6 +150,68 @@ void Simulation::setLocalizedEventModifiers(std::vector<LocalizedEventModifier> 
     refreshEffectiveCapacities();
 }
 
+bool Simulation::addRegionalDemandSource(const EventLocation& location, double requestRatePerSecond)
+{
+    if (location.scope != EventLocationScope::Region || location.region.empty() || requestRatePerSecond <= 0.0) {
+        return false;
+    }
+
+    for (auto& node : graph_.nodes()) {
+        if (node.type == NodeType::ClientCluster && node.hasGeoLocation && node.geoLocation.regionName == location.region) {
+            node.requestRatePerSecond += requestRatePerSecond;
+            node.baseRequestRatePerSecond = node.requestRatePerSecond;
+            return true;
+        }
+    }
+
+    const auto locationCenter = regionCenter(location.region);
+    if (!locationCenter) {
+        return false;
+    }
+
+    const Node* targetApi = nullptr;
+    double bestDistance = std::numeric_limits<double>::max();
+    for (const auto& node : graph_.nodes()) {
+        if (node.type != NodeType::ApiService) {
+            continue;
+        }
+        const double distance = node.hasGeoLocation
+            ? MapProjection::greatCircleKilometers(*locationCenter, node.geoLocation)
+            : 0.0;
+        if (distance < bestDistance) {
+            bestDistance = distance;
+            targetApi = &node;
+        }
+    }
+    if (targetApi == nullptr) {
+        return false;
+    }
+
+    Node node;
+    node.name = location.region + " users";
+    node.type = NodeType::ClientCluster;
+    node.geoLocation = *locationCenter;
+    node.hasGeoLocation = true;
+    node.position = MapProjection::projectEquirectangular(node.geoLocation);
+    node.requestRatePerSecond = requestRatePerSecond;
+    node.baseRequestRatePerSecond = requestRatePerSecond;
+    const int sourceId = graph_.addNode(std::move(node));
+
+    Link link;
+    link.sourceNodeId = sourceId;
+    link.targetNodeId = targetApi->id;
+    link.baseLatencySeconds = 0.18;
+    if (targetApi->hasGeoLocation) {
+        const GeographicSystem geography;
+        link.baseLatencySeconds = geography.latencySeconds(*locationCenter, targetApi->geoLocation, link.baseLatencySeconds);
+        link.geographicDistanceKm = MapProjection::greatCircleKilometers(*locationCenter, targetApi->geoLocation);
+        link.geographicLatencyContributionSeconds = std::max(0.0, link.baseLatencySeconds - 0.18);
+    }
+    graph_.addLink(std::move(link));
+    refreshRegionSlots();
+    return true;
+}
+
 void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays)
 {
     timeSystem_.setScenarioElapsed(elapsedSeconds);
@@ -208,4 +284,3 @@ int Simulation::maxScaleLevelForNode(int nodeId, int contentMaxScaleLevel) const
     }
     return std::max(1, contentMaxScaleLevel > 0 ? contentMaxScaleLevel : node->maxScaleLevel);
 }
-

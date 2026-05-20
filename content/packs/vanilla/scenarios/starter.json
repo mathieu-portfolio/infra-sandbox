@@ -132,6 +132,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",
@@ -350,6 +351,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",
@@ -444,6 +446,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",
@@ -668,6 +671,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",
@@ -860,6 +864,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",
@@ -1055,6 +1060,7 @@
     "events": [
       "planning_user_growth_forecast",
       "planning_regional_adoption",
+      "planning_new_area_traffic",
       "planning_storage_warning",
       "planning_retry_risk",
       "planning_cache_opportunity",

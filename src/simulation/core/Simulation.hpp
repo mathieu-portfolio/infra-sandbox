@@ -39,6 +39,7 @@ public:
     void setScenarioDatabaseHeavyShareOverride(std::optional<double> share);
     void setScenarioRetryDelayMultiplier(double multiplier);
     void setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers);
+    bool addRegionalDemandSource(const EventLocation& location, double requestRatePerSecond);
     void setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays = 0.0);
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);

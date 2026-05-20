@@ -53,7 +53,8 @@ enum class EventEffectType {
     RetryStorm,
     CacheWarmup,
     PartialRecovery,
-    MechanicUnlock
+    MechanicUnlock,
+    RegionalDemand
 };
 
 enum class EventLocationScope {
@@ -98,6 +99,8 @@ struct EventEffect {
     NumericRange retryDelayMultiplierRange{1.0, 1.0};
     std::optional<double> databaseHeavyShare;
     std::optional<NumericRange> databaseHeavyShareRange;
+    double regionalDemandRatePerSecond = 0.0;
+    NumericRange regionalDemandRatePerSecondRange{0.0, 0.0};
     std::vector<MechanicType> unlockMechanics;
 };
 
@@ -155,9 +158,9 @@ struct EventLogEntry {
 class EventManager {
 public:
     void reset(std::vector<EventDefinition> definitions, std::uint32_t seed = 0);
-    void update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation);
-    void inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation);
-    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation);
+    void update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, Simulation& simulation);
+    void inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, Simulation& simulation);
+    [[nodiscard]] std::optional<EventLogEntry> rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, Simulation& simulation);
     [[nodiscard]] std::vector<EventLogEntry> eventsSince(std::size_t startIndex) const;
     [[nodiscard]] std::size_t recentEventCount() const;
     void clear();
@@ -178,7 +181,7 @@ private:
     [[nodiscard]] bool triggerMet(const EventDefinition& definition, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const;
     [[nodiscard]] bool eligibleForRoll(std::size_t definitionIndex, EventMoment moment, double scenarioTimeSeconds, int turnNumber, int phaseIndex, const Simulation& simulation) const;
     [[nodiscard]] double metricValue(EventMetric metric, const Simulation& simulation) const;
-    EventLogEntry activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation);
+    EventLogEntry activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, Simulation& simulation);
     [[nodiscard]] EventLocation resolvedLocation(const EventDefinition& definition, double scenarioTimeSeconds, const Simulation& simulation) const;
 
     std::vector<EventDefinition> definitions_;

@@ -27,6 +27,7 @@ void validateEventRanges(const EventDefinition& event, const std::string& label,
     validateRange(event.effect.databaseCapacityMultiplierRange, label + " database_capacity_multiplier", result);
     validateRange(event.effect.latencyMultiplierRange, label + " latency_multiplier", result);
     validateRange(event.effect.retryDelayMultiplierRange, label + " retry_delay_multiplier", result);
+    validateRange(event.effect.regionalDemandRatePerSecondRange, label + " regional_demand_rate_per_second", result);
     if (event.effect.databaseHeavyShareRange) {
         validateRange(*event.effect.databaseHeavyShareRange, label + " database_heavy_share", result);
     }

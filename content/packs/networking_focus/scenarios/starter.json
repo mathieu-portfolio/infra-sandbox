@@ -62,6 +62,7 @@
     "events": [
       "net_latency_spike",
       "net_cross_region_overflow",
+      "net_new_region_demand",
       "net_observability_gap",
       "net_route_recovery"
     ],
@@ -335,6 +336,7 @@
     "events": [
       "net_bandwidth_hotspot",
       "net_cross_region_overflow",
+      "net_new_region_demand",
       "net_observability_gap",
       "net_route_recovery"
     ],
@@ -480,6 +482,7 @@
       "net_latency_spike",
       "net_edge_cache_warmup",
       "net_cross_region_overflow",
+      "net_new_region_demand",
       "net_observability_gap"
     ],
     "failure_conditions": [

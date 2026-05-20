@@ -72,6 +72,50 @@
     ]
   },
   {
+    "id": "planning_new_area_traffic",
+    "display_name": "New Area Traffic",
+    "description": "A previously quiet world area starts sending real traffic into the platform.",
+    "category": "geography",
+    "moment": "planning_start",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.random_region",
+      "args": {
+        "regions": [
+          "AsiaPacific",
+          "SouthAmerica",
+          "Africa",
+          "Oceania"
+        ]
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
+    },
+    "effect": {
+      "type": "new_area_traffic",
+      "regional_demand_rate_per_second": {
+        "min": 0.7,
+        "max": 1.4
+      },
+      "traffic_multiplier": {
+        "min": 1.08,
+        "max": 1.18
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "planning",
+      "traffic",
+      "geography",
+      "new_region"
+    ]
+  },
+  {
     "id": "planning_storage_warning",
     "display_name": "Storage Warning",
     "description": "Persistence may become the weak point if read-heavy behavior keeps rising.",

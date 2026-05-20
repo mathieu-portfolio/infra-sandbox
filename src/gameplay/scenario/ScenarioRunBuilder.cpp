@@ -73,6 +73,7 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
     event.effect.databaseCapacityMultiplier = content::sampleRange(event.effect.databaseCapacityMultiplierRange, seed, key + ".effect.database_capacity_multiplier");
     event.effect.latencyMultiplier = content::sampleRange(event.effect.latencyMultiplierRange, seed, key + ".effect.latency_multiplier");
     event.effect.retryDelayMultiplier = content::sampleRange(event.effect.retryDelayMultiplierRange, seed, key + ".effect.retry_delay_multiplier");
+    event.effect.regionalDemandRatePerSecond = content::sampleRange(event.effect.regionalDemandRatePerSecondRange, seed, key + ".effect.regional_demand_rate_per_second");
     if (event.effect.databaseHeavyShareRange) {
         event.effect.databaseHeavyShare = content::sampleRange(*event.effect.databaseHeavyShareRange, seed, key + ".effect.database_heavy_share");
     }

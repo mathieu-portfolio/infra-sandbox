@@ -18,7 +18,7 @@ void EventManager::reset(std::vector<EventDefinition> definitions, std::uint32_t
     recentEvents_.clear();
 }
 
-void EventManager::update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation)
+void EventManager::update(double dt, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, Simulation& simulation)
 {
     for (auto& active : activeEvents_) {
         active.remainingSeconds -= dt;
@@ -58,14 +58,14 @@ void EventManager::update(double dt, double scenarioTimeSeconds, int turnNumber,
     }
 }
 
-void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation)
+void EventManager::inject(EventDefinition definition, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, Simulation& simulation)
 {
     definitions_.push_back(std::move(definition));
     fired_.push_back(true);
     activate(definitions_.size() - 1, scenarioTimeSeconds, turnNumber, secondsPerTurn, simulation);
 }
 
-std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, const Simulation& simulation)
+std::optional<EventLogEntry> EventManager::rollPlanningEvent(double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, int phaseIndex, Simulation& simulation)
 {
     std::vector<std::size_t> eligible;
     double totalWeight = 0.0;
@@ -234,7 +234,7 @@ double EventManager::metricValue(EventMetric metric, const Simulation& simulatio
     return 0.0;
 }
 
-EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, const Simulation& simulation)
+EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenarioTimeSeconds, int turnNumber, double secondsPerTurn, Simulation& simulation)
 {
     if (definitionIndex >= definitions_.size()) {
         return {};
@@ -244,6 +244,9 @@ EventLogEntry EventManager::activate(std::size_t definitionIndex, double scenari
     definition.location = resolvedLocation(definition, scenarioTimeSeconds, simulation);
     if (definition.durationTurns > 0) {
         definition.durationSeconds = std::max(1.0, secondsPerTurn) * static_cast<double>(definition.durationTurns);
+    }
+    if (definition.effect.type == EventEffectType::RegionalDemand) {
+        simulation.addRegionalDemandSource(definition.location, definition.effect.regionalDemandRatePerSecond);
     }
     activeEvents_.push_back({
         .definition = definition,

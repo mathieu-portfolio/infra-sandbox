@@ -73,6 +73,7 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
     event.effect.databaseCapacityMultiplier = content::sampleRange(event.effect.databaseCapacityMultiplierRange, seed, key + ".effect.database_capacity_multiplier");
     event.effect.latencyMultiplier = content::sampleRange(event.effect.latencyMultiplierRange, seed, key + ".effect.latency_multiplier");
     event.effect.retryDelayMultiplier = content::sampleRange(event.effect.retryDelayMultiplierRange, seed, key + ".effect.retry_delay_multiplier");
+    event.effect.regionalDemandRatePerSecond = content::sampleRange(event.effect.regionalDemandRatePerSecondRange, seed, key + ".effect.regional_demand_rate_per_second");
     if (event.effect.databaseHeavyShareRange) {
         event.effect.databaseHeavyShare = content::sampleRange(*event.effect.databaseHeavyShareRange, seed, key + ".effect.database_heavy_share");
     }
@@ -226,7 +227,7 @@ void ScenarioManager::setSandboxSeed(std::uint32_t seed)
     createRun(seed);
 }
 
-void ScenarioManager::injectSandboxEvent(const std::string& id, const Simulation& simulation)
+void ScenarioManager::injectSandboxEvent(const std::string& id, Simulation& simulation)
 {
     const std::string contentId = id.rfind("sandbox_", 0) == 0 ? id : "sandbox_" + id;
     const auto preset = std::find_if(run_.activeDefinition.sandboxEvents.begin(), run_.activeDefinition.sandboxEvents.end(), [&](const EventDefinition& event) {
@@ -335,4 +336,3 @@ std::string ScenarioManager::activeModifiersSummary() const
     }
     return stream.str();
 }
-

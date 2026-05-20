@@ -162,6 +162,49 @@
     ]
   },
   {
+    "id": "net_new_region_demand",
+    "display_name": "New Region Demand",
+    "description": "Traffic starts arriving from a region that was not part of the original request path.",
+    "category": "geography",
+    "moment": "planning_start",
+    "weight": 1.05,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.random_region",
+      "args": {
+        "regions": [
+          "AsiaPacific",
+          "SouthAmerica",
+          "Africa",
+          "Oceania"
+        ]
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "new_area_traffic",
+      "regional_demand_rate_per_second": {
+        "min": 0.9,
+        "max": 1.7
+      },
+      "traffic_multiplier": {
+        "min": 1.08,
+        "max": 1.22
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "regional_scaling",
+      "latency",
+      "new_region"
+    ]
+  },
+  {
     "id": "net_edge_cache_warmup",
     "display_name": "Edge Cache Warmup",
     "description": "The edge starts absorbing repeated reads, but only after the first wave pays the distance cost.",

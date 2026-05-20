@@ -362,6 +362,7 @@ EventEffectType effectTypeFromId(const std::string& id)
     if (id == "modify_traffic_rate") return EventEffectType::TrafficSpike;
     if (id == "modify_burst_intensity") return EventEffectType::TrafficSpike;
     if (id == "change_request_mix") return EventEffectType::ViralGrowth;
+    if (id == "add_regional_demand" || id == "new_area_traffic") return EventEffectType::RegionalDemand;
     if (id == "degrade_node_capacity") return EventEffectType::DatabaseSlowdown;
     if (id == "unlock_action" || id == "unlock_intervention") return EventEffectType::MechanicUnlock;
     if (id == "emit_feedback") return EventEffectType::PartialRecovery;
@@ -416,6 +417,7 @@ void validateEventRanges(const EventDefinition& event, const std::string& label,
     validateRange(event.effect.databaseCapacityMultiplierRange, label + " database_capacity_multiplier", result);
     validateRange(event.effect.latencyMultiplierRange, label + " latency_multiplier", result);
     validateRange(event.effect.retryDelayMultiplierRange, label + " retry_delay_multiplier", result);
+    validateRange(event.effect.regionalDemandRatePerSecondRange, label + " regional_demand_rate_per_second", result);
     if (event.effect.databaseHeavyShareRange) {
         validateRange(*event.effect.databaseHeavyShareRange, label + " database_heavy_share", result);
     }
@@ -592,6 +594,8 @@ EventDefinition parseEvent(const Json& object)
         event.effect.latencyMultiplier = event.effect.latencyMultiplierRange.min;
         event.effect.retryDelayMultiplierRange = rangeAt(*effect, "retry_delay_multiplier", event.effect.retryDelayMultiplier);
         event.effect.retryDelayMultiplier = event.effect.retryDelayMultiplierRange.min;
+        event.effect.regionalDemandRatePerSecondRange = rangeAt(*effect, "regional_demand_rate_per_second", event.effect.regionalDemandRatePerSecond);
+        event.effect.regionalDemandRatePerSecond = event.effect.regionalDemandRatePerSecondRange.min;
         if (const Json* share = effect->find("database_heavy_share"); share != nullptr) {
             event.effect.databaseHeavyShareRange = rangeFromJson(*share, 0.0);
             event.effect.databaseHeavyShare = event.effect.databaseHeavyShareRange->min;
