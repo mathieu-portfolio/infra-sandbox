@@ -90,6 +90,10 @@ private:
     void routeFromApi(Request& request);
     void routeFromDatabase(Request& request);
     void routeToLink(Request& request, Link& link, RequestRouteStage nextStage);
+    [[nodiscard]] Link* selectOutgoingLink(int sourceNodeId, RequestRouteStage routeStage);
+    [[nodiscard]] Link* selectClientIngressLink(const Node& clientNode);
+    [[nodiscard]] double trafficEvolutionMultiplierFor(const Node& node, double burstMultiplier) const;
+    [[nodiscard]] double retryEvolutionDelayMultiplierFor(const Node& node) const;
     [[nodiscard]] Link* linkBetween(int sourceNodeId, int targetNodeId);
     [[nodiscard]] std::optional<int> firstNodeOfType(NodeType type) const;
     [[nodiscard]] double processingCost(const Request& request, const Node& node) const;

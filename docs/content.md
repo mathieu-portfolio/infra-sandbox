@@ -13,7 +13,7 @@ Gameplay metadata lives under content packs in `content/packs/`. C++ still owns 
 - `modifiers/`: reusable scenario modifiers.
 - `actions/node_actions.json`: Node Action metadata for mechanics and topology mutations.
 - `actions/world_actions.json`: authored World Action templates used for planning drafts.
-- `traffic/`: reusable traffic profile definitions.
+- `traffic_patterns/` or `traffic/`: reusable traffic profile definitions.
 - `balancing/`: shared gameplay tuning such as pressure thresholds, interpretation text, and history windows.
 
 ## Definition Rules
@@ -117,6 +117,23 @@ Range-capable fields:
 - World Actions: `intensity_range`, `duration_seconds`, `capacity_bonus` domain values, `pressure_resistance`, `event_intensity_multiplier`, `complexity_delta`
 
 Node Actions/cards remain fixed authored data unless a future procedural field is explicitly added.
+
+Traffic profiles may include an `evolution` block for advanced traffic behavior:
+
+```json
+"evolution": {
+  "enabled": true,
+  "pressure_sensitivity": 0.18,
+  "churn_sensitivity": 0.22,
+  "migration_sensitivity": 0.9,
+  "reroute_pressure_sensitivity": 1.6,
+  "reroute_latency_sensitivity": 0.45,
+  "dynamic_retry_sensitivity": 0.35,
+  "burst_amplification": 0.2
+}
+```
+
+These values let demand react to client experience, migrate across alternate ingress links, reroute away from pressured or slow paths, shorten retry delay under retry pressure, and amplify authored bursts.
 
 Examples:
 

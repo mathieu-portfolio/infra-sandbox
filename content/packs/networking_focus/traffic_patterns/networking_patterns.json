@@ -90,6 +90,16 @@
       "routing",
       "regional_scaling",
       "congestion"
-    ]
+    ],
+    "evolution": {
+      "enabled": true,
+      "pressure_sensitivity": 0.18,
+      "churn_sensitivity": 0.22,
+      "migration_sensitivity": 0.9,
+      "reroute_pressure_sensitivity": 1.6,
+      "reroute_latency_sensitivity": 0.45,
+      "dynamic_retry_sensitivity": 0.35,
+      "burst_amplification": 0.2
+    }
   }
 ]

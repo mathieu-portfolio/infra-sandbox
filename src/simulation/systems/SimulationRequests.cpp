@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 
@@ -24,15 +25,20 @@ void Simulation::generateClientRequests(double dt)
             continue;
         }
 
-        Link* link = graph_.firstOutgoingLink(node.id);
+        Link* link = selectClientIngressLink(node);
         if (link == nullptr) {
             continue;
         }
 
-        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * localizedTrafficMultiplierFor(node) * burstMultiplier * dt;
+        const double evolutionMultiplier = trafficEvolutionMultiplierFor(node, burstMultiplier);
+        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * localizedTrafficMultiplierFor(node) * burstMultiplier * evolutionMultiplier * dt;
         while (node.generationAccumulator >= 1.0) {
             createRequest(node, *link);
             node.generationAccumulator -= 1.0;
+            link = selectClientIngressLink(node);
+            if (link == nullptr) {
+                break;
+            }
         }
     }
 }
@@ -68,7 +74,7 @@ void Simulation::createRequest(Node& clientNode, Link& link)
 
 void Simulation::retryRequest(Request& request)
 {
-    Link* link = graph_.firstOutgoingLink(request.sourceNodeId);
+    Link* link = selectOutgoingLink(request.sourceNodeId, RequestRouteStage::ToApi);
     if (link == nullptr) {
         request.state = RequestState::TimedOut;
         request.completedTime = timeSeconds_;
@@ -335,7 +341,8 @@ void Simulation::timeOutRequest(Request& request)
         request.completedTime = timeSeconds_;
         const Node* source = graph_.node(request.sourceNodeId);
         const double localizedRetryDelayMultiplier = source != nullptr ? localizedRetryDelayMultiplierFor(*source) : 1.0;
-        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier;
+        const double evolutionRetryDelayMultiplier = source != nullptr ? retryEvolutionDelayMultiplierFor(*source) : 1.0;
+        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier * evolutionRetryDelayMultiplier;
         request.stateEnteredTime = timeSeconds_;
         if (Node* mutableSource = graph_.node(request.sourceNodeId)) {
             mutableSource->recentTimedOut += 1.0;
@@ -405,7 +412,7 @@ void Simulation::routeFromApi(Request& request)
             }
         }
 
-        if (Link* link = graph_.firstOutgoingLink(request.currentNodeId)) {
+        if (Link* link = selectOutgoingLink(request.currentNodeId, RequestRouteStage::ToDatabase)) {
             routeToLink(request, *link, RequestRouteStage::ToDatabase);
             return;
         }
@@ -448,6 +455,112 @@ void Simulation::routeToLink(Request& request, Link& link, RequestRouteStage nex
     request.stateEnteredTime = timeSeconds_;
     request.transitProgress = 0.0;
     link.inFlightRequests.push_back(request.id);
+}
+
+Link* Simulation::selectOutgoingLink(int sourceNodeId, RequestRouteStage routeStage)
+{
+    std::vector<Link*> candidates;
+    for (auto& link : graph_.links()) {
+        if (link.enabled && link.sourceNodeId == sourceNodeId) {
+            candidates.push_back(&link);
+        }
+    }
+    if (candidates.empty()) {
+        return nullptr;
+    }
+
+    const auto& evolution = scenario_.trafficProfile.evolution;
+    if (!evolution.enabled || (evolution.reroutePressureSensitivity <= 0.0 && evolution.rerouteLatencySensitivity <= 0.0)) {
+        return candidates.front();
+    }
+
+    Link* selected = candidates.front();
+    double bestScore = std::numeric_limits<double>::max();
+    for (Link* link : candidates) {
+        const Node* target = graph_.node(link->targetNodeId);
+        const double targetPressure = target != nullptr
+            ? std::max({target->queuePressure, target->latencyPressure, target->retryPressure, target->propagatedInstability})
+            : 0.0;
+        const double stageBias = routeStage == RequestRouteStage::ToApi ? 0.75 : 1.0;
+        const double score =
+            static_cast<double>(link->inFlightRequests.size()) * 0.05
+            + evolution.reroutePressureSensitivity * targetPressure * stageBias
+            + evolution.rerouteLatencySensitivity * link->baseLatencySeconds;
+        if (score < bestScore) {
+            bestScore = score;
+            selected = link;
+        }
+    }
+    return selected;
+}
+
+Link* Simulation::selectClientIngressLink(const Node& clientNode)
+{
+    Link* selected = selectOutgoingLink(clientNode.id, RequestRouteStage::ToApi);
+    const auto& evolution = scenario_.trafficProfile.evolution;
+    if (selected == nullptr || !evolution.enabled || evolution.migrationSensitivity <= 0.0) {
+        return selected;
+    }
+
+    const Node* target = graph_.node(selected->targetNodeId);
+    if (target == nullptr) {
+        return selected;
+    }
+    const double clientStress = std::clamp(1.0 - clientNode.experienceScore + target->propagatedInstability, 0.0, 1.0);
+    if (clientStress <= 0.0) {
+        return selected;
+    }
+
+    Link* migrated = selected;
+    double bestScore = std::numeric_limits<double>::max();
+    for (auto& link : graph_.links()) {
+        if (!link.enabled || link.sourceNodeId != clientNode.id) {
+            continue;
+        }
+        const Node* candidateTarget = graph_.node(link.targetNodeId);
+        const double candidatePressure = candidateTarget != nullptr
+            ? std::max(candidateTarget->queuePressure, candidateTarget->latencyPressure)
+            : 0.0;
+        const double score = candidatePressure + link.baseLatencySeconds * 0.35 + static_cast<double>(link.inFlightRequests.size()) * 0.03;
+        if (score < bestScore) {
+            bestScore = score;
+            migrated = &link;
+        }
+    }
+
+    const double migrationGate = std::clamp(evolution.migrationSensitivity * clientStress, 0.0, 1.0);
+    const int deterministicRoll = static_cast<int>((nextRequestId_ * 53U + static_cast<std::uint64_t>(clientNode.id) * 17U) % 100U);
+    return deterministicRoll < static_cast<int>(migrationGate * 100.0) ? migrated : selected;
+}
+
+double Simulation::trafficEvolutionMultiplierFor(const Node& node, double burstMultiplier) const
+{
+    const auto& evolution = scenario_.trafficProfile.evolution;
+    if (!evolution.enabled) {
+        return 1.0;
+    }
+
+    const double failureShare = node.recentGenerated > 0.1
+        ? std::clamp((node.recentTimedOut + node.recentRetries * 0.5) / node.recentGenerated, 0.0, 1.0)
+        : 0.0;
+    const double pressureBoost = 1.0 + evolution.pressureSensitivity * std::max(node.latencyPressure, node.retryPressure);
+    const double churnLoss = 1.0 - evolution.churnSensitivity * std::max(0.0, 1.0 - node.experienceScore);
+    const double burstBoost = burstMultiplier > 1.0
+        ? 1.0 + evolution.burstAmplification * (burstMultiplier - 1.0)
+        : 1.0;
+    const double failureChurn = 1.0 - evolution.churnSensitivity * 0.5 * failureShare;
+    return std::clamp(pressureBoost * churnLoss * burstBoost * failureChurn, 0.2, 3.0);
+}
+
+double Simulation::retryEvolutionDelayMultiplierFor(const Node& node) const
+{
+    const auto& evolution = scenario_.trafficProfile.evolution;
+    if (!evolution.enabled || evolution.dynamicRetrySensitivity <= 0.0) {
+        return 1.0;
+    }
+
+    const double sourcePressure = std::clamp(std::max(node.retryPressure, node.timeoutPressure), 0.0, 1.0);
+    return std::clamp(1.0 - evolution.dynamicRetrySensitivity * sourcePressure, 0.25, 1.0);
 }
 
 Link* Simulation::linkBetween(int sourceNodeId, int targetNodeId)

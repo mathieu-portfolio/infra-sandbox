@@ -692,6 +692,16 @@ TrafficProfile parseTraffic(const Json& object)
         ? rangeAt(object, "growth_per_turn", profile.growthPerSecond)
         : rangeAt(object, "growth_per_second", profile.growthPerSecond);
     profile.growthPerSecond = profile.growthPerSecondRange.min;
+    if (const Json* evolution = object.find("evolution"); evolution != nullptr && evolution->isObject()) {
+        profile.evolution.enabled = boolAt(*evolution, "enabled", true);
+        profile.evolution.pressureSensitivity = numberAt(*evolution, "pressure_sensitivity", profile.evolution.pressureSensitivity);
+        profile.evolution.churnSensitivity = numberAt(*evolution, "churn_sensitivity", profile.evolution.churnSensitivity);
+        profile.evolution.migrationSensitivity = numberAt(*evolution, "migration_sensitivity", profile.evolution.migrationSensitivity);
+        profile.evolution.reroutePressureSensitivity = numberAt(*evolution, "reroute_pressure_sensitivity", profile.evolution.reroutePressureSensitivity);
+        profile.evolution.rerouteLatencySensitivity = numberAt(*evolution, "reroute_latency_sensitivity", profile.evolution.rerouteLatencySensitivity);
+        profile.evolution.dynamicRetrySensitivity = numberAt(*evolution, "dynamic_retry_sensitivity", profile.evolution.dynamicRetrySensitivity);
+        profile.evolution.burstAmplification = numberAt(*evolution, "burst_amplification", profile.evolution.burstAmplification);
+    }
     return profile;
 }
 

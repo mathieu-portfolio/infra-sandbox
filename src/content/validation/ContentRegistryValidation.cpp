@@ -71,6 +71,16 @@ void ContentRegistry::validate(ContentLoadResult& result) const
         if (scenario.trafficProfile.baseMultiplier < 0.0) result.errors.push_back("Scenario " + scenario.id + " has invalid traffic multiplier.");
         validateRange(scenario.trafficProfile.baseMultiplierRange, "Scenario " + scenario.id + " traffic base_multiplier", result);
         validateRange(scenario.trafficProfile.growthPerSecondRange, "Scenario " + scenario.id + " traffic growth_per_turn", result);
+        const auto& evolution = scenario.trafficProfile.evolution;
+        if (evolution.pressureSensitivity < 0.0
+            || evolution.churnSensitivity < 0.0
+            || evolution.migrationSensitivity < 0.0
+            || evolution.reroutePressureSensitivity < 0.0
+            || evolution.rerouteLatencySensitivity < 0.0
+            || evolution.dynamicRetrySensitivity < 0.0
+            || evolution.burstAmplification < 0.0) {
+            result.errors.push_back("Scenario " + scenario.id + " has invalid negative traffic evolution value.");
+        }
         validateBurstRanges(scenario.bursts, "Scenario " + scenario.id, result);
         if (scenario.turnDuration.value <= 0.0 || scenario.turnDuration.simulationSeconds <= 0.0) {
             result.errors.push_back("Scenario " + scenario.id + " has invalid turn duration.");

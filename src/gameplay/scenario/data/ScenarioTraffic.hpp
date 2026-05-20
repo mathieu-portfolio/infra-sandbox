@@ -38,6 +38,17 @@ struct BurstScenario {
     NumericRange durationSecondsRange{3.0, 3.0};
 };
 
+struct TrafficEvolutionScenario {
+    bool enabled = false;
+    double pressureSensitivity = 0.0;
+    double churnSensitivity = 0.0;
+    double migrationSensitivity = 0.0;
+    double reroutePressureSensitivity = 0.0;
+    double rerouteLatencySensitivity = 0.0;
+    double dynamicRetrySensitivity = 0.0;
+    double burstAmplification = 0.0;
+};
+
 struct TrafficProfile {
     std::string id;
     std::string displayName;
@@ -49,4 +60,5 @@ struct TrafficProfile {
     NumericRange baseMultiplierRange{1.0, 1.0};
     double growthPerSecond = 0.0;
     NumericRange growthPerSecondRange{0.0, 0.0};
+    TrafficEvolutionScenario evolution;
 };
