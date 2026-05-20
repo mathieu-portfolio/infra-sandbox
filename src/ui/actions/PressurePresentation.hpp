@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/Node.hpp"
-#include "simulation/PressureAnalysis.hpp"
+#include "simulation/topology/Node.hpp"
+#include "simulation/metrics/PressureAnalysis.hpp"
 
 #include "raylib.h"
 

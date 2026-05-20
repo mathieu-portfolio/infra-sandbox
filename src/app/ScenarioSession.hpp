@@ -2,7 +2,7 @@
 
 #include "gameplay/Scenario.hpp"
 #include "gameplay/ScenarioManager.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 
 #include <cstddef>
 

@@ -1,13 +1,13 @@
 #pragma once
 
 #include "gameplay/Scenario.hpp"
-#include "simulation/InfrastructureGraph.hpp"
-#include "simulation/Metrics.hpp"
-#include "simulation/PressureAnalysis.hpp"
-#include "simulation/Request.hpp"
-#include "simulation/RuntimeSystems.hpp"
-#include "simulation/SimulationConfig.hpp"
-#include "simulation/SimulationTime.hpp"
+#include "simulation/topology/InfrastructureGraph.hpp"
+#include "simulation/metrics/Metrics.hpp"
+#include "simulation/metrics/PressureAnalysis.hpp"
+#include "simulation/requests/Request.hpp"
+#include "simulation/core/RuntimeSystems.hpp"
+#include "simulation/core/SimulationConfig.hpp"
+#include "simulation/core/SimulationTime.hpp"
 
 #include <cstdint>
 #include <array>

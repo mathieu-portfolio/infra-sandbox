@@ -1,4 +1,4 @@
-#include "simulation/NodeDefinition.hpp"
+#include "simulation/topology/NodeDefinition.hpp"
 
 #include <array>
 #include <cassert>

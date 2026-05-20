@@ -1,7 +1,7 @@
 #pragma once
 
 #include "input/InputAction.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 
 #include <span>
 

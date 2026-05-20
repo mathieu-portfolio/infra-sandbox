@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/Node.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/topology/Node.hpp"
+#include "simulation/core/Simulation.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"

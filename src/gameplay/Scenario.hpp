@@ -1,10 +1,10 @@
 #pragma once
 
 #include "gameplay/Event.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/Geography.hpp"
-#include "simulation/InfrastructureGraph.hpp"
-#include "simulation/PressureAnalysis.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/topology/Geography.hpp"
+#include "simulation/topology/InfrastructureGraph.hpp"
+#include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <cstdint>
 #include <optional>

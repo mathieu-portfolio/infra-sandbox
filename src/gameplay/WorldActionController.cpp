@@ -2,8 +2,8 @@
 
 #include "content/ContentRegistry.hpp"
 #include "content/ValueSpec.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/TopologyMutation.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/topology/TopologyMutation.hpp"
 
 #include <algorithm>
 #include <array>

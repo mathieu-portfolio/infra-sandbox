@@ -1,6 +1,6 @@
 #pragma once
 
-#include "simulation/SimulationConfig.hpp"
+#include "simulation/core/SimulationConfig.hpp"
 
 #include <array>
 #include <span>

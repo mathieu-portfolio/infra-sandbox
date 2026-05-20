@@ -1,8 +1,8 @@
 #pragma once
 
-#include "simulation/Metrics.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/TopologyMutation.hpp"
+#include "simulation/metrics/Metrics.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/topology/TopologyMutation.hpp"
 #include "gameplay/Scenario.hpp"
 
 #include <array>

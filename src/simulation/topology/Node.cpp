@@ -1,4 +1,4 @@
-#include "simulation/Node.hpp"
+#include "simulation/topology/Node.hpp"
 
 bool Node::isProcessor() const
 {

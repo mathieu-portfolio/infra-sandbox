@@ -1,7 +1,7 @@
 #include "rendering/Renderer.hpp"
 
 #include "rendering/RenderPrimitives.hpp"
-#include "simulation/Geography.hpp"
+#include "simulation/topology/Geography.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/IconRegistry.hpp"
 

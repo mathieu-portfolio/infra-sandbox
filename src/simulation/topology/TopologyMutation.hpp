@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/Link.hpp"
-#include "simulation/Node.hpp"
+#include "simulation/topology/Link.hpp"
+#include "simulation/topology/Node.hpp"
 
 #include <string>
 #include <vector>

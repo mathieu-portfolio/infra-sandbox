@@ -1,6 +1,6 @@
-#include "simulation/Geography.hpp"
+#include "simulation/topology/Geography.hpp"
 
-#include "simulation/Node.hpp"
+#include "simulation/topology/Node.hpp"
 
 #include <algorithm>
 #include <cmath>

@@ -2,7 +2,7 @@
 
 #include "input/InputAction.hpp"
 #include "rendering/CameraController.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include <span>

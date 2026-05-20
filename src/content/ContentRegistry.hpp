@@ -2,9 +2,9 @@
 
 #include "content/ValueSpec.hpp"
 #include "gameplay/Scenario.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/SimulationConfig.hpp"
-#include "simulation/TopologyMutation.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/core/SimulationConfig.hpp"
+#include "simulation/topology/TopologyMutation.hpp"
 
 #include <filesystem>
 #include <string>

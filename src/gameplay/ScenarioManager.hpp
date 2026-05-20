@@ -2,7 +2,7 @@
 
 #include "gameplay/Event.hpp"
 #include "gameplay/Scenario.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 
 #include <cstddef>
 #include <cstdint>

@@ -2,7 +2,7 @@
 
 #include "app/ScenarioSession.hpp"
 #include "gameplay/WorldActionController.hpp"
-#include "simulation/Metrics.hpp"
+#include "simulation/metrics/Metrics.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include <cstddef>

@@ -1,9 +1,9 @@
 #pragma once
 
 #include "content/ValueSpec.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/NodeDefinition.hpp"
-#include "simulation/PressureAnalysis.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/topology/NodeDefinition.hpp"
+#include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <cstdint>
 #include <deque>

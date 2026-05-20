@@ -1,4 +1,4 @@
-#include "simulation/InfrastructureGraph.hpp"
+#include "simulation/topology/InfrastructureGraph.hpp"
 
 int InfrastructureGraph::addNode(Node node)
 {

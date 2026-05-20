@@ -7,7 +7,7 @@
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
 #include "rendering/VisualFeedbackSystem.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 #include "ui/UiManager.hpp"
 
 class Renderer {

@@ -3,9 +3,9 @@
 #include "input/InputAction.hpp"
 #include "rendering/CameraController.hpp"
 #include "gameplay/ScenarioManager.hpp"
-#include "simulation/Mechanics.hpp"
-#include "simulation/Simulation.hpp"
-#include "simulation/TopologyMutation.hpp"
+#include "simulation/core/Mechanics.hpp"
+#include "simulation/core/Simulation.hpp"
+#include "simulation/topology/TopologyMutation.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include <span>

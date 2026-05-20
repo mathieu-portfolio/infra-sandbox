@@ -1,8 +1,8 @@
 #pragma once
 
-#include "simulation/Geography.hpp"
-#include "simulation/NodeDefinition.hpp"
-#include "simulation/Request.hpp"
+#include "simulation/topology/Geography.hpp"
+#include "simulation/topology/NodeDefinition.hpp"
+#include "simulation/requests/Request.hpp"
 
 #include <cstdint>
 #include <deque>

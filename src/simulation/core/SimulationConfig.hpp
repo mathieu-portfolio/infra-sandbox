@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/SimulationLayer.hpp"
-#include "simulation/PressureAnalysis.hpp"
+#include "simulation/core/SimulationLayer.hpp"
+#include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <array>
 

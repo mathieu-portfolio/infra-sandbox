@@ -1,7 +1,7 @@
-#include "simulation/TopologyMutation.hpp"
+#include "simulation/topology/TopologyMutation.hpp"
 
-#include "simulation/Geography.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/topology/Geography.hpp"
+#include "simulation/core/Simulation.hpp"
 
 #include <algorithm>
 

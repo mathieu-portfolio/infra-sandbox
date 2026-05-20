@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rendering/CameraController.hpp"
-#include "simulation/Node.hpp"
+#include "simulation/topology/Node.hpp"
 
 #include "raylib.h"
 

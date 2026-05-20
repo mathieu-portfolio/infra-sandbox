@@ -1,6 +1,6 @@
 #include "ui/actions/ActionPanel.hpp"
 
-#include "simulation/NodeDefinition.hpp"
+#include "simulation/topology/NodeDefinition.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/IconRegistry.hpp"

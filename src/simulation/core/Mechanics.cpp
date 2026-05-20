@@ -1,7 +1,7 @@
-#include "simulation/Mechanics.hpp"
+#include "simulation/core/Mechanics.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 
 #include <array>
 #include <cassert>

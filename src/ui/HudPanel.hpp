@@ -1,6 +1,6 @@
 #pragma once
 
-#include "simulation/Simulation.hpp"
+#include "simulation/core/Simulation.hpp"
 #include "content/ContentPackManager.hpp"
 #include "gameplay/ScenarioManager.hpp"
 #include "ui/hud/ObjectivesDropdownPanel.hpp"

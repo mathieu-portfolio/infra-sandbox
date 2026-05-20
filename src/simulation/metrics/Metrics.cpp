@@ -1,4 +1,4 @@
-#include "simulation/Metrics.hpp"
+#include "simulation/metrics/Metrics.hpp"
 
 void Metrics::reset()
 {

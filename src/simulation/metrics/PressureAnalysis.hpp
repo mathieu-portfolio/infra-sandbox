@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/InfrastructureGraph.hpp"
-#include "simulation/Metrics.hpp"
+#include "simulation/topology/InfrastructureGraph.hpp"
+#include "simulation/metrics/Metrics.hpp"
 
 #include <deque>
 #include <string>
