@@ -1,9 +1,9 @@
 #include "gameplay/Scenario.hpp"
 #include "gameplay/scenario/ScenarioManager.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "simulation/core/Simulation.hpp"
-#include "simulation/topology/Geography.hpp"
-#include "simulation/topology/NodeDefinition.hpp"
+#include "core/topology/Geography.hpp"
+#include "core/topology/NodeDefinition.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 
 #include <gtest/gtest.h>

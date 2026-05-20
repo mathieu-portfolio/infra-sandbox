@@ -5,8 +5,8 @@
 
 #include "gameplay/scenario/data/ScenarioDefinition.hpp"
 #include "gameplay/scenario/data/ScenarioDuration.hpp"
-#include "gameplay/scenario/data/ScenarioEconomy.hpp"
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
+#include "core/scenario/ScenarioEconomy.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
 #include "gameplay/scenario/data/ScenarioModifiers.hpp"
 #include "gameplay/scenario/data/ScenarioObjectives.hpp"
 #include "gameplay/scenario/data/ScenarioPhases.hpp"

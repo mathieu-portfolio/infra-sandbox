@@ -1,7 +1,7 @@
 #include "content/ContentRegistry.hpp"
 
-#include "content/parsing/Json.hpp"
-#include "content/validation/ValueSpec.hpp"
+#include "core/parsing/Json.hpp"
+#include "core/validation/ValueSpec.hpp"
 
 #include <algorithm>
 #include <fstream>

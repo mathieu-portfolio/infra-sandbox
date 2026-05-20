@@ -1,7 +1,7 @@
 #pragma once
 
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
+#include "core/simulation/Mechanics.hpp"
 
 #include <string>
 #include <vector>

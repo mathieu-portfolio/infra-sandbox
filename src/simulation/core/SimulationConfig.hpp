@@ -1,6 +1,6 @@
 #pragma once
 
-#include "simulation/core/SimulationLayer.hpp"
+#include "core/simulation/SimulationLayer.hpp"
 #include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <array>

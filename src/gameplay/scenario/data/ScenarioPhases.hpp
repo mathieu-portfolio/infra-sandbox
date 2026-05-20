@@ -2,7 +2,7 @@
 
 #include "gameplay/scenario/data/ScenarioDuration.hpp"
 #include "gameplay/scenario/data/ScenarioTraffic.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 
 #include <optional>
 #include <string>

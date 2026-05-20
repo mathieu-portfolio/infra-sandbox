@@ -1,7 +1,7 @@
 #pragma once
 
-#include "simulation/core/Mechanics.hpp"
-#include "simulation/topology/Geography.hpp"
+#include "core/simulation/Mechanics.hpp"
+#include "core/topology/Geography.hpp"
 #include "simulation/topology/InfrastructureGraph.hpp"
 
 #include <optional>

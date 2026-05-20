@@ -1,6 +1,6 @@
-#include "content/validation/ValueSpec.hpp"
+#include "core/validation/ValueSpec.hpp"
 
-#include "content/parsing/Json.hpp"
+#include "core/parsing/Json.hpp"
 
 #include <algorithm>
 #include <cmath>

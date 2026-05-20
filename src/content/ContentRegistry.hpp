@@ -1,8 +1,8 @@
 #pragma once
 
-#include "content/validation/ValueSpec.hpp"
+#include "core/validation/ValueSpec.hpp"
 #include "gameplay/Scenario.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "simulation/core/SimulationConfig.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 

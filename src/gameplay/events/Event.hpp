@@ -1,8 +1,8 @@
 #pragma once
 
-#include "content/validation/ValueSpec.hpp"
-#include "simulation/core/Mechanics.hpp"
-#include "simulation/topology/NodeDefinition.hpp"
+#include "core/validation/ValueSpec.hpp"
+#include "core/simulation/Mechanics.hpp"
+#include "core/topology/NodeDefinition.hpp"
 #include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <cstdint>

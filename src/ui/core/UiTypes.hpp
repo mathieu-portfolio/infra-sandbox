@@ -1,7 +1,7 @@
 #pragma once
 
 #include "simulation/metrics/Metrics.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 #include "gameplay/Scenario.hpp"
 

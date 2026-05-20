@@ -1,7 +1,7 @@
 #include "rendering/MapRenderer.hpp"
 
 #include "rendering/RenderPrimitives.hpp"
-#include "simulation/topology/Geography.hpp"
+#include "core/topology/Geography.hpp"
 
 #include "raylib.h"
 

@@ -2,15 +2,15 @@
 
 #include "gameplay/events/Event.hpp"
 #include "gameplay/scenario/data/ScenarioDuration.hpp"
-#include "gameplay/scenario/data/ScenarioEconomy.hpp"
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
+#include "core/scenario/ScenarioEconomy.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
 #include "gameplay/scenario/data/ScenarioModifiers.hpp"
 #include "gameplay/scenario/data/ScenarioObjectives.hpp"
 #include "gameplay/scenario/data/ScenarioPhases.hpp"
 #include "gameplay/scenario/data/ScenarioProgression.hpp"
 #include "gameplay/scenario/data/ScenarioTopology.hpp"
 #include "gameplay/scenario/data/ScenarioTraffic.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <string>

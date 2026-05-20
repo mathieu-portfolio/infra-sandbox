@@ -27,6 +27,16 @@ if(INFRA_BUILD_APP AND NOT raylib_FOUND AND INFRA_FETCH_RAYLIB)
     FetchContent_MakeAvailable(raylib)
 endif()
 
+file(GLOB_RECURSE INFRA_CORE_SOURCES CONFIGURE_DEPENDS
+    src/core/*.cpp
+)
+
+add_library(infra_core
+    ${INFRA_CORE_SOURCES}
+)
+
+target_include_directories(infra_core PUBLIC src)
+
 file(GLOB_RECURSE INFRA_SIMULATION_SOURCES CONFIGURE_DEPENDS
     src/content/*.cpp
     src/gameplay/*.cpp
@@ -39,6 +49,7 @@ add_library(infra_simulation
 
 target_include_directories(infra_simulation PUBLIC src)
 target_compile_definitions(infra_simulation PUBLIC INFRA_CONTENT_DIR="${CMAKE_SOURCE_DIR}/content")
+target_link_libraries(infra_simulation PUBLIC infra_core)
 
 file(GLOB_RECURSE INFRA_APP_SOURCES CONFIGURE_DEPENDS
     src/app/*.cpp
@@ -59,11 +70,13 @@ if(INFRA_BUILD_APP)
 endif()
 
 if(MSVC)
+    target_compile_options(infra_core PRIVATE /W4)
     target_compile_options(infra_simulation PRIVATE /W4)
     if(INFRA_BUILD_APP)
         target_compile_options(infra_sandbox PRIVATE /W4)
     endif()
 else()
+    target_compile_options(infra_core PRIVATE -Wall -Wextra -Wpedantic)
     target_compile_options(infra_simulation PRIVATE -Wall -Wextra -Wpedantic)
     if(INFRA_BUILD_APP)
         target_compile_options(infra_sandbox PRIVATE -Wall -Wextra -Wpedantic)

@@ -1,4 +1,4 @@
-#include "content/parsing/Json.hpp"
+#include "core/parsing/Json.hpp"
 
 #include <cctype>
 #include <cstdlib>

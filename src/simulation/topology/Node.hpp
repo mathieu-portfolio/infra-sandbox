@@ -1,18 +1,13 @@
 #pragma once
 
-#include "simulation/topology/Geography.hpp"
-#include "simulation/topology/NodeDefinition.hpp"
+#include "core/topology/Geography.hpp"
+#include "core/topology/NodeDefinition.hpp"
 #include "simulation/requests/Request.hpp"
 
 #include <cstdint>
 #include <deque>
 #include <string>
 #include <vector>
-
-struct Vec2 {
-    float x = 0.0f;
-    float y = 0.0f;
-};
 
 enum class HealthState {
     Healthy,

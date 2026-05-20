@@ -1,9 +1,9 @@
 #pragma once
 
 #include "gameplay/events/Event.hpp"
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
 #include "gameplay/scenario/data/ScenarioTraffic.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 
 #include <optional>
 #include <string>

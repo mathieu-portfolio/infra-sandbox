@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gameplay/scenario/data/ScenarioDefinition.hpp"
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
 
 #include <cstdint>
 #include <string>

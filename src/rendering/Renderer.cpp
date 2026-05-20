@@ -2,7 +2,7 @@
 
 #include "rendering/layers/RendererLayerUtils.hpp"
 #include "rendering/viewmodels/RenderFrameView.hpp"
-#include "simulation/topology/Geography.hpp"
+#include "core/topology/Geography.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/widgets/IconRegistry.hpp"
 

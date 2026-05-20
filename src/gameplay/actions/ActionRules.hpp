@@ -1,7 +1,7 @@
 #pragma once
 
 #include "content/ContentRegistry.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "gameplay/Scenario.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 #include "ui/core/UiTypes.hpp"

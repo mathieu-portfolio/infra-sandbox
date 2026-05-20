@@ -1,6 +1,6 @@
 #include "simulation/topology/TopologyMutation.hpp"
 
-#include "simulation/topology/Geography.hpp"
+#include "core/topology/Geography.hpp"
 #include "simulation/core/Simulation.hpp"
 
 #include <algorithm>

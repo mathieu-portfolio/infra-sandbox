@@ -1,8 +1,8 @@
 #include "gameplay/WorldActionController.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "content/validation/ValueSpec.hpp"
-#include "simulation/core/Mechanics.hpp"
+#include "core/validation/ValueSpec.hpp"
+#include "core/simulation/Mechanics.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 
 #include <algorithm>

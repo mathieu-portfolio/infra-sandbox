@@ -2,7 +2,7 @@
 
 #include "gameplay/scenario/data/ScenarioDefinition.hpp"
 #include "gameplay/scenario/data/ScenarioDuration.hpp"
-#include "gameplay/scenario/data/ScenarioEnums.hpp"
+#include "core/scenario/ScenarioEnums.hpp"
 
 #include <vector>
 

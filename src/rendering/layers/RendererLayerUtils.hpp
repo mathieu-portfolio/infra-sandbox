@@ -3,7 +3,7 @@
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/RenderPrimitives.hpp"
-#include "simulation/topology/Geography.hpp"
+#include "core/topology/Geography.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 #include "simulation/core/Simulation.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
