@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gameplay/Scenario.hpp"
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "simulation/core/Simulation.hpp"
 
 #include <cstddef>

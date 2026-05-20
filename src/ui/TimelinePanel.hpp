@@ -1,7 +1,7 @@
 #pragma once
 
 #include "simulation/core/Simulation.hpp"
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "ui/core/UiTypes.hpp"
 
 class TimelinePanel {

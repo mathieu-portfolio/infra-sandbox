@@ -1,4 +1,4 @@
-#include "gameplay/Event.hpp"
+#include "gameplay/events/Event.hpp"
 
 #include "simulation/core/Simulation.hpp"
 

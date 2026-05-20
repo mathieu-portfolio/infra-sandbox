@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"

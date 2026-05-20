@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gameplay/Scenario.hpp"
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "content/loading/ContentPackManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"

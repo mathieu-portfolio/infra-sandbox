@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gameplay/Event.hpp"
+#include "gameplay/events/Event.hpp"
 #include "gameplay/Scenario.hpp"
 #include "simulation/core/Simulation.hpp"
 

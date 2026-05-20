@@ -2,7 +2,7 @@
 
 #include "input/InputAction.hpp"
 #include "rendering/CameraController.hpp"
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "simulation/core/Mechanics.hpp"
 #include "simulation/core/Simulation.hpp"
 #include "simulation/topology/TopologyMutation.hpp"

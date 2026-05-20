@@ -2,7 +2,7 @@
 
 #include "simulation/core/Simulation.hpp"
 #include "content/loading/ContentPackManager.hpp"
-#include "gameplay/ScenarioManager.hpp"
+#include "gameplay/scenario/ScenarioManager.hpp"
 #include "ui/hud/ObjectivesDropdownPanel.hpp"
 #include "ui/hud/OptionsMenuPanel.hpp"
 #include "ui/hud/PackDropdownPanel.hpp"

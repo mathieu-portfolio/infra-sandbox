@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gameplay/Event.hpp"
+#include "gameplay/events/Event.hpp"
 #include "simulation/core/Mechanics.hpp"
 #include "simulation/topology/Geography.hpp"
 #include "simulation/topology/InfrastructureGraph.hpp"
