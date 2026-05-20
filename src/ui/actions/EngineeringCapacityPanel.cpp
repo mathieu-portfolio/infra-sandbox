@@ -15,7 +15,6 @@ int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain dom
     case EngineeringDomain::Backend: return capacity.backend;
     case EngineeringDomain::Infrastructure: return capacity.infrastructure;
     case EngineeringDomain::Data: return capacity.data;
-    case EngineeringDomain::Operations: return capacity.operations;
     case EngineeringDomain::Count: break;
     }
     return 0;
@@ -41,8 +40,7 @@ int distributedCapacityUsage(const EngineeringCapacity& capacity)
     return std::max(0, capacity.frontend)
         + std::max(0, capacity.backend)
         + std::max(0, capacity.infrastructure)
-        + std::max(0, capacity.data)
-        + std::max(0, capacity.operations);
+        + std::max(0, capacity.data);
 }
 
 const EngineeringCapacity& displayedCapacity(const UiState& state)
@@ -57,7 +55,6 @@ const char* shortDomainName(EngineeringDomain domain)
     case EngineeringDomain::Backend: return "Back";
     case EngineeringDomain::Infrastructure: return "Infra";
     case EngineeringDomain::Data: return "Data";
-    case EngineeringDomain::Operations: return "Ops";
     case EngineeringDomain::Count: break;
     }
     return "";
@@ -70,7 +67,6 @@ const char* domainIcon(EngineeringDomain domain)
     case EngineeringDomain::Backend: return "engineering.backend";
     case EngineeringDomain::Infrastructure: return "engineering.infrastructure";
     case EngineeringDomain::Data: return "engineering.data";
-    case EngineeringDomain::Operations: return "engineering.operations";
     case EngineeringDomain::Count: break;
     }
     return "engineering.total";

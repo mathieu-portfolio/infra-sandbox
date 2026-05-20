@@ -21,14 +21,13 @@ void runFor(Simulation& simulation, double seconds)
     }
 }
 
-EngineeringCapacity capacityBonus(int frontend, int backend, int infrastructure, int data, int operations, int total)
+EngineeringCapacity capacityBonus(int frontend, int backend, int infrastructure, int data, int total)
 {
     EngineeringCapacity bonus;
     bonus.frontend = frontend;
     bonus.backend = backend;
     bonus.infrastructure = infrastructure;
     bonus.data = data;
-    bonus.operations = operations;
     bonus.total = total;
     return bonus;
 }
@@ -204,22 +203,21 @@ TEST(EngineeringCapacityTests, SpecialtyIncreasesAreCappedAtTotalBudget)
         .backend = 1,
         .infrastructure = 1,
         .data = 1,
-        .operations = 1,
-        .total = 5,
+        .total = 4,
     };
 
-    const EngineeringCapacity cappedIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 2, 0, 0, 0, 0));
+    const EngineeringCapacity cappedIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 2, 0, 0, 0));
     EXPECT_EQ(cappedIncrease.backend, 1);
     EXPECT_EQ(specialtyCapacityTotal(cappedIncrease), cappedIncrease.total);
 
-    const EngineeringCapacity rebalance = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, -1, 0, 1, 0, 0));
+    const EngineeringCapacity rebalance = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, -1, 0, 1, 0));
     EXPECT_EQ(rebalance.backend, 0);
     EXPECT_EQ(rebalance.data, 2);
     EXPECT_EQ(specialtyCapacityTotal(rebalance), rebalance.total);
 
-    const EngineeringCapacity budgetIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 1, 0, 0, 0, 1));
+    const EngineeringCapacity budgetIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 1, 0, 0, 1));
     EXPECT_EQ(budgetIncrease.backend, 2);
-    EXPECT_EQ(budgetIncrease.total, 6);
+    EXPECT_EQ(budgetIncrease.total, 5);
     EXPECT_EQ(specialtyCapacityTotal(budgetIncrease), budgetIncrease.total);
 }
 

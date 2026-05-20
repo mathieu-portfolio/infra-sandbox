@@ -72,7 +72,6 @@ struct WorldActionDefinition {
     NumericRange backendCapacityBonusRange{0.0, 0.0};
     NumericRange infrastructureCapacityBonusRange{0.0, 0.0};
     NumericRange dataCapacityBonusRange{0.0, 0.0};
-    NumericRange operationsCapacityBonusRange{0.0, 0.0};
     NumericRange totalCapacityBonusRange{0.0, 0.0};
     double pressureResistance = 0.0;
     NumericRange pressureResistanceRange{0.0, 0.0};

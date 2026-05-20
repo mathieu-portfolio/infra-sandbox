@@ -54,8 +54,7 @@
       "infrastructure": {
         "min": 1,
         "max": 2
-      },
-      "operations": 1
+      }
     },
     "complexity_delta": {
       "min": 0.15,
@@ -89,10 +88,6 @@
       "failure"
     ],
     "capacity_bonus": {
-      "operations": {
-        "min": 1,
-        "max": 2
-      }
     },
     "pressure_resistance": {
       "min": 0.06,
@@ -130,7 +125,6 @@
       "retry"
     ],
     "capacity_bonus": {
-      "operations": 1
     },
     "pressure_resistance": {
       "min": 0.1,
@@ -169,7 +163,6 @@
       "persistence"
     ],
     "capacity_bonus": {
-      "operations": 1
     },
     "pressure_resistance": {
       "min": 0.02,
@@ -223,42 +216,6 @@
     ]
   },
   {
-    "id": "ops_to_infra_rebalance",
-    "display_name": "Shift Operations Toward Infrastructure",
-    "description": "Trade one operations slot for infrastructure capacity so topology and regional changes are easier to queue.",
-    "categories": [
-      "Reallocation"
-    ],
-    "useful_when": "placement, capacity, or network-path actions are blocked by infrastructure capacity",
-    "tradeoffs": "Incident response and reliability guardrail work have less room this turn.",
-    "icon_id": "engineering.infrastructure",
-    "affected_pressures": [
-      "latency",
-      "compute",
-      "queue"
-    ],
-    "capacity_bonus": {
-      "operations": -1,
-      "infrastructure": 1
-    },
-    "complexity_delta": {
-      "min": 0.05,
-      "max": 0.12
-    },
-    "duration_turns": {
-      "min": 1,
-      "max": 2
-    },
-    "intensity_range": {
-      "min": 1.0,
-      "max": 1.0
-    },
-    "tags": [
-      "reallocation",
-      "infrastructure"
-    ]
-  },
-  {
     "id": "defer_frontend_work",
     "display_name": "Defer Frontend Work",
     "description": "Reduce frontend capacity for this turn to free organizational focus without increasing any other specialty.",
@@ -308,7 +265,6 @@
       "latency"
     ],
     "capacity_bonus": {
-      "operations": 1
     },
     "pressure_resistance": {
       "min": 0.02,
@@ -346,7 +302,6 @@
       "persistence"
     ],
     "capacity_bonus": {
-      "operations": 1
     },
     "complexity_delta": {
       "min": 0.08,
@@ -384,7 +339,6 @@
       "failure"
     ],
     "capacity_bonus": {
-      "operations": 1
     },
     "complexity_delta": {
       "min": 0.1,

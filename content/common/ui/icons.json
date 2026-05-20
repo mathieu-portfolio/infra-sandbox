@@ -116,7 +116,6 @@
     "engineering.data": "node.database",
     "engineering.frontend": "node.client",
     "engineering.infrastructure": "action.scale_up",
-    "engineering.operations": "action.queue",
     "engineering.total": "action.generic",
     "legend.client": "node.client",
     "legend.service": "node.service",

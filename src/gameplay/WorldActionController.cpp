@@ -51,7 +51,6 @@ EngineeringCapacity scaledCapacityBonus(EngineeringCapacity bonus, double intens
     bonus.backend = scale(bonus.backend);
     bonus.infrastructure = scale(bonus.infrastructure);
     bonus.data = scale(bonus.data);
-    bonus.operations = scale(bonus.operations);
     bonus.total = scale(bonus.total);
     return bonus;
 }
@@ -66,7 +65,6 @@ EngineeringCapacity sampledCapacityBonus(const content::WorldActionDefinition& d
         .backend = sample(".capacity.backend", definition.backendCapacityBonusRange),
         .infrastructure = sample(".capacity.infrastructure", definition.infrastructureCapacityBonusRange),
         .data = sample(".capacity.data", definition.dataCapacityBonusRange),
-        .operations = sample(".capacity.operations", definition.operationsCapacityBonusRange),
         .total = sample(".capacity.total", definition.totalCapacityBonusRange),
     };
 }
@@ -101,7 +99,6 @@ bool hasAnyCapacityDelta(const EngineeringCapacity& bonus)
         || bonus.backend != 0
         || bonus.infrastructure != 0
         || bonus.data != 0
-        || bonus.operations != 0
         || bonus.total != 0;
 }
 

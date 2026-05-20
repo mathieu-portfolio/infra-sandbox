@@ -38,7 +38,6 @@ enum class EngineeringDomain {
     Backend,
     Infrastructure,
     Data,
-    Operations,
     Count
 };
 

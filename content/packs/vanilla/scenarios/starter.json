@@ -48,7 +48,6 @@
       "backend": 3,
       "infrastructure": 3,
       "data": 2,
-      "operations": 2,
       "total": 13
     },
     "starting_actions": [
@@ -257,7 +256,6 @@
       "backend": 1,
       "infrastructure": 1,
       "data": 1,
-      "operations": 1,
       "total": 7
     },
     "starting_actions": [
@@ -404,7 +402,6 @@
       "backend": 2,
       "infrastructure": 1,
       "data": 1,
-      "operations": 1,
       "total": 8
     },
     "starting_actions": [],
@@ -612,7 +609,6 @@
       "backend": 2,
       "infrastructure": 1,
       "data": 2,
-      "operations": 1,
       "total": 9
     },
     "starting_actions": [],
@@ -831,7 +827,6 @@
       "backend": 2,
       "infrastructure": 1,
       "data": 1,
-      "operations": 2,
       "total": 9
     },
     "starting_actions": [
@@ -1035,7 +1030,6 @@
       "backend": 2,
       "infrastructure": 2,
       "data": 1,
-      "operations": 1,
       "total": 9
     },
     "starting_actions": [

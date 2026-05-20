@@ -54,7 +54,6 @@ Scenario `engineering_capacity` defines the planning budget that refills each tu
   "backend": 2,
   "infrastructure": 1,
   "data": 1,
-  "operations": 1,
   "total": 4
 }
 ```

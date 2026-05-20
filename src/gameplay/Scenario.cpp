@@ -123,8 +123,6 @@ const char* engineeringDomainName(EngineeringDomain domain)
         return "Infrastructure";
     case EngineeringDomain::Data:
         return "Data";
-    case EngineeringDomain::Operations:
-        return "Operations";
     case EngineeringDomain::Count:
         break;
     }

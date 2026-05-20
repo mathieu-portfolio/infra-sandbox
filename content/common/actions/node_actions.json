@@ -97,7 +97,6 @@
     ],
     "complexity_cost": 0.25,
     "engineering_costs": {
-      "operations": 1
     },
     "availability": {
       "requires_mechanic": "throttle_traffic"
@@ -323,8 +322,7 @@
     ],
     "complexity_cost": 1.25,
     "engineering_costs": {
-      "backend": 1,
-      "operations": 1
+      "backend": 1
     },
     "region_slot_usage": 1,
     "availability": {
@@ -439,7 +437,6 @@
     ],
     "complexity_cost": 0.25,
     "engineering_costs": {
-      "operations": 1
     },
     "availability": {
       "requires_mechanic": "toggle_retries"
@@ -489,7 +486,6 @@
     ],
     "complexity_cost": 0.0,
     "engineering_costs": {
-      "operations": 1
     },
     "availability": {
       "requires_mechanic": "clear_cache"

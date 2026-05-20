@@ -36,7 +36,6 @@
     "engineering_capacity": {
       "backend": 1,
       "infrastructure": 2,
-      "operations": 1,
       "data": 1,
       "total": 8
     },
@@ -176,7 +175,6 @@
     "engineering_capacity": {
       "backend": 2,
       "infrastructure": 2,
-      "operations": 2,
       "total": 10
     },
     "starting_actions": [
@@ -310,7 +308,6 @@
     "engineering_capacity": {
       "infrastructure": 2,
       "backend": 1,
-      "operations": 1,
       "data": 1,
       "total": 8
     },
@@ -456,7 +453,6 @@
       "infrastructure": 2,
       "backend": 1,
       "data": 2,
-      "operations": 1,
       "total": 9
     },
     "starting_actions": [
@@ -600,7 +596,6 @@
     ],
     "engineering_capacity": {
       "infrastructure": 2,
-      "operations": 2,
       "backend": 2,
       "data": 1,
       "total": 10
@@ -749,7 +744,6 @@
     "engineering_capacity": {
       "infrastructure": 3,
       "backend": 2,
-      "operations": 2,
       "data": 2,
       "total": 12
     },

@@ -94,7 +94,6 @@ const char* domainShort(EngineeringDomain domain)
     case EngineeringDomain::Backend: return "BE";
     case EngineeringDomain::Infrastructure: return "INF";
     case EngineeringDomain::Data: return "DATA";
-    case EngineeringDomain::Operations: return "OPS";
     case EngineeringDomain::Count: break;
     }
     return "";

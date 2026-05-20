@@ -264,13 +264,12 @@ EngineeringDomain engineeringDomainFromId(const std::string& id)
     if (id == "frontend") return EngineeringDomain::Frontend;
     if (id == "infrastructure" || id == "infra") return EngineeringDomain::Infrastructure;
     if (id == "data") return EngineeringDomain::Data;
-    if (id == "operations" || id == "ops") return EngineeringDomain::Operations;
     return EngineeringDomain::Backend;
 }
 
 bool knownEngineeringDomainId(const std::string& id)
 {
-    static const std::set<std::string> ids{"frontend", "backend", "infrastructure", "infra", "data", "operations", "ops"};
+    static const std::set<std::string> ids{"frontend", "backend", "infrastructure", "infra", "data"};
     return ids.contains(id);
 }
 
@@ -515,7 +514,6 @@ EngineeringCapacity parseEngineeringCapacity(const Json& object, EngineeringCapa
     capacity.backend = static_cast<int>(numberAt(*value, "backend", capacity.backend));
     capacity.infrastructure = static_cast<int>(numberAt(*value, "infrastructure", numberAt(*value, "infra", capacity.infrastructure)));
     capacity.data = static_cast<int>(numberAt(*value, "data", capacity.data));
-    capacity.operations = static_cast<int>(numberAt(*value, "operations", numberAt(*value, "ops", capacity.operations)));
     capacity.total = static_cast<int>(numberAt(*value, "total", capacity.total));
     return capacity;
 }
@@ -527,14 +525,12 @@ EngineeringCapacity parseCapacityBonus(const Json& object)
     bonus.backend = 0;
     bonus.infrastructure = 0;
     bonus.data = 0;
-    bonus.operations = 0;
     bonus.total = 0;
     if (const Json* value = object.find("capacity_bonus"); value != nullptr && value->isObject()) {
         bonus.frontend = static_cast<int>(numberAt(*value, "frontend"));
         bonus.backend = static_cast<int>(numberAt(*value, "backend"));
         bonus.infrastructure = static_cast<int>(numberAt(*value, "infrastructure", numberAt(*value, "infra")));
         bonus.data = static_cast<int>(numberAt(*value, "data"));
-        bonus.operations = static_cast<int>(numberAt(*value, "operations", numberAt(*value, "ops")));
         bonus.total = static_cast<int>(numberAt(*value, "total"));
     }
     return bonus;
@@ -550,10 +546,6 @@ void parseCapacityBonusRanges(const Json& object, WorldActionDefinition& action)
             action.infrastructureCapacityBonusRange = rangeFromJson(*infra, 0.0);
         }
         action.dataCapacityBonusRange = rangeAt(*value, "data", 0.0);
-        action.operationsCapacityBonusRange = rangeAt(*value, "operations", numberAt(*value, "ops"));
-        if (const Json* ops = value->find("ops"); ops != nullptr && value->find("operations") == nullptr) {
-            action.operationsCapacityBonusRange = rangeFromJson(*ops, 0.0);
-        }
         action.totalCapacityBonusRange = rangeAt(*value, "total", 0.0);
     }
 }
@@ -1411,7 +1403,6 @@ ContentLoadResult ContentRegistry::loadInternal(const std::vector<std::filesyste
         validateRange(action.backendCapacityBonusRange, "World action " + action.id + " backend capacity_bonus", result);
         validateRange(action.infrastructureCapacityBonusRange, "World action " + action.id + " infrastructure capacity_bonus", result);
         validateRange(action.dataCapacityBonusRange, "World action " + action.id + " data capacity_bonus", result);
-        validateRange(action.operationsCapacityBonusRange, "World action " + action.id + " operations capacity_bonus", result);
         validateRange(action.totalCapacityBonusRange, "World action " + action.id + " budget capacity_bonus", result);
         validateRange(action.pressureResistanceRange, "World action " + action.id + " pressure_resistance", result);
         validateRange(action.eventIntensityMultiplierRange, "World action " + action.id + " event_intensity_multiplier", result);

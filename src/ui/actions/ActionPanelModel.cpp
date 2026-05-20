@@ -32,8 +32,6 @@ int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain dom
         return capacity.infrastructure;
     case EngineeringDomain::Data:
         return capacity.data;
-    case EngineeringDomain::Operations:
-        return capacity.operations;
     case EngineeringDomain::Count:
         break;
     }

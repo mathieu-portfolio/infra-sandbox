@@ -50,8 +50,6 @@ int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain dom
         return capacity.infrastructure;
     case EngineeringDomain::Data:
         return capacity.data;
-    case EngineeringDomain::Operations:
-        return capacity.operations;
     case EngineeringDomain::Count:
         break;
     }
@@ -83,7 +81,7 @@ EngineeringCapacity addCapacityPreview(EngineeringCapacity base, const Engineeri
 
 bool validCapacityDistribution(const EngineeringCapacity& capacity, std::string& reason)
 {
-    if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0) {
+    if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0) {
         reason = "This world action would reduce one specialty below zero capacity.";
         return false;
     }

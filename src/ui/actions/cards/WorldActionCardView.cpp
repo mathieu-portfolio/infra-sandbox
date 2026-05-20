@@ -35,7 +35,6 @@ std::string capacityBonusLabel(const EngineeringCapacity& bonus, bool verbose)
     else text += signedCapacityPart("Front", bonus.frontend);
     text += signedCapacityPart(verbose ? "Backend" : "Back", bonus.backend);
     text += signedCapacityPart("Infra", bonus.infrastructure);
-    text += signedCapacityPart("Ops", bonus.operations);
     text += signedCapacityPart("Data", bonus.data);
     text += signedCapacityPart("Budget", bonus.total);
     return text;

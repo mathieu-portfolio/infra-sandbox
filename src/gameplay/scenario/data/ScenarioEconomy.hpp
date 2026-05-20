@@ -9,7 +9,6 @@ struct EngineeringCapacity {
     int backend = 2;
     int infrastructure = 1;
     int data = 1;
-    int operations = 1;
     int total = 8;
 };
 
@@ -23,8 +22,7 @@ inline int specialtyCapacityTotal(const EngineeringCapacity& capacity)
     return std::max(0, capacity.frontend)
         + std::max(0, capacity.backend)
         + std::max(0, capacity.infrastructure)
-        + std::max(0, capacity.data)
-        + std::max(0, capacity.operations);
+        + std::max(0, capacity.data);
 }
 
 inline bool hasPositiveSpecialtyBonus(const EngineeringCapacity& bonus)
@@ -32,8 +30,7 @@ inline bool hasPositiveSpecialtyBonus(const EngineeringCapacity& bonus)
     return bonus.frontend > 0
         || bonus.backend > 0
         || bonus.infrastructure > 0
-        || bonus.data > 0
-        || bonus.operations > 0;
+        || bonus.data > 0;
 }
 
 inline bool hasNegativeSpecialtyBonus(const EngineeringCapacity& bonus)
@@ -41,8 +38,7 @@ inline bool hasNegativeSpecialtyBonus(const EngineeringCapacity& bonus)
     return bonus.frontend < 0
         || bonus.backend < 0
         || bonus.infrastructure < 0
-        || bonus.data < 0
-        || bonus.operations < 0;
+        || bonus.data < 0;
 }
 
 inline EngineeringCapacity applyEngineeringCapacityBudgetCap(EngineeringCapacity base, const EngineeringCapacity& bonus)
@@ -58,7 +54,6 @@ inline EngineeringCapacity applyEngineeringCapacityBudgetCap(EngineeringCapacity
     result.backend = applyReduction(base.backend, bonus.backend);
     result.infrastructure = applyReduction(base.infrastructure, bonus.infrastructure);
     result.data = applyReduction(base.data, bonus.data);
-    result.operations = applyReduction(base.operations, bonus.operations);
 
     int remaining = std::max(0, result.total - specialtyCapacityTotal(result));
     auto applyIncrease = [&remaining](int value, int delta) {
@@ -74,7 +69,6 @@ inline EngineeringCapacity applyEngineeringCapacityBudgetCap(EngineeringCapacity
     result.backend = applyIncrease(result.backend, bonus.backend);
     result.infrastructure = applyIncrease(result.infrastructure, bonus.infrastructure);
     result.data = applyIncrease(result.data, bonus.data);
-    result.operations = applyIncrease(result.operations, bonus.operations);
     return result;
 }
 
@@ -86,7 +80,6 @@ inline EngineeringCapacity effectiveEngineeringCapacityBonus(const EngineeringCa
         .backend = capped.backend - base.backend,
         .infrastructure = capped.infrastructure - base.infrastructure,
         .data = capped.data - base.data,
-        .operations = capped.operations - base.operations,
         .total = capped.total - base.total,
     };
 }

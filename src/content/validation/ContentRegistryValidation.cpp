@@ -86,7 +86,7 @@ void ContentRegistry::validate(ContentLoadResult& result) const
             result.errors.push_back("Scenario " + scenario.id + " has invalid turn duration.");
         }
         const EngineeringCapacity& capacity = scenario.engineeringCapacity;
-        if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.operations < 0 || capacity.total < 0) {
+        if (capacity.frontend < 0 || capacity.backend < 0 || capacity.infrastructure < 0 || capacity.data < 0 || capacity.total < 0) {
             result.errors.push_back("Scenario " + scenario.id + " has invalid engineering capacity.");
         }
         for (const auto& node : scenario.nodes) {
