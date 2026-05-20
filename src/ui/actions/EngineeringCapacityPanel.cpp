@@ -36,10 +36,18 @@ std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> domainUsage(
     return usage;
 }
 
-int distributedCapacity(const EngineeringCapacity& capacity)
+int distributedCapacityUsage(const EngineeringCapacity& capacity)
 {
-    return std::max(0, capacity.frontend) + std::max(0, capacity.backend) + std::max(0, capacity.infrastructure)
-        + std::max(0, capacity.data) + std::max(0, capacity.operations);
+    return std::max(0, capacity.frontend)
+        + std::max(0, capacity.backend)
+        + std::max(0, capacity.infrastructure)
+        + std::max(0, capacity.data)
+        + std::max(0, capacity.operations);
+}
+
+const EngineeringCapacity& displayedCapacity(const UiState& state)
+{
+    return state.engineeringCapacityPreviewVisible ? state.previewEngineeringCapacity : state.engineeringCapacity;
 }
 
 const char* shortDomainName(EngineeringDomain domain)
@@ -107,12 +115,12 @@ float EngineeringCapacityPanel::measureHeight(const UiState& state) const
     int visibleDomains = 0;
     for (int i = 0; i < static_cast<int>(EngineeringDomain::Count); ++i) {
         const auto domain = static_cast<EngineeringDomain>(i);
-        if (capacityForDomain(state.engineeringCapacity, domain) > 0) {
+        if (capacityForDomain(displayedCapacity(state), domain) > 0) {
             ++visibleDomains;
         }
     }
 
-    if (visibleDomains <= 0 && state.engineeringCapacity.total <= 0) {
+    if (visibleDomains <= 0 && displayedCapacity(state).total <= 0) {
         return 18.0f;
     }
 
@@ -123,16 +131,17 @@ float EngineeringCapacityPanel::measureHeight(const UiState& state) const
 void EngineeringCapacityPanel::draw(Rectangle bounds, const UiState& state) const
 {
     const auto usage = domainUsage(state);
+    const EngineeringCapacity& capacity = displayedCapacity(state);
 
-    drawTextClipped("ENGINEERING CAPACITY", {bounds.x, bounds.y, bounds.width, 14.0f}, 11, {139, 148, 158, 255});
+    drawTextClipped("ENGINEERING BUDGET", {bounds.x, bounds.y, bounds.width, 14.0f}, 11, {139, 148, 158, 255});
 
     float y = bounds.y + 24.0f;
-    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "engineering.total", "Total", distributedCapacity(state.engineeringCapacity), state.engineeringCapacity.total, {230, 237, 243, 255}, true);
+    drawCapacityRow({bounds.x, y, bounds.width, 14.0f}, "engineering.total", "Budget", distributedCapacityUsage(capacity), capacity.total, {230, 237, 243, 255}, true);
     y += 22.0f;
 
     for (int i = 0; i < static_cast<int>(EngineeringDomain::Count); ++i) {
         const auto domain = static_cast<EngineeringDomain>(i);
-        const int cap = capacityForDomain(state.engineeringCapacity, domain);
+        const int cap = capacityForDomain(capacity, domain);
         if (cap <= 0) {
             continue;
         }

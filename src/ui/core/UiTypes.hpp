@@ -170,7 +170,12 @@ struct UiState {
     bool suppressMapSelectionOnce = false;
     EngineeringCapacity worldActionCapacityBonus;
     std::deque<std::string> resolutionSummaries;
+    // Committed action-point capacities. This is the single source used by
+    // validation and phase-independent UI. Hover/selection previews are kept
+    // separate so they cannot be accidentally applied twice.
     EngineeringCapacity engineeringCapacity;
+    EngineeringCapacity previewEngineeringCapacity;
+    bool engineeringCapacityPreviewVisible = false;
     std::string lastCapacityUsageSummary;
     UiViewMode activeViewMode = UiViewMode::Overview;
     OverlayMode activeOverlay = OverlayMode::Bottlenecks;

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "template.location.global",
+    "scope": "global"
+  },
+  {
+    "id": "template.location.node_type",
+    "scope": "node_type",
+    "node_type": "$node_type"
+  },
+  {
+    "id": "template.location.random_region",
+    "scope": "random_region",
+    "regions": "$regions"
+  },
+  {
+    "id": "template.turn_duration.operational_cycle",
+    "value": 1,
+    "unit": "turns",
+    "label": "operational cycle",
+    "simulation_turn_seconds": 60.0,
+    "advance_calendar": false
+  },
+  {
+    "id": "template.trigger.time_turn",
+    "type": "time",
+    "turn": "$turn"
+  },
+  {
+    "id": "template.trigger.metric_threshold",
+    "type": "metric_threshold",
+    "metric": "$metric",
+    "threshold": "$threshold"
+  },
+  {
+    "id": "template.trigger.pressure_threshold",
+    "type": "pressure_threshold",
+    "pressure": "$pressure",
+    "threshold": "$threshold"
+  }
+]

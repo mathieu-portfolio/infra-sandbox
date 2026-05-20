@@ -378,6 +378,18 @@ bool ScenarioManager::isScenarioUnlocked(const ScenarioDefinition& scenario) con
         && scenario.id == Scenario::createDefault().id;
 }
 
+
+void ScenarioManager::applyEngineeringCapacityBonus(const EngineeringCapacity& bonus)
+{
+    auto& capacity = run_.activeDefinition.engineeringCapacity;
+    capacity.frontend = std::max(0, capacity.frontend + bonus.frontend);
+    capacity.backend = std::max(0, capacity.backend + bonus.backend);
+    capacity.infrastructure = std::max(0, capacity.infrastructure + bonus.infrastructure);
+    capacity.data = std::max(0, capacity.data + bonus.data);
+    capacity.operations = std::max(0, capacity.operations + bonus.operations);
+    capacity.total = std::max(0, capacity.total + bonus.total);
+}
+
 void ScenarioManager::notifyActionTriggered(MechanicType mechanic)
 {
     actionsTriggered_.push_back(mechanic);

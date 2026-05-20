@@ -8,11 +8,13 @@
     "weight": 1.4,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -36,11 +38,13 @@
     "weight": 1.3,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 2
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -68,11 +72,13 @@
     "weight": 1.35,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 2
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -100,11 +106,13 @@
     "weight": 0.9,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 3
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -132,11 +140,13 @@
     "weight": 1.1,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 3
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -160,11 +170,13 @@
     "weight": 0.9,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 4
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -193,11 +205,13 @@
     "weight": 0.85,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 5
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 5
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -225,11 +239,13 @@
     "weight": 0.8,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 2
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
     },
     "effect": {
       "type": "emit_feedback"
@@ -246,7 +262,7 @@
     "description": "Force a remote latency spike to compare edge and backpressure strategies.",
     "category": "sandbox",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
       "type": "manual"
@@ -268,7 +284,7 @@
     "description": "Force packet loss and retry amplification on the networking path.",
     "category": "sandbox",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
       "type": "manual"

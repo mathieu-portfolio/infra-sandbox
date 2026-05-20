@@ -14,11 +14,7 @@
     "topology_template": "infrastructure_lab",
     "traffic_pattern": "constant",
     "turn_duration": {
-      "value": 1,
-      "unit": "turns",
-      "label": "operational cycle",
-      "simulation_turn_seconds": 60.0,
-      "advance_calendar": false
+      "template": "template.turn_duration.operational_cycle"
     },
     "educational_focus": [
       "scaling",
@@ -129,11 +125,7 @@
         "start_turn": 1,
         "duration_turns": 999,
         "transition_duration": {
-          "value": 1,
-          "unit": "turns",
-          "label": "operational cycle",
-          "simulation_turn_seconds": 60.0,
-          "advance_calendar": false
+          "template": "template.turn_duration.operational_cycle"
         },
         "traffic_multiplier": 1.0
       }
@@ -533,11 +525,7 @@
         "start_turn": 1,
         "duration_turns": 1,
         "transition_duration": {
-          "value": 1,
-          "unit": "turns",
-          "label": "operational cycle",
-          "simulation_turn_seconds": 60.0,
-          "advance_calendar": false
+          "template": "template.turn_duration.operational_cycle"
         },
         "traffic_multiplier": 1.05
       },
@@ -759,11 +747,7 @@
         "start_turn": 1,
         "duration_turns": 1,
         "transition_duration": {
-          "value": 1,
-          "unit": "turns",
-          "label": "operational cycle",
-          "simulation_turn_seconds": 60.0,
-          "advance_calendar": false
+          "template": "template.turn_duration.operational_cycle"
         },
         "traffic_multiplier": 1.05
       },
@@ -993,11 +977,7 @@
         "start_turn": 5,
         "duration_turns": 2,
         "transition_duration": {
-          "value": 1,
-          "unit": "turns",
-          "label": "operational cycle",
-          "simulation_turn_seconds": 60.0,
-          "advance_calendar": false
+          "template": "template.turn_duration.operational_cycle"
         },
         "traffic_multiplier": 1.4,
         "burst_override": {

@@ -28,7 +28,7 @@ std::string capacityUsageSummary(const UiState& state)
         return "0/" + std::to_string(state.engineeringCapacity.total);
     }
 
-    std::string summary = std::to_string(total) + "/" + std::to_string(state.engineeringCapacity.total) + " total";
+    std::string summary = std::to_string(total) + "/" + std::to_string(state.engineeringCapacity.total) + " budget";
     for (std::size_t index = 0; index < domainUsage.size(); ++index) {
         if (domainUsage[index] <= 0) {
             continue;
@@ -119,6 +119,8 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
     state.selectedWorldActionIndex = -1;
     state.hoveredWorldActionIndex = -1;
     state.worldActionCapacityBonus = {};
+    state.previewEngineeringCapacity = {};
+    state.engineeringCapacityPreviewVisible = false;
     state.worldActionDraftVisible = state.eventPopupMode == EventPopupMode::None && !state.worldActionDraft.empty();
 }
 
@@ -133,6 +135,8 @@ void WorldActionController::clearPlan(UiState& state) const
     state.selectedWorldActionIndex = -1;
     state.hoveredWorldActionIndex = -1;
     state.worldActionCapacityBonus = {};
+    state.previewEngineeringCapacity = {};
+    state.engineeringCapacityPreviewVisible = false;
 }
 
 void WorldActionController::applyPlan(UiState& state, ScenarioSession& session) const
@@ -141,6 +145,8 @@ void WorldActionController::applyPlan(UiState& state, ScenarioSession& session) 
         return;
     }
     const WorldActionDraft& action = state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)];
+    session.scenarioManager().applyEngineeringCapacityBonus(action.capacityBonus);
+    state.engineeringCapacity = session.scenarioManager().definition().engineeringCapacity;
     if (action.complexityDelta > 0.0) {
         session.simulation().addComplexity(action.complexityDelta);
     }
@@ -148,6 +154,15 @@ void WorldActionController::applyPlan(UiState& state, ScenarioSession& session) 
     state.lastCapacityUsageSummary = state.lastCapacityUsageSummary.empty()
         ? "World action: " + action.name
         : state.lastCapacityUsageSummary + "; world action: " + action.name;
+
+    // Once the world action is committed into ScenarioManager, it is no longer a preview.
+    // Leaving the selection active let later planning/analysis frames add the same bonus
+    // on top of the newly committed capacity.
+    state.selectedWorldActionIndex = -1;
+    state.hoveredWorldActionIndex = -1;
+    state.worldActionCapacityBonus = {};
+    state.previewEngineeringCapacity = {};
+    state.engineeringCapacityPreviewVisible = false;
 }
 
 void WorldActionController::applyPlannedInterventions(UiState& state, ScenarioSession& session) const

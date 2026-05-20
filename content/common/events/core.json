@@ -8,11 +8,13 @@
     "weight": 1.2,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -37,15 +39,19 @@
     "weight": 1.0,
     "repeatable": true,
     "location": {
-      "scope": "random_region",
-      "regions": [
-        "Europe",
-        "NorthAmerica"
-      ]
+      "template": "template.location.random_region",
+      "args": {
+        "regions": [
+          "Europe",
+          "NorthAmerica"
+        ]
+      }
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -74,8 +80,10 @@
     "weight": 0.9,
     "repeatable": true,
     "location": {
-      "scope": "node_type",
-      "node_type": "database"
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "database"
+      }
     },
     "trigger": {
       "type": "time",
@@ -109,7 +117,7 @@
     "weight": 0.8,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
       "type": "time",
@@ -143,12 +151,16 @@
     "weight": 0.9,
     "repeatable": true,
     "location": {
-      "scope": "node_type",
-      "node_type": "database"
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "database"
+      }
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -173,7 +185,7 @@
     "weight": 0.45,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
       "type": "time",
@@ -203,11 +215,13 @@
     "weight": 0.55,
     "repeatable": true,
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "emit_feedback"
@@ -225,11 +239,13 @@
     "description": "Manual lab traffic pressure injection.",
     "category": "traffic",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -248,15 +264,19 @@
     "description": "Manual lab regional demand pressure injection.",
     "category": "traffic",
     "location": {
-      "scope": "random_region",
-      "regions": [
-        "Europe",
-        "NorthAmerica"
-      ]
+      "template": "template.location.random_region",
+      "args": {
+        "regions": [
+          "Europe",
+          "NorthAmerica"
+        ]
+      }
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -276,11 +296,13 @@
     "description": "Manual lab retry amplification injection.",
     "category": "reliability",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_burst_intensity",
@@ -299,12 +321,16 @@
     "description": "Manual lab persistence slowdown injection.",
     "category": "infrastructure",
     "location": {
-      "scope": "node_type",
-      "node_type": "database"
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "database"
+      }
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "degrade_node_capacity",
@@ -322,11 +348,13 @@
     "description": "Manual lab recovery injection.",
     "category": "recovery",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -346,11 +374,13 @@
     "description": "A short client refresh wave increases traffic pressure.",
     "category": "traffic",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 1
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 1
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -374,11 +404,13 @@
     "description": "A visible product moment creates a short demand spike.",
     "category": "traffic",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 2
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -402,11 +434,13 @@
     "description": "Another burst arrives before all queues have fully recovered.",
     "category": "traffic",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 3
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
     },
     "effect": {
       "type": "modify_traffic_rate",
@@ -430,7 +464,7 @@
     "description": "Demand rises and stays elevated long enough to expose weak capacity planning.",
     "category": "demand",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
       "type": "time",
@@ -455,13 +489,17 @@
     "description": "Storage latency reduces effective database capacity.",
     "category": "infrastructure",
     "location": {
-      "scope": "node_type",
-      "node_type": "database"
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "database"
+      }
     },
     "trigger": {
-      "type": "metric_threshold",
-      "metric": "database_queue",
-      "threshold": 5.0,
+      "template": "template.trigger.metric_threshold",
+      "args": {
+        "metric": "database_queue",
+        "threshold": 5.0
+      },
       "delay_turns": 1
     },
     "effect": {
@@ -486,12 +524,14 @@
     "description": "Timeouts cause retries to amplify load after a delay.",
     "category": "reliability",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "metric_threshold",
-      "metric": "retry_rate",
-      "threshold": 0.5,
+      "template": "template.trigger.metric_threshold",
+      "args": {
+        "metric": "retry_rate",
+        "threshold": 0.5
+      },
       "delay_turns": 1
     },
     "effect": {
@@ -516,13 +556,17 @@
     "description": "Repeated reads make cache effectiveness visible over time.",
     "category": "recovery",
     "location": {
-      "scope": "node_type",
-      "node_type": "database"
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "database"
+      }
     },
     "trigger": {
-      "type": "metric_threshold",
-      "metric": "cache_hit_rate",
-      "threshold": 0.35
+      "template": "template.trigger.metric_threshold",
+      "args": {
+        "metric": "cache_hit_rate",
+        "threshold": 0.35
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -542,11 +586,13 @@
     "description": "Pressure eases temporarily so queues can drain.",
     "category": "recovery",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 4
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -570,11 +616,13 @@
     "description": "Traffic briefly softens after sustained load.",
     "category": "recovery",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 4
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
     },
     "effect": {
       "type": "emit_feedback",
@@ -598,11 +646,13 @@
     "description": "Database pressure eases temporarily after a heavy read period.",
     "category": "recovery",
     "location": {
-      "scope": "global"
+      "template": "template.location.global"
     },
     "trigger": {
-      "type": "time",
-      "turn": 4
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
     },
     "effect": {
       "type": "emit_feedback",

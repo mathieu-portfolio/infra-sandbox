@@ -40,6 +40,13 @@ int capacityForDomain(const EngineeringCapacity& capacity, EngineeringDomain dom
     return 0;
 }
 
+const EngineeringCapacity& effectivePlanningCapacity(const UiState& state)
+{
+    return state.engineeringCapacityPreviewVisible && state.selectedWorldActionIndex >= 0
+        ? state.previewEngineeringCapacity
+        : state.engineeringCapacity;
+}
+
 std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomainUsage(const UiState& state)
 {
     std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> usage{};
@@ -54,13 +61,24 @@ std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomai
 bool exceedsEngineeringCapacity(const UiState& state, const std::vector<EngineeringCost>& costs, std::string& reason)
 {
     const auto usage = plannedDomainUsage(state);
+    const EngineeringCapacity& capacity = effectivePlanningCapacity(state);
+    int plannedTotal = 0;
+    int addedTotal = 0;
+    for (const int used : usage) {
+        plannedTotal += used;
+    }
     for (const auto& cost : costs) {
+        addedTotal += cost.amount;
         const int next = usage[static_cast<std::size_t>(cost.domain)] + cost.amount;
-        const int cap = capacityForDomain(state.engineeringCapacity, cost.domain);
+        const int cap = capacityForDomain(capacity, cost.domain);
         if (next > cap) {
             reason = std::string("Insufficient ") + engineeringDomainName(cost.domain) + " capacity this turn.";
             return true;
         }
+    }
+    if (plannedTotal + addedTotal > capacity.total) {
+        reason = "Insufficient turn budget.";
+        return true;
     }
     return false;
 }

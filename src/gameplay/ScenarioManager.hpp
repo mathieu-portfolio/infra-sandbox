@@ -43,6 +43,7 @@ public:
     [[nodiscard]] const ProgressionState& progressionState() const;
     [[nodiscard]] bool isScenarioUnlocked(const ScenarioDefinition& scenario) const;
     void notifyActionTriggered(MechanicType mechanic);
+    void applyEngineeringCapacityBonus(const EngineeringCapacity& bonus);
     [[nodiscard]] const SandboxControls& sandboxControls() const;
     void setSandboxTrafficMultiplier(double multiplier);
     void setSandboxLatencyMultiplier(double multiplier);

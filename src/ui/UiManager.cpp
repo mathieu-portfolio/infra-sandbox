@@ -20,15 +20,29 @@ EngineeringCapacity displayCapacityWithBonus(EngineeringCapacity base, const Eng
     return base;
 }
 
+bool hasActiveCapacityPreview(const UiState& state)
+{
+    if (state.gameplayPhase != GameplayPhase::Planning) {
+        return false;
+    }
+    return (state.hoveredWorldActionIndex >= 0
+            && state.hoveredWorldActionIndex < static_cast<int>(state.worldActionDraft.size()))
+        || (state.selectedWorldActionIndex >= 0
+            && state.selectedWorldActionIndex < static_cast<int>(state.worldActionDraft.size()));
+}
+
 EngineeringCapacity activeCapacityBonus(const UiState& state)
 {
-    if (state.selectedWorldActionIndex >= 0
-        && state.selectedWorldActionIndex < static_cast<int>(state.worldActionDraft.size())) {
-        return state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)].capacityBonus;
+    if (state.gameplayPhase != GameplayPhase::Planning) {
+        return {};
     }
     if (state.hoveredWorldActionIndex >= 0
         && state.hoveredWorldActionIndex < static_cast<int>(state.worldActionDraft.size())) {
         return state.worldActionDraft[static_cast<std::size_t>(state.hoveredWorldActionIndex)].capacityBonus;
+    }
+    if (state.selectedWorldActionIndex >= 0
+        && state.selectedWorldActionIndex < static_cast<int>(state.worldActionDraft.size())) {
+        return state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)].capacityBonus;
     }
     return {};
 }
@@ -38,10 +52,13 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
 {
     UiContext context{&state_, GetScreenWidth(), GetScreenHeight(), paused};
     state_.sandboxMode = scenarioManager.definition().sandboxLab;
-    // Always rebuild the visible planning capacity from the scenario baseline.
-    // This avoids carrying stale UI state between the initial turn, hover previews,
-    // and the first selected World Action.
-    state_.engineeringCapacity = displayCapacityWithBonus(scenarioManager.definition().engineeringCapacity, activeCapacityBonus(state_));
+    // Keep committed capacity and temporary preview capacity separate.
+    // The old code wrote the preview directly into engineeringCapacity, which made
+    // the panel and capacity checks read different values across phase changes.
+    state_.engineeringCapacity = scenarioManager.definition().engineeringCapacity;
+    const EngineeringCapacity previewBonus = activeCapacityBonus(state_);
+    state_.previewEngineeringCapacity = displayCapacityWithBonus(state_.engineeringCapacity, previewBonus);
+    state_.engineeringCapacityPreviewVisible = hasActiveCapacityPreview(state_);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
     hudPanel_.update(context, simulation, scenarioManager, packManager);

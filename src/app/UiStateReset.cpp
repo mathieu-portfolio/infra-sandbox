@@ -23,6 +23,8 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.hoveredWorldActionIndex = -1;
     state.suppressMapSelectionOnce = false;
     state.worldActionCapacityBonus = {};
+    state.previewEngineeringCapacity = {};
+    state.engineeringCapacityPreviewVisible = false;
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
     state.selection = {};
