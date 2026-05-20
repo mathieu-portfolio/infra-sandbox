@@ -1,6 +1,6 @@
 #pragma once
 
-#include "content/ContentPackManager.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"

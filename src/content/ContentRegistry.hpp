@@ -1,6 +1,6 @@
 #pragma once
 
-#include "content/ValueSpec.hpp"
+#include "content/validation/ValueSpec.hpp"
 #include "gameplay/Scenario.hpp"
 #include "simulation/core/Mechanics.hpp"
 #include "simulation/core/SimulationConfig.hpp"

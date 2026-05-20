@@ -1,7 +1,7 @@
 #pragma once
 
 #include "simulation/core/Simulation.hpp"
-#include "content/ContentPackManager.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "gameplay/ScenarioManager.hpp"
 #include "ui/DebugPanel.hpp"
 #include "ui/HudPanel.hpp"

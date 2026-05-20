@@ -1,6 +1,6 @@
 #include "gameplay/Scenario.hpp"
 
-#include "content/ContentPackManager.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "content/ContentRegistry.hpp"
 
 #include <algorithm>

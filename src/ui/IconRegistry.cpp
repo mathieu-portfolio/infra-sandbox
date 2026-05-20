@@ -1,7 +1,7 @@
 #include "ui/IconRegistry.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "content/Json.hpp"
+#include "content/parsing/Json.hpp"
 
 #include <algorithm>
 #include <fstream>

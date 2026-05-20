@@ -1,7 +1,7 @@
 #include "gameplay/WorldActionController.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "content/ValueSpec.hpp"
+#include "content/validation/ValueSpec.hpp"
 #include "simulation/core/Mechanics.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 

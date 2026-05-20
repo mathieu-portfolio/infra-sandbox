@@ -3,7 +3,7 @@
 #include "gameplay/GameplayPhaseController.hpp"
 #include "gameplay/SandboxController.hpp"
 #include "app/ScenarioSession.hpp"
-#include "content/ContentPackManager.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "gameplay/WorldActionController.hpp"
 #include "control/InterventionController.hpp"
 #include "control/OverlayController.hpp"

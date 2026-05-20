@@ -1,7 +1,7 @@
 #include "gameplay/ScenarioManager.hpp"
 
 #include "content/ContentRegistry.hpp"
-#include "content/ValueSpec.hpp"
+#include "content/validation/ValueSpec.hpp"
 
 #include <algorithm>
 #include <cctype>

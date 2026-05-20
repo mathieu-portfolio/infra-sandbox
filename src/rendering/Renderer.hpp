@@ -2,7 +2,7 @@
 
 #include "gameplay/Scenario.hpp"
 #include "gameplay/ScenarioManager.hpp"
-#include "content/ContentPackManager.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
