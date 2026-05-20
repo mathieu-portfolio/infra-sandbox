@@ -2,11 +2,12 @@
   {
     "id": "write_heavy_platform",
     "display_name": "Write-Heavy Platform",
-    "description": "The product starts recording more state. API scaling helps briefly, but the database becomes the true bottleneck.",
+    "description": "The product starts recording more state. API scaling helps briefly, but queued writes must pass through workers before the database catches up.",
     "tags": [
       "data_systems",
       "write_pressure",
-      "intro"
+      "intro",
+      "worker"
     ],
     "archetype": "write_bottleneck",
     "minimum_tier": "data_foundations",
@@ -25,7 +26,8 @@
     "educational_focus": [
       "write pressure",
       "database bottlenecks",
-      "backpressure"
+      "backpressure",
+      "async processing"
     ],
     "guaranteed_pressures": [
       "persistence",
@@ -134,6 +136,10 @@
       {
         "id": "eu_queue",
         "processing_capacity_per_second": 3.2
+      },
+      {
+        "id": "eu_worker",
+        "processing_capacity_per_second": 2.3
       }
     ],
     "request_types": [
@@ -471,7 +477,8 @@
     "tags": [
       "data_systems",
       "queues",
-      "async_processing"
+      "async_processing",
+      "worker"
     ],
     "archetype": "backlog_recovery",
     "minimum_tier": "async_backlog",
@@ -493,7 +500,8 @@
     "educational_focus": [
       "queues",
       "backlog",
-      "delayed consequences"
+      "delayed consequences",
+      "async processing"
     ],
     "guaranteed_pressures": [
       "queue",
@@ -602,6 +610,10 @@
       {
         "id": "eu_database",
         "processing_capacity_per_second": 2.5
+      },
+      {
+        "id": "eu_worker",
+        "processing_capacity_per_second": 2.3
       }
     ],
     "request_types": [
@@ -785,7 +797,8 @@
     "tags": [
       "data_systems",
       "sandbox",
-      "distributed_systems"
+      "distributed_systems",
+      "worker"
     ],
     "archetype": "data_lab",
     "minimum_tier": "data_lab",
@@ -801,7 +814,8 @@
     "educational_focus": [
       "data systems",
       "distributed systems",
-      "trade-offs"
+      "trade-offs",
+      "async processing"
     ],
     "guaranteed_pressures": [
       "persistence",
@@ -929,6 +943,10 @@
       {
         "id": "eu_cache",
         "processing_capacity_per_second": 4.6
+      },
+      {
+        "id": "eu_worker",
+        "processing_capacity_per_second": 2.3
       }
     ],
     "request_types": [

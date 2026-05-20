@@ -453,6 +453,10 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
             : definition.defaultProcessingCapacityPerSecond;
         node.baseProcessingCapacityPerSecond = node.processingCapacityPerSecond;
         node.timeoutSeconds = nodeScenario.timeoutSeconds;
+        node.computeWeight = nodeScenario.resourceProfile.compute;
+        node.memoryWeight = nodeScenario.resourceProfile.memory;
+        node.storageWeight = nodeScenario.resourceProfile.storage;
+        node.networkWeight = nodeScenario.resourceProfile.network;
         graph_.addNode(std::move(node));
     }
     refreshRegionSlots();
@@ -676,6 +680,14 @@ void Simulation::updateProcessors(double dt)
         node.currentUtilization = node.recentWorkCapacity > 0.0
             ? std::clamp(node.recentWorkConsumed / node.recentWorkCapacity, 0.0, 1.0)
             : 0.0;
+        node.backlogPressure = std::clamp(static_cast<double>(node.queue.size()) / std::max(1.0, node.processingCapacityPerSecond * 2.0), 0.0, 1.0);
+        node.recentJobsConsumed = node.recentJobsConsumed * decay + static_cast<double>(consumedProcessingBudget > 0.0 ? 1.0 : 0.0);
+
+        const double utilization = node.currentUtilization;
+        node.computePressure = std::clamp(utilization * std::max(0.0, node.computeWeight), 0.0, 1.0);
+        node.memoryPressure = std::clamp((utilization * 0.7 + node.backlogPressure * 0.3) * std::max(0.0, node.memoryWeight), 0.0, 1.0);
+        node.storagePressure = std::clamp((utilization * 0.5 + node.backlogPressure * 0.5) * std::max(0.0, node.storageWeight), 0.0, 1.0);
+        node.networkPressure = std::clamp(utilization * std::max(0.0, node.networkWeight), 0.0, 1.0);
     }
 }
 
@@ -745,7 +757,23 @@ void Simulation::completeRequest(Request& request, Node& node)
         return;
     }
 
-    if (node.type == NodeType::Cache || node.type == NodeType::QueueBroker) {
+    if (node.type == NodeType::QueueBroker) {
+        if (const auto workerId = firstNodeOfType(NodeType::Worker)) {
+            if (Link* link = linkBetween(node.id, *workerId)) {
+                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+                return;
+            }
+        }
+
+        if (const auto databaseId = firstNodeOfType(NodeType::Database)) {
+            if (Link* link = linkBetween(node.id, *databaseId)) {
+                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+                return;
+            }
+        }
+    }
+
+    if (node.type == NodeType::Worker || node.type == NodeType::Cache) {
         const auto databaseId = firstNodeOfType(NodeType::Database);
         if (databaseId) {
             if (Link* link = linkBetween(node.id, *databaseId)) {
@@ -919,7 +947,15 @@ double Simulation::processingCost(const Request& request, const Node& node) cons
         return scenario_.requestTypes.databaseCostHeavy;
     }
 
-    if (node.type == NodeType::Cache || node.type == NodeType::QueueBroker) {
+    if (node.type == NodeType::QueueBroker) {
+        return 0.2;
+    }
+
+    if (node.type == NodeType::Worker || node.type == NodeType::BatchProcessor || node.type == NodeType::StreamProcessor) {
+        return request.type == RequestType::DatabaseHeavy ? 1.1 : 0.55;
+    }
+
+    if (node.type == NodeType::Cache) {
         return 0.25;
     }
 

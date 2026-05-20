@@ -215,7 +215,8 @@
     "tags": [
       "cache",
       "topology"
-    ]
+    ],
+    "show_usage_details": false
   },
   {
     "id": "add_read_replica",
@@ -271,13 +272,14 @@
     "tags": [
       "database",
       "topology"
-    ]
+    ],
+    "show_usage_details": false
   },
   {
     "id": "add_queue",
     "display_name": "Insert Request Queue",
     "icon_id": "action.queue",
-    "description": "Add buffering between the selected service and its dependency so bursts do not immediately overload downstream systems.",
+    "description": "Insert a queue into a dependency path so bursts become backlog that downstream workers or storage can drain over time.",
     "kind": "topology_mutation",
     "mechanic": "add_queue",
     "mutation": "add_queue",
@@ -291,7 +293,8 @@
     ],
     "node_types": [
       "api_service",
-      "database"
+      "database",
+      "worker"
     ],
     "categories": [
       "Reliability",
@@ -312,7 +315,8 @@
       "Downstream stability improves"
     ],
     "negative_effects": [
-      "End-to-end latency and consistency complexity increase"
+      "End-to-end latency and consistency complexity increase",
+      "Delayed work becomes a backlog that workers must drain"
     ],
     "pressure_shifts": [
       "Queue pressure moves from database saturation into buffering"
@@ -329,7 +333,8 @@
     "tags": [
       "queue",
       "topology"
-    ]
+    ],
+    "show_usage_details": false
   },
   {
     "id": "add_regional_cache",
@@ -390,7 +395,8 @@
       "cache",
       "geography",
       "topology"
-    ]
+    ],
+    "show_usage_details": false
   },
   {
     "id": "toggle_retries",

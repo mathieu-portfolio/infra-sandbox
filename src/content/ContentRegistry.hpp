@@ -38,6 +38,7 @@ struct InterventionDefinition {
     std::vector<std::string> pressureShifts;
     std::vector<std::string> categories;
     std::vector<std::string> usefulWhen;
+    bool showUsageDetails = true;
     std::string iconId;
     std::vector<PressureCategory> affectedPressures;
     std::vector<NodeType> targetNodeTypes;
@@ -63,6 +64,7 @@ struct WorldActionDefinition {
     std::vector<std::string> categories;
     std::string usefulWhen;
     std::string tradeoffs;
+    bool showUsageDetails = true;
     std::string iconId;
     std::vector<PressureCategory> affectedPressures;
     EngineeringCapacity capacityBonus;

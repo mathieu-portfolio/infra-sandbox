@@ -139,6 +139,7 @@ struct WorldActionDraft {
     std::string category;
     std::string usefulWhen;
     std::string tradeOff;
+    bool showUsageDetails = true;
     std::string iconId;
     EngineeringCapacity capacityBonus;
     double intensity = 1.0;

@@ -109,6 +109,13 @@ struct ObjectiveReward {
     std::string message;
 };
 
+struct ResourceProfile {
+    double compute = 1.0;
+    double memory = 0.0;
+    double storage = 0.0;
+    double network = 0.0;
+};
+
 struct ProgressionTierDefinition {
     std::string id;
     std::string displayName;
@@ -132,6 +139,7 @@ struct NodeScenario {
     double requestRatePerSecond = 0.0;
     double processingCapacityPerSecond = 0.0;
     double timeoutSeconds = 6.0;
+    ResourceProfile resourceProfile;
 };
 
 struct RequestTypeScenario {

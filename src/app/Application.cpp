@@ -74,7 +74,7 @@ void Application::handleInput()
         resetScenario();
     }
 
-    interventionController_.handleActions(events, session_.simulation(), session_.scenarioManager(), renderer_.uiManager().state());
+    interventionController_.handleActions(events, session_.simulation(), session_.scenarioManager(), renderer_.uiManager().state(), cameraController_);
     if (!shouldBlockCameraInput()) {
         cameraController_.handleActions(events, GetFrameTime());
     }

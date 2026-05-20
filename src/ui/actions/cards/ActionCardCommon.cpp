@@ -48,6 +48,9 @@ int actionPointCost(const std::vector<EngineeringCost>& costs)
 
 std::vector<std::string> usefulPoints(const ActionCardModel& card)
 {
+    if (!card.showUsageDetails) {
+        return {};
+    }
     if (!card.usefulWhen.empty()) {
         return card.usefulWhen;
     }
@@ -59,6 +62,9 @@ std::vector<std::string> usefulPoints(const ActionCardModel& card)
 
 std::vector<std::string> worsenPoints(const ActionCardModel& card)
 {
+    if (!card.showUsageDetails) {
+        return {};
+    }
     if (!card.negativeEffects.empty()) {
         return card.negativeEffects;
     }

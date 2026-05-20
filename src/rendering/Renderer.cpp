@@ -30,6 +30,37 @@ Color toRaylib(NodeVisualColor color)
     return {color.r, color.g, color.b, color.a};
 }
 
+
+Rectangle mapBounds(const CameraController& camera, int screenWidth, int screenHeight)
+{
+    const Vector2 topLeft = worldToScreen({-MapProjection::worldWidth * 0.5f, -MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
+    const Vector2 bottomRight = worldToScreen({MapProjection::worldWidth * 0.5f, MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
+    return {topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y};
+}
+
+int hoveredPlacementCandidateIndex(const Simulation& simulation, TopologyMutationType type, const CameraController& camera, Vector2 mousePosition, int screenWidth, int screenHeight)
+{
+    if (!CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight))) {
+        return -1;
+    }
+    const PlacementCandidateGenerator generator;
+    const auto candidates = generator.generate(simulation, type);
+    int bestIndex = -1;
+    float bestDistanceSquared = 1.0e12f;
+    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
+        const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
+        const Vector2 center = worldToScreen(world, screenWidth, screenHeight, camera);
+        const float dx = mousePosition.x - center.x;
+        const float dy = mousePosition.y - center.y;
+        const float distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < bestDistanceSquared) {
+            bestDistanceSquared = distanceSquared;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
+}
+
 void drawDiamond(Vector2 center, float radius, Color fill, Color outline)
 {
     const Vector2 points[4] = {
@@ -457,15 +488,22 @@ void Renderer::drawMutationPreview(const Simulation& simulation, const CameraCon
         return;
     }
 
-    const int selected = state.placementActive ? std::clamp(state.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1) : 0;
+    int selected = 0;
+    if (state.placementActive) {
+        selected = hoveredPlacementCandidateIndex(simulation, mutation, camera, GetMousePosition(), width, height);
+    }
     for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
         const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
         const Vector2 center = worldToScreen(world, width, height, camera);
-        const bool isSelected = i == selected;
+        const bool isSelected = selected >= 0 && i == selected;
         const Color color = isSelected ? Color{89, 196, 255, 210} : Color{139, 148, 158, 120};
         DrawCircleV(center, isSelected ? 38.0f : 28.0f, {color.r, color.g, color.b, 34});
         DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), isSelected ? 38.0f : 28.0f, color);
         DrawText(candidates[static_cast<std::size_t>(i)].displayName.c_str(), static_cast<int>(center.x + 42.0f), static_cast<int>(center.y - 8.0f), 14, color);
+    }
+
+    if (selected < 0 || selected >= static_cast<int>(candidates.size())) {
+        return;
     }
 
     const auto& option = candidates[static_cast<std::size_t>(selected)];

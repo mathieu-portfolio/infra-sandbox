@@ -1,7 +1,7 @@
 {
   "id": "data_pipeline_lab",
   "display_name": "Data Pipeline Lab",
-  "description": "API, queue, cache, and database topology for exploring writes, backlog, and storage pressure without requiring a dedicated worker node type.",
+  "description": "API, queue, worker, cache, and database topology for exploring writes, backlog, delayed jobs, and storage pressure.",
   "tags": [
     "data_systems",
     "queues",
@@ -44,7 +44,13 @@
         "region": "Europe"
       },
       "processing_capacity_per_second": 4.6,
-      "timeout_seconds": 4.5
+      "timeout_seconds": 4.5,
+      "resource_profile": {
+        "compute": 0.8,
+        "memory": 0.25,
+        "storage": 0.1,
+        "network": 0.45
+      }
     },
     {
       "id": "eu_queue",
@@ -56,7 +62,31 @@
         "region": "Europe"
       },
       "processing_capacity_per_second": 3.8,
-      "timeout_seconds": 5.0
+      "timeout_seconds": 5.0,
+      "resource_profile": {
+        "compute": 0.25,
+        "memory": 0.55,
+        "storage": 0.35,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "eu_worker",
+      "display_name": "EU worker pool",
+      "type": "worker",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.665,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.8,
+      "timeout_seconds": 6.0,
+      "resource_profile": {
+        "compute": 0.8,
+        "memory": 0.35,
+        "storage": 0.35,
+        "network": 0.25
+      }
     },
     {
       "id": "eu_cache",
@@ -68,7 +98,13 @@
         "region": "Europe"
       },
       "processing_capacity_per_second": 5.0,
-      "timeout_seconds": 3.0
+      "timeout_seconds": 3.0,
+      "resource_profile": {
+        "compute": 0.35,
+        "memory": 0.8,
+        "storage": 0.25,
+        "network": 0.35
+      }
     },
     {
       "id": "eu_database",
@@ -80,7 +116,13 @@
         "region": "Europe"
       },
       "processing_capacity_per_second": 2.6,
-      "timeout_seconds": 5.2
+      "timeout_seconds": 5.2,
+      "resource_profile": {
+        "compute": 0.45,
+        "memory": 0.45,
+        "storage": 0.9,
+        "network": 0.25
+      }
     }
   ],
   "links": [
@@ -115,12 +157,6 @@
       "bandwidth_per_second": 40.0
     },
     {
-      "source": "eu_queue",
-      "target": "eu_database",
-      "base_latency_seconds": 0.28,
-      "bandwidth_per_second": 32.0
-    },
-    {
       "source": "eu_api",
       "target": "eu_database",
       "base_latency_seconds": 0.34,
@@ -131,6 +167,18 @@
       "target": "eu_api",
       "base_latency_seconds": 0.34,
       "bandwidth_per_second": 36.0
+    },
+    {
+      "source": "eu_queue",
+      "target": "eu_worker",
+      "base_latency_seconds": 0.14,
+      "bandwidth_per_second": 36.0
+    },
+    {
+      "source": "eu_worker",
+      "target": "eu_database",
+      "base_latency_seconds": 0.22,
+      "bandwidth_per_second": 32.0
     }
   ]
 }

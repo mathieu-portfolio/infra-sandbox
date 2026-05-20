@@ -155,6 +155,7 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
         .pressureShifts = definition.pressureShifts,
         .categories = definition.categories,
         .usefulWhen = definition.usefulWhen,
+        .showUsageDetails = definition.showUsageDetails,
         .affectedPressures = definition.affectedPressures,
         .engineeringCosts = definition.engineeringCosts,
         .architecturalPattern = definition.architecturalPattern,
@@ -202,6 +203,7 @@ ActionCardModel topologyCard(const Simulation& simulation, const UiState& state,
         .pressureShifts = definition.pressureShifts,
         .categories = definition.categories,
         .usefulWhen = definition.usefulWhen,
+        .showUsageDetails = definition.showUsageDetails,
         .affectedPressures = definition.affectedPressures,
         .engineeringCosts = definition.engineeringCosts,
         .architecturalPattern = definition.architecturalPattern,
@@ -288,11 +290,12 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
     if (state.placementActive) {
         cards.push_back({
             .kind = ActionCardKind::ConfirmPreview,
-            .name = "Confirm placement",
-            .description = "Queue the previewed topology change.",
+            .name = "Click map to place",
+            .description = "Hover a continent to preview, then click the map to queue placement.",
             .target = selectedTarget(simulation, state),
-            .helps = "Adds this architecture change to the plan.",
+            .helps = "Places the selected node directly on the hovered region.",
             .tradeOff = "Consequences resolve during the turn.",
+            .showUsageDetails = false,
             .available = true,
         });
         cards.push_back({
@@ -302,6 +305,7 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
             .target = "Preview",
             .helps = "Keeps current architecture unchanged.",
             .tradeOff = "No effect.",
+            .showUsageDetails = false,
             .available = true,
         });
     } else {

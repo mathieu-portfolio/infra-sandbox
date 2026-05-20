@@ -106,6 +106,7 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
             .category = definition.categories.empty() ? "World" : definition.categories.front(),
             .usefulWhen = definition.usefulWhen,
             .tradeOff = definition.tradeoffs,
+            .showUsageDetails = definition.showUsageDetails,
             .iconId = definition.iconId,
             .capacityBonus = scaledCapacityBonus(sampledCapacityBonus(definition, seed), intensity),
             .intensity = intensity,

@@ -237,6 +237,10 @@ NodeType nodeTypeFromId(const std::string& id)
 {
     if (id == "client_cluster") return NodeType::ClientCluster;
     if (id == "api_service") return NodeType::ApiService;
+    if (id == "microservice") return NodeType::Microservice;
+    if (id == "worker") return NodeType::Worker;
+    if (id == "batch_processor") return NodeType::BatchProcessor;
+    if (id == "stream_processor") return NodeType::StreamProcessor;
     if (id == "database") return NodeType::Database;
     if (id == "cache") return NodeType::Cache;
     if (id == "read_replica") return NodeType::ReadReplica;
@@ -249,7 +253,8 @@ NodeType nodeTypeFromId(const std::string& id)
 bool knownNodeTypeId(const std::string& id)
 {
     static const std::set<std::string> ids{
-        "client_cluster", "api_service", "database", "cache", "read_replica", "queue", "cdn_edge", "load_balancer",
+        "client_cluster", "api_service", "microservice", "worker", "batch_processor", "stream_processor",
+        "database", "cache", "read_replica", "queue", "cdn_edge", "load_balancer",
     };
     return ids.contains(id);
 }
@@ -736,6 +741,12 @@ std::vector<NodeScenario> parseNodes(const Json& topology)
             node.requestRatePerSecond = numberAt(entry, "request_rate_per_second");
             node.processingCapacityPerSecond = numberAt(entry, "processing_capacity_per_second");
             node.timeoutSeconds = numberAt(entry, "timeout_seconds", 6.0);
+            if (const Json* profile = entry.find("resource_profile"); profile != nullptr && profile->isObject()) {
+                node.resourceProfile.compute = numberAt(*profile, "compute", node.resourceProfile.compute);
+                node.resourceProfile.memory = numberAt(*profile, "memory", node.resourceProfile.memory);
+                node.resourceProfile.storage = numberAt(*profile, "storage", node.resourceProfile.storage);
+                node.resourceProfile.network = numberAt(*profile, "network", node.resourceProfile.network);
+            }
             nodes.push_back(std::move(node));
         }
     }
@@ -841,6 +852,7 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.pressureShifts = stringsAt(object, "pressure_shifts");
     intervention.categories = stringsAt(object, "categories");
     intervention.usefulWhen = stringsAt(object, "useful_when");
+    intervention.showUsageDetails = boolAt(object, "show_usage_details", true);
     intervention.iconId = stringAt(object, "icon_id");
     intervention.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
     intervention.targetNodeTypes = mappedStrings<NodeType>(object, "node_types", nodeTypeFromId);
@@ -869,6 +881,7 @@ WorldActionDefinition parseWorldAction(const Json& object)
     action.categories = stringsAt(object, "categories");
     action.usefulWhen = stringAt(object, "useful_when");
     action.tradeoffs = stringAt(object, "tradeoffs");
+    action.showUsageDetails = boolAt(object, "show_usage_details", true);
     action.iconId = stringAt(object, "icon_id", "action.generic");
     action.affectedPressures = mappedStrings<PressureCategory>(object, "affected_pressures", pressureFromId);
     action.capacityBonus = parseCapacityBonus(object);

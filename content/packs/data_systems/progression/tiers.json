@@ -29,7 +29,8 @@
       "client_cluster",
       "api_service",
       "database",
-      "cache"
+      "cache",
+      "worker"
     ]
   },
   {
@@ -71,7 +72,7 @@
   {
     "id": "async_backlog",
     "display_name": "Async Backlog",
-    "description": "Queues protect user-facing paths, but backlog becomes its own operational pressure.",
+    "description": "Queues protect user-facing paths, but workers must drain backlog before delayed jobs destabilize storage.",
     "tags": [
       "queues",
       "async_processing"
@@ -80,7 +81,8 @@
       "Queue depth",
       "Processed req/s",
       "Latency",
-      "Timeouts"
+      "Timeouts",
+      "Worker utilization"
     ],
     "available_actions": [
       "add_queue",
@@ -98,7 +100,8 @@
       "client_cluster",
       "api_service",
       "queue",
-      "database"
+      "database",
+      "worker"
     ]
   },
   {
@@ -174,7 +177,8 @@
       "cache",
       "database",
       "queue",
-      "cdn_edge"
+      "cdn_edge",
+      "worker"
     ]
   }
 ]

@@ -84,12 +84,23 @@ float measureWrappedTextHeight(std::string_view text, float width, int fontSize)
 
 std::string usefulWhenText(const WorldActionDraft& action)
 {
+    if (!action.showUsageDetails) {
+        return {};
+    }
     return action.usefulWhen.empty() ? "the current pressure pattern matches this strategic focus" : action.usefulWhen;
 }
 
 std::string tradeOffText(const WorldActionDraft& action)
 {
+    if (!action.showUsageDetails) {
+        return {};
+    }
     return action.tradeOff.empty() ? "coordination complexity" : action.tradeOff;
+}
+
+bool hasUsageDetails(const WorldActionDraft& action)
+{
+    return action.showUsageDetails;
 }
 }
 
@@ -97,6 +108,14 @@ float WorldActionCardView::preferredDraftHeight(float width, const WorldActionDr
 {
     const float textWidth = std::max(0.0f, width - 2.0f * kDraftPadding);
     const float descriptionHeight = std::max(kDraftMinDescriptionHeight, measureWrappedTextHeight(action.description, textWidth, 13));
+    if (!hasUsageDetails(action)) {
+        return kDraftPadding +
+               kDraftHeaderHeight +
+               kDraftHeaderToBodyGap +
+               descriptionHeight +
+               kDraftFooterHeight;
+    }
+
     const float usefulHeight = std::max(kDraftMinDetailHeight, measureWrappedTextHeight(usefulWhenText(action), textWidth, 12));
     const float tradeOffHeight = std::max(kDraftMinDetailHeight, measureWrappedTextHeight(tradeOffText(action), textWidth, 12));
 
@@ -146,6 +165,14 @@ void WorldActionCardView::drawDraft(Rectangle bounds, const WorldActionDraft& ac
     const float availableBodyHeight = std::max(0.0f, footerTop - y);
 
     const float measuredDescriptionHeight = std::max(kDraftMinDescriptionHeight, measureWrappedTextHeight(action.description, textWidth, 13));
+    if (!hasUsageDetails(action)) {
+        const float descriptionHeight = std::min(measuredDescriptionHeight, availableBodyHeight);
+        actions_ui::drawWrappedTextClipped(action.description, {bounds.x + kDraftPadding, y, textWidth, descriptionHeight}, 13, {205, 213, 224, 255});
+        const std::string bonus = capacityBonusLabel(action.capacityBonus, true);
+        drawTextClipped(bonus.empty() ? "No capacity change" : bonus, {bounds.x + kDraftPadding, bounds.y + bounds.height - 30.0f, textWidth, 18.0f}, 12, {86, 210, 151, 255});
+        return;
+    }
+
     const float measuredUsefulHeight = std::max(kDraftMinDetailHeight, measureWrappedTextHeight(usefulWhenText(action), textWidth, 12));
     const float measuredTradeOffHeight = std::max(kDraftMinDetailHeight, measureWrappedTextHeight(tradeOffText(action), textWidth, 12));
     const float fixedBodyHeight = 2.0f * kDraftLabelHeight + 2.0f * kDraftSectionGap + 2.0f * kDraftBodyGap;

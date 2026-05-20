@@ -30,6 +30,7 @@ struct ActionCardModel {
     std::vector<std::string> pressureShifts;
     std::vector<std::string> categories;
     std::vector<std::string> usefulWhen;
+    bool showUsageDetails = true;
     std::vector<PressureCategory> affectedPressures;
     std::vector<EngineeringCost> engineeringCosts;
     std::string architecturalPattern;

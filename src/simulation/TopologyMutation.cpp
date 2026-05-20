@@ -71,39 +71,62 @@ std::vector<PlacementOption> PlacementCandidateGenerator::generate(const Simulat
 {
     std::vector<PlacementOption> options{
         {
-            .id = "eu-west",
-            .displayName = "Europe West",
-            .location = {50.11, 8.68, "Europe"},
-            .latencyImpact = "Best for EU API and DB paths",
-            .trafficImpact = "Keeps traffic near central backend",
+            .id = "north-america",
+            .displayName = "North America",
+            .location = {39.5, -98.35, "NorthAmerica"},
+            .latencyImpact = "Best for North American users and regional failover",
+            .trafficImpact = "Localizes NA traffic and reduces transatlantic load",
+            .resourceCost = "Medium",
+            .complexityImpact = "Medium",
+        },
+        {
+            .id = "europe",
+            .displayName = "Europe",
+            .location = {50.1, 8.7, "Europe"},
+            .latencyImpact = "Best for European API and DB paths",
+            .trafficImpact = "Keeps traffic near the central backend",
             .resourceCost = "Low",
             .complexityImpact = "Low",
         },
         {
-            .id = "us-east",
-            .displayName = "US East",
-            .location = {39.04, -77.49, "NorthAmerica"},
-            .latencyImpact = "Reduces transatlantic client latency",
-            .trafficImpact = "Localizes NA read traffic",
+            .id = "asia-pacific",
+            .displayName = "Asia Pacific",
+            .location = {1.35, 103.8, "AsiaPacific"},
+            .latencyImpact = "Prepares APAC expansion and distant-user traffic",
+            .trafficImpact = "Localizes APAC demand and reduces global round trips",
             .resourceCost = "Medium",
             .complexityImpact = "Medium",
         },
         {
-            .id = "asia-pacific",
-            .displayName = "Asia Pacific",
-            .location = {1.35, 103.80, "AsiaPacific"},
-            .latencyImpact = "Prepares APAC expansion",
-            .trafficImpact = "Little immediate benefit without APAC users",
+            .id = "south-america",
+            .displayName = "South America",
+            .location = {-23.55, -46.63, "SouthAmerica"},
+            .latencyImpact = "Improves latency for South American users",
+            .trafficImpact = "Creates a regional absorption point for southern traffic",
             .resourceCost = "Medium",
+            .complexityImpact = "Medium",
+        },
+        {
+            .id = "africa",
+            .displayName = "Africa",
+            .location = {-1.29, 36.82, "Africa"},
+            .latencyImpact = "Improves coverage for African and nearby users",
+            .trafficImpact = "Adds a regional buffer for underserved routes",
+            .resourceCost = "Medium",
+            .complexityImpact = "Medium",
+        },
+        {
+            .id = "oceania",
+            .displayName = "Oceania",
+            .location = {-33.86, 151.21, "Oceania"},
+            .latencyImpact = "Improves latency for far-edge Oceania users",
+            .trafficImpact = "Reduces extreme long-haul traffic paths",
+            .resourceCost = "High",
             .complexityImpact = "Medium",
         },
     };
 
-    if (type == TopologyMutationType::AddQueue) {
-        options.erase(std::remove_if(options.begin(), options.end(), [](const PlacementOption& option) {
-            return option.location.regionName != "Europe";
-        }), options.end());
-    }
+    (void)type;
     return options;
 }
 

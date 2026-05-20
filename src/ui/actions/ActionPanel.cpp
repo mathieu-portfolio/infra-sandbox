@@ -337,17 +337,12 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     drawTextClipped(lockedReason, {locked.x + 56.0f, locked.y + 42.0f, locked.width - 72.0f, 18.0f}, 12, {139, 148, 158, 255});
 
     if (context.state->placementActive) {
-        const PlacementCandidateGenerator generator;
-        const auto candidates = generator.generate(simulation, context.state->activeMutation);
-        if (!candidates.empty()) {
-            const int index = std::clamp(context.state->placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
-            drawTextClipped("Placement: " + candidates[static_cast<std::size_t>(index)].displayName, panel.statusMessage, 12, {89, 196, 255, 255});
-        }
+        drawTextClipped("Placement: hover the map, then click a region.", panel.statusMessage, 12, {89, 196, 255, 255});
     }
 
-    DrawRectangleRounded(panel.button, 0.08f, 8, {97, 64, 196, static_cast<unsigned char>(context.state->placementActive ? 255 : 150)});
+    DrawRectangleRounded(panel.button, 0.08f, 8, {97, 64, 196, static_cast<unsigned char>(context.state->placementActive ? 120 : 150)});
     const bool hasSelectedAction = context.state->selectedActionIndex >= 0;
-    DrawText(context.state->placementActive ? "Queue Placement" : (hasSelectedAction ? "Queue Action" : "Select an Action"), static_cast<int>(panel.button.x + panel.button.width * 0.5f - 58.0f), static_cast<int>(panel.button.y + 14.0f), 15, {230, 237, 243, 255});
+    DrawText(context.state->placementActive ? "Pick on Map" : (hasSelectedAction ? "Queue Action" : "Select an Action"), static_cast<int>(panel.button.x + panel.button.width * 0.5f - 58.0f), static_cast<int>(panel.button.y + 14.0f), 15, {230, 237, 243, 255});
 
     if (!context.state->latestFeedback.empty() && !context.state->placementActive) {
         drawTextClipped(context.state->latestFeedback, panel.statusMessage, 13, {245, 184, 76, 255});

@@ -42,6 +42,23 @@ struct Node {
     double currentUtilization = 0.0;
     double averageQueueWaitSeconds = 0.0;
 
+    // Generic resource pressure weights. These are intentionally simple and
+    // shared by future packs: workers/data systems use compute+storage,
+    // networking uses network, and hardware can later specialize them.
+    double computeWeight = 1.0;
+    double memoryWeight = 0.0;
+    double storageWeight = 0.0;
+    double networkWeight = 0.0;
+    double computePressure = 0.0;
+    double memoryPressure = 0.0;
+    double storagePressure = 0.0;
+    double networkPressure = 0.0;
+
+    // Async/backlog-oriented nodes such as queues and workers expose these so
+    // content can reason about delayed processing without a separate subsystem.
+    double backlogPressure = 0.0;
+    double recentJobsConsumed = 0.0;
+
     // Utilization is service-capacity occupancy over a short rolling window.
     // It is intentionally separate from queue/backlog pressure: a node can be
     // busy without being overloaded, and can have backlog spikes without being

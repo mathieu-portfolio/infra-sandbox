@@ -62,7 +62,10 @@ float descriptionHeight(const ActionCardModel& card, float contentWidth)
 
 float sectionHeight(const std::vector<std::string>& points)
 {
-    return kSectionTitleHeight + kSectionTitleGap + static_cast<float>(std::max<std::size_t>(1, points.size())) * kBulletLineHeight;
+    if (points.empty()) {
+        return 0.0f;
+    }
+    return kSectionTitleHeight + kSectionTitleGap + static_cast<float>(points.size()) * kBulletLineHeight;
 }
 
 float drawPointSection(
@@ -94,7 +97,7 @@ float NodeActionCardView::measureHeight(const ActionCardModel& card, float width
         descriptionHeight(card, contentWidth) +
         kDescriptionBottomGap +
         sectionHeight(useful) +
-        kSectionGap +
+        (useful.empty() || worsen.empty() ? 0.0f : kSectionGap) +
         sectionHeight(worsen);
 
     const float total =
@@ -137,20 +140,26 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
     const auto useful = actions_ui::cards::usefulPoints(card);
     const auto worsen = actions_ui::cards::worsenPoints(card);
 
-    y += drawPointSection(
-        "USEFUL WHEN",
-        useful,
-        {card.bounds.x + kPad, y, contentWidth, sectionHeight(useful)},
-        {189, 135, 255, 255},
-        {205, 213, 224, 255});
-    y += kSectionGap;
+    if (!useful.empty()) {
+        y += drawPointSection(
+            "USEFUL WHEN",
+            useful,
+            {card.bounds.x + kPad, y, contentWidth, sectionHeight(useful)},
+            {189, 135, 255, 255},
+            {205, 213, 224, 255});
+        if (!worsen.empty()) {
+            y += kSectionGap;
+        }
+    }
 
-    drawPointSection(
-        "MAY WORSEN",
-        worsen,
-        {card.bounds.x + kPad, y, contentWidth - 76.0f, std::max(0.0f, footerY - y - kSectionGap)},
-        {235, 86, 100, 255},
-        {205, 213, 224, 255});
+    if (!worsen.empty()) {
+        drawPointSection(
+            "MAY WORSEN",
+            worsen,
+            {card.bounds.x + kPad, y, contentWidth - 76.0f, std::max(0.0f, footerY - y - kSectionGap)},
+            {235, 86, 100, 255},
+            {205, 213, 224, 255});
+    }
 
     actions_ui::cards::drawChip(
         {card.bounds.x + kPad, footerY, 86.0f, 20.0f},

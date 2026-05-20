@@ -4,6 +4,7 @@
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "rendering/RenderPrimitives.hpp"
 
 #include <algorithm>
 #include <array>
@@ -115,9 +116,56 @@ bool worldActionRequiredBeforeNodeActions(const UiState& uiState)
 {
     return uiState.gameplayPhase == GameplayPhase::Planning && (uiState.eventPopupMode != EventPopupMode::None || (!uiState.worldActionDraft.empty() && uiState.selectedWorldActionIndex < 0));
 }
+
+
+Rectangle mapBounds(const CameraController& camera, int screenWidth, int screenHeight)
+{
+    const Vector2 topLeft = worldToScreen({-MapProjection::worldWidth * 0.5f, -MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
+    const Vector2 bottomRight = worldToScreen({MapProjection::worldWidth * 0.5f, MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
+    return {topLeft.x, topLeft.y, bottomRight.x - topLeft.x, bottomRight.y - topLeft.y};
 }
 
-void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState)
+int hoveredPlacementCandidateIndex(const Simulation& simulation, TopologyMutationType type, const CameraController& camera, Vector2 mousePosition, int screenWidth, int screenHeight)
+{
+    if (!CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight))) {
+        return -1;
+    }
+
+    const PlacementCandidateGenerator generator;
+    const auto candidates = generator.generate(simulation, type);
+    if (candidates.empty()) {
+        return -1;
+    }
+
+    int bestIndex = -1;
+    float bestDistanceSquared = 1.0e12f;
+    for (int i = 0; i < static_cast<int>(candidates.size()); ++i) {
+        const Vec2 world = MapProjection::projectEquirectangular(candidates[static_cast<std::size_t>(i)].location);
+        const Vector2 center = worldToScreen(world, screenWidth, screenHeight, camera);
+        const float dx = mousePosition.x - center.x;
+        const float dy = mousePosition.y - center.y;
+        const float distanceSquared = dx * dx + dy * dy;
+        if (distanceSquared < bestDistanceSquared) {
+            bestDistanceSquared = distanceSquared;
+            bestIndex = i;
+        }
+    }
+    return bestIndex;
+}
+
+bool canUseMapPlacementClick(const UiState& uiState, Vector2 mousePosition, const CameraController& camera, int screenWidth, int screenHeight)
+{
+    if (!uiState.placementActive || uiState.gameplayPhase != GameplayPhase::Planning || uiState.eventPopupMode != EventPopupMode::None) {
+        return false;
+    }
+    if (uiState.worldActionDraftVisible || pointInUiPanel(mousePosition, computeUiLayout(screenWidth, screenHeight))) {
+        return false;
+    }
+    return CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight));
+}
+}
+
+void InterventionController::handleActions(std::span<const InputEvent> events, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera)
 {
     for (const auto& event : events) {
         if (event.phase != InputPhase::Pressed) {
@@ -125,7 +173,12 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
         }
 
         if (event.action == InputAction::Select) {
-            handleActionPanelClick(event, simulation, scenarioManager, uiState);
+            if (canUseMapPlacementClick(uiState, event.mousePosition, camera, GetScreenWidth(), GetScreenHeight())) {
+                confirmHoveredPlacement(simulation, scenarioManager, uiState, camera, event.mousePosition);
+                uiState.suppressMapSelectionOnce = true;
+            } else {
+                handleActionPanelClick(event, simulation, scenarioManager, uiState);
+            }
             continue;
         }
 
@@ -155,7 +208,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             moveCandidate(simulation, uiState, -1);
             break;
         case InputAction::ConfirmPlacement:
-            confirmPlacement(simulation, scenarioManager, uiState);
+            uiState.latestFeedback = "Hover a map region and click to place the selected node.";
             break;
         case InputAction::CancelPlacement:
             uiState.placementActive = false;
@@ -216,7 +269,7 @@ void InterventionController::startPlacement(const Simulation& simulation, UiStat
     uiState.placementActive = true;
     uiState.activeMutation = type;
     uiState.placementCandidateIndex = 0;
-    uiState.latestFeedback = std::string(topologyMutationName(type)) + " preview selected. Choose a region, then confirm or cancel.";
+    uiState.latestFeedback = std::string(topologyMutationName(type)) + " selected. Hover the map to preview a region, then click to queue placement.";
 }
 
 void InterventionController::moveCandidate(const Simulation& simulation, UiState& uiState, int delta) const
@@ -233,17 +286,13 @@ void InterventionController::moveCandidate(const Simulation& simulation, UiState
     uiState.placementCandidateIndex = (uiState.placementCandidateIndex + delta + count) % count;
 }
 
-void InterventionController::confirmPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
+void InterventionController::confirmPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const PlacementOption& option) const
 {
     if (!uiState.placementActive) {
         return;
     }
-    const auto candidates = candidateGenerator_.generate(simulation, uiState.activeMutation);
-    if (candidates.empty()) {
-        return;
-    }
-    const int index = std::clamp(uiState.placementCandidateIndex, 0, static_cast<int>(candidates.size()) - 1);
-    MutationPreview preview = mutationValidator_.preview(simulation, uiState.activeMutation, candidates[static_cast<std::size_t>(index)]);
+
+    MutationPreview preview = mutationValidator_.preview(simulation, uiState.activeMutation, option);
     const MechanicType mechanic = uiState.activeMutation == TopologyMutationType::AddCache ? MechanicType::AddCache
         : uiState.activeMutation == TopologyMutationType::AddReadReplica ? MechanicType::AddReadReplica
         : uiState.activeMutation == TopologyMutationType::AddQueue ? MechanicType::AddQueue
@@ -256,21 +305,34 @@ void InterventionController::confirmPlacement(Simulation& simulation, ScenarioMa
             return;
         }
     }
-    if (preview.valid) {
-        const std::string target = candidates[static_cast<std::size_t>(index)].displayName;
-        std::string feedback = std::string(topologyMutationName(uiState.activeMutation)) + " applied in " + target + ". Watch latency, queue depth, and utilization.";
-        if (const auto* intervention = interventionFor(mechanic); intervention != nullptr) {
-            if (!intervention->positiveEffects.empty()) {
-                feedback = intervention->positiveEffects.front() + ".";
-            }
-            if (!intervention->pressureShifts.empty()) {
-                feedback += " " + intervention->pressureShifts.front() + ".";
-            }
-        }
-        queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), target, feedback);
-        uiState.placementActive = false;
+    if (!preview.valid) {
+        uiState.latestFeedback = preview.validationMessage.empty() ? "This node cannot be placed here." : preview.validationMessage;
+        return;
     }
+
+    std::string feedback = std::string(topologyMutationName(uiState.activeMutation)) + " queued in " + option.displayName + ". Resolve the turn to see consequences.";
+    if (const auto* intervention = interventionFor(mechanic); intervention != nullptr) {
+        if (!intervention->positiveEffects.empty()) {
+            feedback = intervention->positiveEffects.front() + ".";
+        }
+        if (!intervention->pressureShifts.empty()) {
+            feedback += " " + intervention->pressureShifts.front() + ".";
+        }
+    }
+    queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), option.displayName, feedback);
+    uiState.placementActive = false;
     (void)scenarioManager;
+}
+
+void InterventionController::confirmHoveredPlacement(Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState, const CameraController& camera, Vector2 mousePosition) const
+{
+    const auto candidates = candidateGenerator_.generate(simulation, uiState.activeMutation);
+    const int index = hoveredPlacementCandidateIndex(simulation, uiState.activeMutation, camera, mousePosition, GetScreenWidth(), GetScreenHeight());
+    if (index < 0 || index >= static_cast<int>(candidates.size())) {
+        uiState.latestFeedback = "Hover a map region and click to place the selected node.";
+        return;
+    }
+    confirmPlacement(simulation, scenarioManager, uiState, candidates[static_cast<std::size_t>(index)]);
 }
 
 void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
@@ -336,7 +398,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     const Rectangle actionButton{sidebar.x + 12.0f, buttonY, sidebar.width - 24.0f, 40.0f};
     if (CheckCollisionPointRec(event.mousePosition, actionButton)) {
         if (uiState.placementActive) {
-            confirmPlacement(simulation, scenarioManager, uiState);
+            uiState.latestFeedback = "Hover the map, then click a region to place this node.";
             return;
         }
         if (uiState.selectedActionIndex >= 0 && uiState.selectedActionIndex < static_cast<int>(cards.size())) {
@@ -383,7 +445,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             startPlacement(simulation, uiState, card.mutation);
             break;
         case ActionCardKind::ConfirmPreview:
-            confirmPlacement(simulation, scenarioManager, uiState);
+            uiState.latestFeedback = "Hover the map, then click a region to place this node.";
             break;
         case ActionCardKind::CancelPreview:
             uiState.placementActive = false;
