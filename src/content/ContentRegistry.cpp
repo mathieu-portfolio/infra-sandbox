@@ -913,6 +913,7 @@ WorldActionDefinition parseWorldAction(const Json& object)
     action.complexityDelta = action.complexityDeltaRange.min;
     action.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", action.durationSeconds);
     action.durationSeconds = action.durationSecondsRange.min;
+    action.unlocksObservability = stringsAtAny(object, "unlocks_observability", "observability_unlocks");
     if (const Json* intensity = object.find("intensity_range"); intensity != nullptr && intensity->isObject()) {
         action.minIntensity = numberAt(*intensity, "min", action.minIntensity);
         action.maxIntensity = numberAt(*intensity, "max", action.maxIntensity);

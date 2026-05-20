@@ -155,13 +155,13 @@
   },
   {
     "id": "observability_push",
-    "display_name": "Observability Push",
-    "description": "Improve visibility into pressure movement so bottlenecks are easier to interpret.",
+    "display_name": "Metrics Pipeline",
+    "description": "Instrument core services so detailed node metrics become available instead of relying only on broad health signals.",
     "categories": [
       "Observability"
     ],
-    "useful_when": "the dominant bottleneck is unclear",
-    "tradeoffs": "Consumes operations attention before it improves throughput.",
+    "useful_when": "you need precise utilization, queue, and error readings before choosing a fix",
+    "tradeoffs": "Consumes operations attention before it directly improves throughput.",
     "icon_id": "action.generic",
     "affected_pressures": [
       "latency",
@@ -184,7 +184,11 @@
       "max": 1.2
     },
     "tags": [
-      "observability"
+      "observability",
+      "metrics"
+    ],
+    "unlocks_observability": [
+      "metrics"
     ]
   },
   {
@@ -286,6 +290,120 @@
     "tags": [
       "deprioritization",
       "frontend"
+    ]
+  },
+  {
+    "id": "traffic_analysis",
+    "display_name": "Traffic Analysis",
+    "description": "Map request movement through the platform so incoming, outgoing, retry, and regional traffic are easier to reason about.",
+    "categories": [
+      "Observability"
+    ],
+    "useful_when": "load is moving through the system but the source of pressure is unclear",
+    "tradeoffs": "Adds analysis overhead before it improves capacity.",
+    "icon_id": "action.generic",
+    "affected_pressures": [
+      "traffic",
+      "retry",
+      "latency"
+    ],
+    "capacity_bonus": {
+      "operations": 1
+    },
+    "pressure_resistance": {
+      "min": 0.02,
+      "max": 0.05
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "unlocks_observability": [
+      "traffic"
+    ],
+    "tags": [
+      "observability",
+      "traffic"
+    ]
+  },
+  {
+    "id": "distributed_tracing",
+    "display_name": "Distributed Tracing",
+    "description": "Trace request paths across services so dependency chains and downstream pressure become visible.",
+    "categories": [
+      "Observability"
+    ],
+    "useful_when": "a node looks unhealthy but may only be suffering from an upstream or downstream dependency",
+    "tradeoffs": "Tracing increases operational complexity and consumes operations focus.",
+    "icon_id": "action.generic",
+    "affected_pressures": [
+      "latency",
+      "queue",
+      "persistence"
+    ],
+    "capacity_bonus": {
+      "operations": 1
+    },
+    "complexity_delta": {
+      "min": 0.08,
+      "max": 0.16
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "unlocks_observability": [
+      "dependencies"
+    ],
+    "tags": [
+      "observability",
+      "tracing"
+    ]
+  },
+  {
+    "id": "advanced_diagnostics",
+    "display_name": "Advanced Diagnostics",
+    "description": "Add diagnostic tooling that summarizes suspected pressure sources with confidence instead of presenting raw data only.",
+    "categories": [
+      "Observability"
+    ],
+    "useful_when": "multiple metrics are bad and the root cause is ambiguous",
+    "tradeoffs": "Diagnostics can guide investigation but should not be treated as perfectly certain.",
+    "icon_id": "action.generic",
+    "affected_pressures": [
+      "latency",
+      "queue",
+      "failure"
+    ],
+    "capacity_bonus": {
+      "operations": 1
+    },
+    "complexity_delta": {
+      "min": 0.1,
+      "max": 0.2
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "unlocks_observability": [
+      "diagnostics"
+    ],
+    "tags": [
+      "observability",
+      "diagnostics"
     ]
   }
 ]

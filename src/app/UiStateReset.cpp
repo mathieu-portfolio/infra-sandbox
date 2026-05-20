@@ -28,6 +28,8 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.resolutionSummaries.clear();
     state.lastCapacityUsageSummary.clear();
     state.selection = {};
+    state.activeNodeInspectionTab = NodeInspectionTab::Overview;
+    state.observability = {};
     state.scenarioDroplistOpen = false;
     state.packDroplistOpen = false;
     state.requestedPackId.clear();

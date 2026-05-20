@@ -82,6 +82,7 @@ struct WorldActionDefinition {
     NumericRange complexityDeltaRange{0.0, 0.0};
     double durationSeconds = 0.0;
     NumericRange durationSecondsRange{0.0, 0.0};
+    std::vector<std::string> unlocksObservability;
     double minIntensity = 0.85;
     double maxIntensity = 1.25;
 };

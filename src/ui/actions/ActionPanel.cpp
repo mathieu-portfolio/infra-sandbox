@@ -181,6 +181,69 @@ std::vector<PressureRow> primaryPressureRows(const NodePressure* pressure)
     }
     return rows;
 }
+
+NodeInspectionTab nodeTabAt(int index)
+{
+    return static_cast<NodeInspectionTab>(std::clamp(index, 0, static_cast<int>(NodeInspectionTab::Count) - 1));
+}
+
+const char* nodeTabLabel(NodeInspectionTab tab)
+{
+    switch (tab) {
+    case NodeInspectionTab::Overview: return "Overview";
+    case NodeInspectionTab::Metrics: return "Metrics";
+    case NodeInspectionTab::Traffic: return "Traffic";
+    case NodeInspectionTab::Dependencies: return "Dependencies";
+    case NodeInspectionTab::Diagnostics: return "Diagnostics";
+    case NodeInspectionTab::Count: break;
+    }
+    return "Overview";
+}
+
+bool nodeTabUnlocked(const ObservabilityState& observability, NodeInspectionTab tab)
+{
+    switch (tab) {
+    case NodeInspectionTab::Overview:
+        return true;
+    case NodeInspectionTab::Metrics:
+        return observability.metricsUnlocked;
+    case NodeInspectionTab::Traffic:
+        return observability.trafficUnlocked;
+    case NodeInspectionTab::Dependencies:
+        return observability.dependenciesUnlocked;
+    case NodeInspectionTab::Diagnostics:
+        return observability.diagnosticsUnlocked;
+    case NodeInspectionTab::Count:
+        break;
+    }
+    return true;
+}
+
+const char* nodeTabUnlockHint(NodeInspectionTab tab)
+{
+    switch (tab) {
+    case NodeInspectionTab::Metrics:
+        return "Metrics are not instrumented yet. Pick an observability world action to expose detailed load, queue, and error readings.";
+    case NodeInspectionTab::Traffic:
+        return "Traffic analysis is unavailable. Improve observability to inspect request flow, retry traffic, and regional demand.";
+    case NodeInspectionTab::Dependencies:
+        return "Distributed tracing is unavailable. Improve observability to reveal upstream and downstream dependency paths.";
+    case NodeInspectionTab::Diagnostics:
+        return "Advanced diagnostics are unavailable. Improve observability to get suspected root causes and confidence estimates.";
+    default:
+        return "";
+    }
+}
+
+void drawLockedObservability(Rectangle bounds, NodeInspectionTab tab)
+{
+    DrawRectangleRounded(bounds, 0.035f, 8, {18, 24, 34, 230});
+    DrawRectangleRoundedLines(bounds, 0.035f, 8, {70, 86, 104, 110});
+    DrawText("OBSERVABILITY REQUIRED", static_cast<int>(bounds.x + 14.0f), static_cast<int>(bounds.y + 15.0f), 13, {205, 213, 224, 255});
+    actions_ui::drawWrappedTextClipped(nodeTabUnlockHint(tab), {bounds.x + 14.0f, bounds.y + 44.0f, bounds.width - 28.0f, bounds.height - 58.0f}, 13, {139, 148, 158, 255});
+}
+
+
 }
 
 void ActionPanel::update(UiContext& context, const Simulation& simulation)
@@ -193,6 +256,19 @@ void ActionPanel::update(UiContext& context, const Simulation& simulation)
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+        const RightSidebarLayout panel = computeRightSidebarLayout(layout.rightSidebar);
+        constexpr int kNodeTabCount = static_cast<int>(NodeInspectionTab::Count);
+        if (CheckCollisionPointRec(mouse, panel.tabs)) {
+            for (int i = 0; i < kNodeTabCount; ++i) {
+                if (CheckCollisionPointRec(mouse, tabBounds(panel.tabs, i, kNodeTabCount))) {
+                    context.state->activeNodeInspectionTab = nodeTabAt(i);
+                    return;
+                }
+            }
+        }
+    }
     context.state->hoveredWorldActionIndex = -1;
     if (context.state->eventPopupMode != EventPopupMode::None) {
         return;
@@ -250,52 +326,136 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     }
 
     DrawLine(static_cast<int>(sidebar.x), static_cast<int>(panel.tabs.y - 5.0f), static_cast<int>(sidebar.x + sidebar.width), static_cast<int>(panel.tabs.y - 5.0f), {31, 42, 58, 255});
-    const char* tabs[] = {"Overview", "Metrics", "Traffic", "Dependencies"};
-    for (int i = 0; i < 4; ++i) {
-        const Rectangle tab = tabBounds(panel.tabs, i, 4);
-        drawTextClipped(tabs[i], {tab.x + 4.0f, tab.y + 10.0f, tab.width - 8.0f, 18.0f}, 13, i == 0 ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
-        if (i == 0) {
+    constexpr int kNodeTabCount = static_cast<int>(NodeInspectionTab::Count);
+    for (int i = 0; i < kNodeTabCount; ++i) {
+        const NodeInspectionTab tabMode = nodeTabAt(i);
+        const Rectangle tab = tabBounds(panel.tabs, i, kNodeTabCount);
+        const bool active = context.state->activeNodeInspectionTab == tabMode;
+        const bool unlocked = nodeTabUnlocked(context.state->observability, tabMode);
+        const Color textColor = active ? Color{230, 237, 243, 255} : unlocked ? Color{139, 148, 158, 255} : Color{86, 96, 112, 255};
+        drawTextClipped(nodeTabLabel(tabMode), {tab.x + 4.0f, tab.y + 10.0f, tab.width - 8.0f, 18.0f}, 13, textColor);
+        if (!unlocked) {
+            DrawCircle(static_cast<int>(tab.x + tab.width - 10.0f), static_cast<int>(tab.y + 15.0f), 3.0f, {97, 64, 196, 180});
+        }
+        if (active) {
             DrawRectangleRounded({tab.x, tab.y + tab.height - 4.0f, tab.width - 10.0f, 3.0f}, 0.4f, 6, {145, 109, 255, 255});
         }
     }
 
     const Rectangle overview = panel.overview;
-    const Rectangle description{overview.x, overview.y, overview.width * 0.58f - 7.0f, overview.height};
-    const Rectangle status{description.x + description.width + 14.0f, overview.y, overview.width - description.width - 14.0f, overview.height};
-    DrawRectangleRounded(description, 0.035f, 8, {13, 34, 47, 226});
-    DrawRectangleRoundedLines(description, 0.035f, 8, {48, 95, 112, 115});
-    DrawText("OVERVIEW", static_cast<int>(description.x + 14.0f), static_cast<int>(description.y + 15.0f), 12, {166, 176, 192, 255});
-    if (selected != nullptr) {
-        const auto& nodeDef = NodeRegistry::definition(selected->type);
-        actions_ui::drawWrappedTextClipped(std::string("This ") + std::string(nodeDef.displayName) + " handles local request flow and participates in the dependency path.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, 68.0f}, 13, {205, 213, 224, 255});
-        actions_ui::drawWrappedTextClipped(selectedPressure != nullptr && !selectedPressure->explanation.empty() ? selectedPressure->explanation : "Watch traffic, queue depth, and dependency pressure before committing changes.", {description.x + 16.0f, description.y + 122.0f, description.width - 32.0f, description.height - 134.0f}, 12, {166, 176, 192, 255});
-    } else {
-        actions_ui::drawWrappedTextClipped("Select an infrastructure node to inspect its role, local telemetry, pressure sources, and contextual actions.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, description.height - 58.0f}, 13, {205, 213, 224, 255});
-    }
-
-    DrawRectangleRounded(status, 0.035f, 8, {18, 24, 34, 230});
-    DrawRectangleRoundedLines(status, 0.035f, 8, {70, 86, 104, 110});
-    if (selected == nullptr) {
-        DrawText("TELEMETRY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
-        actions_ui::drawWrappedTextClipped("No node selected. Telemetry and pressure details are intentionally empty until a concrete node is inspected.", {status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, status.height - 62.0f}, 13, {139, 148, 158, 255});
-    } else {
-        const double overall = actions_ui::overallPressure(selectedPressure, selected);
-        DrawText("TELEMETRY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
-        drawTextClipped(actions_ui::pressureSeverity(overall), {status.x + status.width - 78.0f, status.y + 15.0f, 64.0f, 16.0f}, 13, actions_ui::pressureColor(overall));
-        drawMetricBar({status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, 18.0f}, "Util", selected->currentUtilization, actions_ui::pressureColor(selected->currentUtilization));
-        drawMetricBar({status.x + 14.0f, status.y + 78.0f, status.width - 28.0f, 18.0f}, "Queue", selected->queuePressure, actions_ui::pressureColor(selected->queuePressure));
-        drawMetricBar({status.x + 14.0f, status.y + 108.0f, status.width - 28.0f, 18.0f}, "Errors", std::max(selected->timeoutPressure, selected->retryPressure), actions_ui::pressureColor(std::max(selected->timeoutPressure, selected->retryPressure)));
-        DrawText("PRIMARY PRESSURES", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 138.0f), 11, {166, 176, 192, 255});
-        const auto rows = primaryPressureRows(selectedPressure);
-        if (rows.empty()) {
-            actions_ui::drawWrappedTextClipped("No primary pressure detected. Local load is currently below the diagnostic thresholds.", {status.x + 14.0f, status.y + 156.0f, status.width - 28.0f, 42.0f}, 12, {139, 148, 158, 255});
+    const NodeInspectionTab activeNodeTab = context.state->activeNodeInspectionTab;
+    if (!nodeTabUnlocked(context.state->observability, activeNodeTab)) {
+        drawLockedObservability(overview, activeNodeTab);
+    } else if (activeNodeTab == NodeInspectionTab::Overview) {
+        const Rectangle description{overview.x, overview.y, overview.width * 0.58f - 7.0f, overview.height};
+        const Rectangle status{description.x + description.width + 14.0f, overview.y, overview.width - description.width - 14.0f, overview.height};
+        DrawRectangleRounded(description, 0.035f, 8, {13, 34, 47, 226});
+        DrawRectangleRoundedLines(description, 0.035f, 8, {48, 95, 112, 115});
+        DrawText("OVERVIEW", static_cast<int>(description.x + 14.0f), static_cast<int>(description.y + 15.0f), 12, {166, 176, 192, 255});
+        if (selected != nullptr) {
+            const auto& nodeDef = NodeRegistry::definition(selected->type);
+            actions_ui::drawWrappedTextClipped(std::string("This ") + std::string(nodeDef.displayName) + " handles local request flow and participates in the architecture.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, 68.0f}, 13, {205, 213, 224, 255});
+            const double overall = actions_ui::overallPressure(selectedPressure, selected);
+            const char* summary = overall >= 0.72 ? "The node is unstable. Inspect unlocked telemetry before choosing a corrective action."
+                : overall >= 0.42 ? "The node is under pressure. More detailed telemetry may clarify whether the cause is local or downstream."
+                : "The node is currently healthy. Watch for pressure changes after each operational cycle.";
+            actions_ui::drawWrappedTextClipped(summary, {description.x + 16.0f, description.y + 122.0f, description.width - 32.0f, description.height - 134.0f}, 12, {166, 176, 192, 255});
         } else {
-            for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
-                const float y = status.y + 156.0f + static_cast<float>(i) * 16.0f;
-                DrawCircle(static_cast<int>(status.x + 18.0f), static_cast<int>(y + 6.0f), 4.0f, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
-                drawTextClipped(pressureCategoryName(rows[static_cast<std::size_t>(i)].category), {status.x + 28.0f, y, status.width - 100.0f, 12.0f}, 11, {230, 237, 243, 255});
-                drawTextClipped(actions_ui::pressureSeverity(rows[static_cast<std::size_t>(i)].value), {status.x + status.width - 66.0f, y, 52.0f, 12.0f}, 11, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
+            actions_ui::drawWrappedTextClipped("Select an infrastructure node to inspect its role, broad health, and observability-gated details.", {description.x + 16.0f, description.y + 44.0f, description.width - 32.0f, description.height - 58.0f}, 13, {205, 213, 224, 255});
+        }
+
+        DrawRectangleRounded(status, 0.035f, 8, {18, 24, 34, 230});
+        DrawRectangleRoundedLines(status, 0.035f, 8, {70, 86, 104, 110});
+        DrawText("VISIBLE SIGNALS", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
+        if (selected == nullptr) {
+            actions_ui::drawWrappedTextClipped("No node selected. Overview remains intentionally high-level until a concrete node is inspected.", {status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, status.height - 62.0f}, 13, {139, 148, 158, 255});
+        } else {
+            const double overall = actions_ui::overallPressure(selectedPressure, selected);
+            drawTextClipped(actions_ui::pressureSeverity(overall), {status.x + status.width - 78.0f, status.y + 15.0f, 64.0f, 16.0f}, 13, actions_ui::pressureColor(overall));
+            drawMetricBar({status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, 18.0f}, "Health", overall, actions_ui::pressureColor(overall));
+            DrawText("OBSERVABILITY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 84.0f), 11, {166, 176, 192, 255});
+            actions_ui::drawWrappedTextClipped(
+                context.state->observability.metricsUnlocked || context.state->observability.dependenciesUnlocked
+                    ? "Some telemetry layers are available. Use the tabs to move from broad signals to evidence."
+                    : "Only broad status is available. World observability actions unlock metrics, traffic analysis, tracing, and diagnostics.",
+                {status.x + 14.0f, status.y + 104.0f, status.width - 28.0f, 62.0f}, 12, {139, 148, 158, 255});
+        }
+    } else if (activeNodeTab == NodeInspectionTab::Metrics) {
+        DrawRectangleRounded(overview, 0.035f, 8, {18, 24, 34, 230});
+        DrawRectangleRoundedLines(overview, 0.035f, 8, {70, 86, 104, 110});
+        DrawText("METRICS", static_cast<int>(overview.x + 14.0f), static_cast<int>(overview.y + 15.0f), 14, {205, 213, 224, 255});
+        if (selected == nullptr) {
+            actions_ui::drawWrappedTextClipped("Select a node to inspect instrumented metrics.", {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, overview.height - 62.0f}, 13, {139, 148, 158, 255});
+        } else {
+            drawMetricBar({overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, 18.0f}, "Util", selected->currentUtilization, actions_ui::pressureColor(selected->currentUtilization));
+            drawMetricBar({overview.x + 14.0f, overview.y + 78.0f, overview.width - 28.0f, 18.0f}, "Queue", selected->queuePressure, actions_ui::pressureColor(selected->queuePressure));
+            drawMetricBar({overview.x + 14.0f, overview.y + 108.0f, overview.width - 28.0f, 18.0f}, "Errors", std::max(selected->timeoutPressure, selected->retryPressure), actions_ui::pressureColor(std::max(selected->timeoutPressure, selected->retryPressure)));
+            DrawText("PRIMARY PRESSURES", static_cast<int>(overview.x + 14.0f), static_cast<int>(overview.y + 140.0f), 11, {166, 176, 192, 255});
+            const auto rows = primaryPressureRows(selectedPressure);
+            if (rows.empty()) {
+                actions_ui::drawWrappedTextClipped("No primary pressure detected above diagnostic thresholds.", {overview.x + 14.0f, overview.y + 158.0f, overview.width - 28.0f, 32.0f}, 12, {139, 148, 158, 255});
+            } else {
+                for (int i = 0; i < static_cast<int>(rows.size()); ++i) {
+                    const float y = overview.y + 158.0f + static_cast<float>(i) * 16.0f;
+                    DrawCircle(static_cast<int>(overview.x + 18.0f), static_cast<int>(y + 6.0f), 4.0f, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
+                    drawTextClipped(pressureCategoryName(rows[static_cast<std::size_t>(i)].category), {overview.x + 28.0f, y, overview.width - 100.0f, 12.0f}, 11, {230, 237, 243, 255});
+                    drawTextClipped(actions_ui::pressureSeverity(rows[static_cast<std::size_t>(i)].value), {overview.x + overview.width - 66.0f, y, 52.0f, 12.0f}, 11, actions_ui::pressureColor(rows[static_cast<std::size_t>(i)].value));
+                }
             }
+        }
+    } else if (activeNodeTab == NodeInspectionTab::Traffic) {
+        DrawRectangleRounded(overview, 0.035f, 8, {18, 24, 34, 230});
+        DrawRectangleRoundedLines(overview, 0.035f, 8, {70, 86, 104, 110});
+        DrawText("TRAFFIC ANALYSIS", static_cast<int>(overview.x + 14.0f), static_cast<int>(overview.y + 15.0f), 14, {205, 213, 224, 255});
+        if (selected == nullptr) {
+            actions_ui::drawWrappedTextClipped("Select a node to inspect traffic flow.", {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, overview.height - 62.0f}, 13, {139, 148, 158, 255});
+        } else {
+            int incomingTraffic = 0;
+            int outgoingTraffic = 0;
+            for (const auto& link : simulation.graph().links()) {
+                if (link.targetNodeId == selected->id) incomingTraffic += static_cast<int>(link.inFlightRequests.size());
+                if (link.sourceNodeId == selected->id) outgoingTraffic += static_cast<int>(link.inFlightRequests.size());
+            }
+            char value[96];
+            std::snprintf(value, sizeof(value), "In flight: %d incoming / %d outgoing", incomingTraffic, outgoingTraffic);
+            drawTextClipped(value, {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, 18.0f}, 13, {230, 237, 243, 255});
+            actions_ui::drawWrappedTextClipped("Traffic analysis separates load movement from local saturation. Use it to distinguish regional demand, retry churn, and downstream congestion.", {overview.x + 14.0f, overview.y + 78.0f, overview.width - 28.0f, 82.0f}, 12, {139, 148, 158, 255});
+        }
+    } else if (activeNodeTab == NodeInspectionTab::Dependencies) {
+        DrawRectangleRounded(overview, 0.035f, 8, {18, 24, 34, 230});
+        DrawRectangleRoundedLines(overview, 0.035f, 8, {70, 86, 104, 110});
+        DrawText("DEPENDENCIES", static_cast<int>(overview.x + 14.0f), static_cast<int>(overview.y + 15.0f), 14, {205, 213, 224, 255});
+        if (selected == nullptr) {
+            actions_ui::drawWrappedTextClipped("Select a node to inspect dependency paths.", {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, overview.height - 62.0f}, 13, {139, 148, 158, 255});
+        } else {
+            int upstream = 0;
+            int downstream = 0;
+            for (const auto& link : simulation.graph().links()) {
+                if (link.targetNodeId == selected->id) ++upstream;
+                if (link.sourceNodeId == selected->id) ++downstream;
+            }
+            char value[96];
+            std::snprintf(value, sizeof(value), "Visible path: %d upstream / %d downstream links", upstream, downstream);
+            drawTextClipped(value, {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, 18.0f}, 13, {230, 237, 243, 255});
+            actions_ui::drawWrappedTextClipped(selectedPressure != nullptr && !selectedPressure->explanation.empty()
+                    ? selectedPressure->explanation
+                    : "Tracing exposes whether a node is the root bottleneck or only suffering from downstream pressure.",
+                {overview.x + 14.0f, overview.y + 78.0f, overview.width - 28.0f, 92.0f}, 12, {139, 148, 158, 255});
+        }
+    } else if (activeNodeTab == NodeInspectionTab::Diagnostics) {
+        DrawRectangleRounded(overview, 0.035f, 8, {18, 24, 34, 230});
+        DrawRectangleRoundedLines(overview, 0.035f, 8, {70, 86, 104, 110});
+        DrawText("DIAGNOSTICS", static_cast<int>(overview.x + 14.0f), static_cast<int>(overview.y + 15.0f), 14, {205, 213, 224, 255});
+        if (selected == nullptr) {
+            actions_ui::drawWrappedTextClipped("Select a node to inspect suspected root causes.", {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, overview.height - 62.0f}, 13, {139, 148, 158, 255});
+        } else {
+            const double overall = actions_ui::overallPressure(selectedPressure, selected);
+            const char* confidence = overall >= 0.72 ? "Confidence: medium" : overall >= 0.42 ? "Confidence: low" : "Confidence: low";
+            drawTextClipped(confidence, {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, 18.0f}, 13, {230, 237, 243, 255});
+            actions_ui::drawWrappedTextClipped(selectedPressure != nullptr && !selectedPressure->explanation.empty()
+                    ? std::string("Suspected pressure source: ") + selectedPressure->explanation
+                    : "No strong root cause detected. Diagnostics should support reasoning, not replace it.",
+                {overview.x + 14.0f, overview.y + 78.0f, overview.width - 28.0f, 92.0f}, 12, {139, 148, 158, 255});
         }
     }
 

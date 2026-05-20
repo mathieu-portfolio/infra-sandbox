@@ -60,6 +60,24 @@ enum class OverlayMode {
     RetryAmplification
 };
 
+
+enum class NodeInspectionTab {
+    Overview,
+    Metrics,
+    Traffic,
+    Dependencies,
+    Diagnostics,
+    Count
+};
+
+struct ObservabilityState {
+    bool metricsUnlocked = false;
+    bool trafficUnlocked = false;
+    bool dependenciesUnlocked = false;
+    bool diagnosticsUnlocked = false;
+    int telemetryDelayTurns = 0;
+};
+
 enum class TimelineCategory {
     All,
     Traffic,
@@ -147,6 +165,7 @@ struct WorldActionDraft {
     double eventIntensityMultiplier = 1.0;
     double complexityDelta = 0.0;
     double durationSeconds = 0.0;
+    std::vector<std::string> unlocksObservability;
 };
 
 struct UiState {
@@ -180,6 +199,8 @@ struct UiState {
     UiViewMode activeViewMode = UiViewMode::Overview;
     OverlayMode activeOverlay = OverlayMode::Bottlenecks;
     UiSelection selection{};
+    NodeInspectionTab activeNodeInspectionTab = NodeInspectionTab::Overview;
+    ObservabilityState observability{};
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};
     bool showDebug = false;
     bool showMetrics = true;

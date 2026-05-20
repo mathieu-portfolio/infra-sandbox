@@ -71,6 +71,22 @@ EngineeringCapacity sampledCapacityBonus(const content::WorldActionDefinition& d
     };
 }
 
+
+void applyObservabilityUnlocks(UiState& state, const std::vector<std::string>& unlocks)
+{
+    for (const auto& unlock : unlocks) {
+        if (unlock == "metrics") {
+            state.observability.metricsUnlocked = true;
+        } else if (unlock == "traffic") {
+            state.observability.trafficUnlocked = true;
+        } else if (unlock == "dependencies" || unlock == "tracing") {
+            state.observability.dependenciesUnlocked = true;
+        } else if (unlock == "diagnostics") {
+            state.observability.diagnosticsUnlocked = true;
+        }
+    }
+}
+
 MechanicType mechanicForMutation(TopologyMutationType mutationType)
 {
     return mutationType == TopologyMutationType::AddCache ? MechanicType::AddCache
@@ -88,7 +104,23 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
 
     std::vector<content::WorldActionDefinition> candidates = content::ContentRegistry::instance().worldActions();
     const PressureCategory dominant = session.simulation().pressure().dominantPressure;
-    std::stable_sort(candidates.begin(), candidates.end(), [dominant](const auto& lhs, const auto& rhs) {
+    auto unlocksMissingObservability = [&state](const content::WorldActionDefinition& definition) {
+        for (const auto& unlock : definition.unlocksObservability) {
+            if ((unlock == "metrics" && !state.observability.metricsUnlocked)
+                || (unlock == "traffic" && !state.observability.trafficUnlocked)
+                || ((unlock == "dependencies" || unlock == "tracing") && !state.observability.dependenciesUnlocked)
+                || (unlock == "diagnostics" && !state.observability.diagnosticsUnlocked)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    std::stable_sort(candidates.begin(), candidates.end(), [dominant, &unlocksMissingObservability](const auto& lhs, const auto& rhs) {
+        const bool lhsUnlock = unlocksMissingObservability(lhs);
+        const bool rhsUnlock = unlocksMissingObservability(rhs);
+        if (lhsUnlock != rhsUnlock) {
+            return lhsUnlock;
+        }
         const bool lhsMatch = std::find(lhs.affectedPressures.begin(), lhs.affectedPressures.end(), dominant) != lhs.affectedPressures.end();
         const bool rhsMatch = std::find(rhs.affectedPressures.begin(), rhs.affectedPressures.end(), dominant) != rhs.affectedPressures.end();
         return lhsMatch && !rhsMatch;
@@ -114,6 +146,7 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
             .eventIntensityMultiplier = content::sampleRange(definition.eventIntensityMultiplierRange, seed, definition.id + ".event_intensity_multiplier"),
             .complexityDelta = content::sampleRange(definition.complexityDeltaRange, seed, definition.id + ".complexity_delta") * intensity,
             .durationSeconds = content::sampleRange(definition.durationSecondsRange, seed, definition.id + ".duration_turns"),
+            .unlocksObservability = definition.unlocksObservability,
         });
     }
     state.selectedWorldActionIndex = -1;
@@ -145,6 +178,7 @@ void WorldActionController::applyPlan(UiState& state, ScenarioSession& session) 
         return;
     }
     const WorldActionDraft& action = state.worldActionDraft[static_cast<std::size_t>(state.selectedWorldActionIndex)];
+    applyObservabilityUnlocks(state, action.unlocksObservability);
     session.scenarioManager().applyEngineeringCapacityBonus(action.capacityBonus);
     state.engineeringCapacity = session.scenarioManager().definition().engineeringCapacity;
     if (action.complexityDelta > 0.0) {
