@@ -21,6 +21,18 @@ void runFor(Simulation& simulation, double seconds)
     }
 }
 
+EngineeringCapacity capacityBonus(int frontend, int backend, int infrastructure, int data, int operations, int total)
+{
+    EngineeringCapacity bonus;
+    bonus.frontend = frontend;
+    bonus.backend = backend;
+    bonus.infrastructure = infrastructure;
+    bonus.data = data;
+    bonus.operations = operations;
+    bonus.total = total;
+    return bonus;
+}
+
 TEST(NodeRegistryTests, RegistersFutureNodeSkeletons)
 {
     EXPECT_EQ(NodeRegistry::definitions().size(), 50U);
@@ -183,6 +195,32 @@ TEST(ProgressionRegistryTests, ProvidesTierFilters)
     EXPECT_FALSE(tier.visibleMetrics.empty());
     EXPECT_NE(std::find(tier.availableMechanics.begin(), tier.availableMechanics.end(), MechanicType::EnableCache), tier.availableMechanics.end());
     EXPECT_NE(std::find(tier.allowedPressures.begin(), tier.allowedPressures.end(), PressureCategory::PersistencePressure), tier.allowedPressures.end());
+}
+
+TEST(EngineeringCapacityTests, SpecialtyIncreasesAreCappedAtTotalBudget)
+{
+    const EngineeringCapacity fullCapacity{
+        .frontend = 1,
+        .backend = 1,
+        .infrastructure = 1,
+        .data = 1,
+        .operations = 1,
+        .total = 5,
+    };
+
+    const EngineeringCapacity cappedIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 2, 0, 0, 0, 0));
+    EXPECT_EQ(cappedIncrease.backend, 1);
+    EXPECT_EQ(specialtyCapacityTotal(cappedIncrease), cappedIncrease.total);
+
+    const EngineeringCapacity rebalance = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, -1, 0, 1, 0, 0));
+    EXPECT_EQ(rebalance.backend, 0);
+    EXPECT_EQ(rebalance.data, 2);
+    EXPECT_EQ(specialtyCapacityTotal(rebalance), rebalance.total);
+
+    const EngineeringCapacity budgetIncrease = applyEngineeringCapacityBudgetCap(fullCapacity, capacityBonus(0, 1, 0, 0, 0, 1));
+    EXPECT_EQ(budgetIncrease.backend, 2);
+    EXPECT_EQ(budgetIncrease.total, 6);
+    EXPECT_EQ(specialtyCapacityTotal(budgetIncrease), budgetIncrease.total);
 }
 
 TEST(ScenarioManagerTests, AppliesPhaseTrafficAndMechanicRestrictions)

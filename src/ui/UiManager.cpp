@@ -11,13 +11,7 @@
 namespace {
 EngineeringCapacity displayCapacityWithBonus(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
-    base.frontend = std::max(0, base.frontend + bonus.frontend);
-    base.backend = std::max(0, base.backend + bonus.backend);
-    base.infrastructure = std::max(0, base.infrastructure + bonus.infrastructure);
-    base.data = std::max(0, base.data + bonus.data);
-    base.operations = std::max(0, base.operations + bonus.operations);
-    base.total = std::max(0, base.total + bonus.total);
-    return base;
+    return applyEngineeringCapacityBudgetCap(base, bonus);
 }
 
 bool hasActiveCapacityPreview(const UiState& state)

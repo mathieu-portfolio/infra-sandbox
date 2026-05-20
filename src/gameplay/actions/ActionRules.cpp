@@ -78,13 +78,7 @@ std::array<int, static_cast<std::size_t>(EngineeringDomain::Count)> plannedDomai
 
 EngineeringCapacity addCapacityPreview(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
-    base.frontend += bonus.frontend;
-    base.backend += bonus.backend;
-    base.infrastructure += bonus.infrastructure;
-    base.data += bonus.data;
-    base.operations += bonus.operations;
-    base.total += bonus.total;
-    return base;
+    return applyEngineeringCapacityBudgetCap(base, bonus);
 }
 
 bool validCapacityDistribution(const EngineeringCapacity& capacity, std::string& reason)
@@ -95,6 +89,10 @@ bool validCapacityDistribution(const EngineeringCapacity& capacity, std::string&
     }
     if (capacity.total < 0) {
         reason = "This world action would reduce the turn budget below zero.";
+        return false;
+    }
+    if (specialtyCapacityTotal(capacity) > capacity.total) {
+        reason = "This world action would exceed the turn budget.";
         return false;
     }
     return true;

@@ -94,6 +94,30 @@ MechanicType mechanicForMutation(TopologyMutationType mutationType)
         : mutationType == TopologyMutationType::AddQueue ? MechanicType::AddQueue
         : MechanicType::AddRegionalCache;
 }
+
+bool hasAnyCapacityDelta(const EngineeringCapacity& bonus)
+{
+    return bonus.frontend != 0
+        || bonus.backend != 0
+        || bonus.infrastructure != 0
+        || bonus.data != 0
+        || bonus.operations != 0
+        || bonus.total != 0;
+}
+
+bool isCappedOutSpecialtyIncrease(
+    const EngineeringCapacity& rawBonus,
+    const EngineeringCapacity& effectiveBonus,
+    bool unlocksMissingObservability)
+{
+    if (unlocksMissingObservability) {
+        return false;
+    }
+    return hasPositiveSpecialtyBonus(rawBonus)
+        && !hasNegativeSpecialtyBonus(rawBonus)
+        && rawBonus.total <= 0
+        && !hasAnyCapacityDelta(effectiveBonus);
+}
 }
 
 void WorldActionController::generateDraft(UiState& state, ScenarioSession& session) const
@@ -126,11 +150,20 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
         return lhsMatch && !rhsMatch;
     });
 
-    const std::size_t maxDraft = std::min<std::size_t>(3, candidates.size());
-    for (std::size_t i = 0; i < maxDraft; ++i) {
-        const auto& definition = candidates[i];
+    constexpr std::size_t maxDraft = 3;
+    for (const auto& definition : candidates) {
+        if (state.worldActionDraft.size() >= maxDraft) {
+            break;
+        }
         const std::uint32_t seed = session.scenarioManager().run().seed + static_cast<std::uint32_t>(session.scenarioManager().elapsedSeconds());
         const double intensity = content::sampleNumber(seed, definition.id, definition.minIntensity, definition.maxIntensity);
+        const EngineeringCapacity rawCapacityBonus = scaledCapacityBonus(sampledCapacityBonus(definition, seed), intensity);
+        const EngineeringCapacity effectiveCapacity = effectiveEngineeringCapacityBonus(
+            session.scenarioManager().definition().engineeringCapacity,
+            rawCapacityBonus);
+        if (isCappedOutSpecialtyIncrease(rawCapacityBonus, effectiveCapacity, unlocksMissingObservability(definition))) {
+            continue;
+        }
         state.worldActionDraft.push_back({
             .id = definition.id,
             .name = definition.displayName,
@@ -140,7 +173,7 @@ void WorldActionController::generateDraft(UiState& state, ScenarioSession& sessi
             .tradeOff = definition.tradeoffs,
             .showUsageDetails = definition.showUsageDetails,
             .iconId = definition.iconId,
-            .capacityBonus = scaledCapacityBonus(sampledCapacityBonus(definition, seed), intensity),
+            .capacityBonus = effectiveCapacity,
             .intensity = intensity,
             .pressureResistance = content::sampleRange(definition.pressureResistanceRange, seed, definition.id + ".pressure_resistance") * intensity,
             .eventIntensityMultiplier = content::sampleRange(definition.eventIntensityMultiplierRange, seed, definition.id + ".event_intensity_multiplier"),
