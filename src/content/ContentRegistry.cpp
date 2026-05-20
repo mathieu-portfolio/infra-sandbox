@@ -753,6 +753,31 @@ std::vector<NodeScenario> parseNodes(const Json& topology)
     return nodes;
 }
 
+std::vector<ProceduralLocationRule> parseProceduralLocationRules(const Json& object)
+{
+    std::vector<ProceduralLocationRule> rules;
+    const Json* value = object.find("procedural_location_regions");
+    if (value == nullptr || !value->isObject()) {
+        return rules;
+    }
+    for (const auto& [nodeId, regions] : value->asObject()) {
+        if (!regions.isArray()) {
+            continue;
+        }
+        ProceduralLocationRule rule;
+        rule.nodeId = nodeId;
+        for (const auto& region : regions.asArray()) {
+            if (region.isString()) {
+                rule.regions.push_back(region.asString());
+            }
+        }
+        if (!rule.nodeId.empty() && !rule.regions.empty()) {
+            rules.push_back(std::move(rule));
+        }
+    }
+    return rules;
+}
+
 std::vector<LinkScenario> parseLinks(const Json& topology, const std::vector<NodeScenario>& nodes)
 {
     std::unordered_map<std::string, int> nodeIndexes;
@@ -789,8 +814,14 @@ void applyScenarioOverrides(ScenarioDefinition& scenario, const Json& object)
             if (overrideNode.find("request_rate_per_second") != nullptr) it->requestRatePerSecond = numberAt(overrideNode, "request_rate_per_second");
             if (overrideNode.find("processing_capacity_per_second") != nullptr) it->processingCapacityPerSecond = numberAt(overrideNode, "processing_capacity_per_second");
             if (overrideNode.find("timeout_seconds") != nullptr) it->timeoutSeconds = numberAt(overrideNode, "timeout_seconds", it->timeoutSeconds);
+            if (const Json* geo = overrideNode.find("geo"); geo != nullptr && geo->isObject()) {
+                it->geoLocation = parseGeo(*geo);
+            }
         }
     }
+    scenario.proceduralLocations = boolAt(object, "procedural_locations", scenario.proceduralLocations);
+    scenario.proceduralLocationJitterDegrees = numberAt(object, "procedural_location_jitter_degrees", scenario.proceduralLocationJitterDegrees);
+    scenario.proceduralLocationRules = parseProceduralLocationRules(object);
     if (const Json* requestTypes = object.find("request_types"); requestTypes != nullptr && requestTypes->isObject()) {
         scenario.requestTypes.lightweightShare = numberAt(*requestTypes, "lightweight_share", scenario.requestTypes.lightweightShare);
         scenario.requestTypes.databaseHeavyCacheableShare = numberAt(*requestTypes, "database_heavy_cacheable_share", scenario.requestTypes.databaseHeavyCacheableShare);

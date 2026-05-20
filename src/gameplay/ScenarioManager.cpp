@@ -5,8 +5,10 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <optional>
 #include <random>
 #include <sstream>
+#include <string_view>
 #include <utility>
 
 namespace {
@@ -86,6 +88,61 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
     event.effect.latencyMultiplier = scaledMultiplier(event.effect.latencyMultiplier, event.intensity);
     event.effect.retryDelayMultiplier = scaledMultiplier(event.effect.retryDelayMultiplier, event.intensity);
     return event;
+}
+
+
+const ProceduralLocationRule* proceduralLocationRuleFor(const ScenarioDefinition& definition, std::string_view nodeId)
+{
+    const auto it = std::find_if(
+        definition.proceduralLocationRules.begin(),
+        definition.proceduralLocationRules.end(),
+        [nodeId](const ProceduralLocationRule& rule) { return rule.nodeId == nodeId; });
+    return it != definition.proceduralLocationRules.end() ? &(*it) : nullptr;
+}
+
+std::optional<GeoLocation> regionCenterByName(std::string_view regionName)
+{
+    const auto& regions = GeographicRegistry::definitions();
+    const auto it = std::find_if(regions.begin(), regions.end(), [regionName](const RegionDefinition& region) {
+        return region.name == regionName;
+    });
+    if (it == regions.end()) {
+        return std::nullopt;
+    }
+    return it->center;
+}
+
+void applyProceduralLocations(ScenarioDefinition& definition, std::uint32_t seed)
+{
+    if (!definition.proceduralLocations) {
+        return;
+    }
+
+    const double jitter = std::max(0.0, definition.proceduralLocationJitterDegrees);
+    for (auto& node : definition.nodes) {
+        if (!node.geoLocation) {
+            continue;
+        }
+        const std::string key = definition.id + ".locations." + node.id;
+        if (const ProceduralLocationRule* rule = proceduralLocationRuleFor(definition, node.id);
+            rule != nullptr && !rule->regions.empty()) {
+            const std::size_t selectedIndex = std::min(
+                rule->regions.size() - 1,
+                static_cast<std::size_t>(content::sampleUnitInterval(seed, key + ".region") * rule->regions.size()));
+            if (auto regionCenter = regionCenterByName(rule->regions[selectedIndex])) {
+                node.geoLocation = *regionCenter;
+            }
+        }
+        node.geoLocation->latitude = std::clamp(
+            node.geoLocation->latitude + content::sampleNumber(seed, key + ".lat", -jitter, jitter),
+            -70.0,
+            70.0);
+        node.geoLocation->longitude = std::clamp(
+            node.geoLocation->longitude + content::sampleNumber(seed, key + ".lon", -jitter * 1.8, jitter * 1.8),
+            -175.0,
+            175.0);
+        node.position = MapProjection::projectEquirectangular(*node.geoLocation);
+    }
 }
 
 ScenarioModifierDefinition instantiateModifier(ScenarioModifierDefinition modifier, std::uint32_t seed, const std::string& key)
@@ -449,6 +506,7 @@ ScenarioDefinition ScenarioManager::createActiveDefinition(std::uint32_t seed) c
     for (const auto& modifier : run_.selectedModifiers) {
         applyModifier(definition, modifier);
     }
+    applyProceduralLocations(definition, seed);
     applyProgressionTierFilters(definition);
     return definition;
 }

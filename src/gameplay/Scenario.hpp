@@ -271,6 +271,11 @@ struct LinkScenario {
     double bandwidthPerSecond = 100.0;
 };
 
+struct ProceduralLocationRule {
+    std::string nodeId;
+    std::vector<std::string> regions;
+};
+
 struct ScenarioDefinition {
     std::string id;
     std::string displayName;
@@ -308,6 +313,9 @@ struct ScenarioDefinition {
     std::vector<EventDefinition> sandboxEvents;
     GameplayDuration turnDuration;
     double requestTimeoutSeconds = 5.5;
+    bool proceduralLocations = false;
+    double proceduralLocationJitterDegrees = 6.0;
+    std::vector<ProceduralLocationRule> proceduralLocationRules;
 };
 
 struct ScenarioRun {
