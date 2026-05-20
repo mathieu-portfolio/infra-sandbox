@@ -1,0 +1,86 @@
+[
+  {
+    "id": "index_hot_path",
+    "display_name": "Index Hot Path",
+    "description": "Spend a turn improving the most common query path so repeated reads hit storage more efficiently.",
+    "categories": [
+      "Data"
+    ],
+    "useful_when": "read-heavy pressure is pushing database utilization up",
+    "tradeoffs": "Maintenance work temporarily competes with incident response capacity.",
+    "icon_id": "node.database",
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "capacity_bonus": {
+      "data": {
+        "min": 1,
+        "max": 2
+      },
+      "total": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.04,
+      "max": 0.08
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "indexing",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "separate_analytics_window",
+    "display_name": "Separate Analytics Window",
+    "description": "Shift analytical work away from peak production turns.",
+    "categories": [
+      "Data",
+      "Operations"
+    ],
+    "useful_when": "analytics load is competing with production traffic",
+    "tradeoffs": "Results arrive later and operational coordination increases.",
+    "icon_id": "node.service",
+    "affected_pressures": [
+      "persistence",
+      "queue"
+    ],
+    "capacity_bonus": {
+      "data": {
+        "min": 1,
+        "max": 2
+      },
+      "operations": 1,
+      "total": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.03,
+      "max": 0.07
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.2
+    },
+    "tags": [
+      "analytics",
+      "isolation"
+    ]
+  }
+]

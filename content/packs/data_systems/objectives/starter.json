@@ -1,0 +1,124 @@
+[
+  {
+    "id": "observe_data_path_1_turn",
+    "display_name": "Read the Data Path",
+    "description": "Observe the first operational cycle and decide whether the dominant pressure is writes, reads, queues, or replication lag.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Observe one initialized data turn before committing to a mitigation.",
+    "duration_turns": 1,
+    "starts_active": true,
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "add_read_replica",
+        "message": "Read Replica unlocked. Use it when repeated reads dominate storage pressure."
+      }
+    ],
+    "next_objectives": [
+      "reduce_write_pressure_data"
+    ],
+    "tags": [
+      "diagnosis",
+      "data_systems",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "reduce_write_pressure_data",
+    "display_name": "Reduce Write Pressure",
+    "description": "Stabilize the persistence path before write-heavy traffic forces the whole platform into queueing.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.5,
+    "summary": "Reduce persistence pressure below 50%.",
+    "tags": [
+      "write_pressure",
+      "database_pressure",
+      "stabilization"
+    ]
+  },
+  {
+    "id": "survive_replication_lag_5_turns",
+    "display_name": "Survive Replication Lag",
+    "description": "Keep the platform usable while replicas lag behind the write path.",
+    "type": "survive_duration",
+    "summary": "Survive 5 turns of replication lag pressure.",
+    "duration_turns": 5,
+    "tags": [
+      "replication",
+      "consistency",
+      "read_scaling"
+    ]
+  },
+  {
+    "id": "drain_data_backlog_5_turns",
+    "display_name": "Drain the Data Backlog",
+    "description": "Keep buffered work from becoming permanent delayed failure.",
+    "type": "survive_duration",
+    "summary": "Maintain recovery for 5 turns while queue backlog pressure rises.",
+    "duration_turns": 5,
+    "tags": [
+      "queue",
+      "backlog",
+      "async_processing"
+    ]
+  },
+  {
+    "id": "analytics_isolation_goal",
+    "display_name": "Isolate Analytics Load",
+    "description": "Reduce persistence pressure after analytical queries start competing with user-facing reads.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.46,
+    "summary": "Bring persistence pressure below 46% during analytics load.",
+    "tags": [
+      "analytics",
+      "isolation",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "cache_freshness_tradeoff",
+    "display_name": "Use Cache Without Hiding Storage Risk",
+    "description": "Use cache and replicas to control reads while avoiding runaway persistence pressure underneath.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.48,
+    "summary": "Keep persistence pressure below 48% while read traffic grows.",
+    "tags": [
+      "cache",
+      "freshness",
+      "read_scaling"
+    ]
+  },
+  {
+    "id": "data_latency_under_5s",
+    "display_name": "Keep Data Latency Usable",
+    "description": "Failure condition for data paths whose storage latency dominates the user request.",
+    "type": "latency_under",
+    "threshold": 5.0,
+    "summary": "Effective latency must stay below 5 seconds.",
+    "tags": [
+      "failure",
+      "latency",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "data_lab_7_turns",
+    "display_name": "Run the Data Systems Lab",
+    "description": "Survive mixed reads, writes, queues, replication lag, and analytics pressure long enough to compare data strategies.",
+    "type": "survive_duration",
+    "summary": "Survive 7 operational cycles in the data systems lab.",
+    "duration_turns": 7,
+    "tags": [
+      "sandbox",
+      "data_systems",
+      "distributed_systems"
+    ]
+  }
+]

@@ -1,0 +1,136 @@
+[
+  {
+    "id": "read_network_signals_1_turn",
+    "display_name": "Read the Network Signals",
+    "description": "Observe one operational cycle and identify whether latency, bandwidth, retries, or regional distance is dominating.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Observe one initialized networking turn before choosing a mitigation.",
+    "duration_turns": 1,
+    "starts_active": true,
+    "rewards": [
+      {
+        "type": "unlock_action",
+        "id": "add_regional_cache",
+        "message": "Regional Cache unlocked. Use it when distance and repeated reads dominate latency."
+      }
+    ],
+    "next_objectives": [
+      "keep_latency_network_5s"
+    ],
+    "tags": [
+      "diagnosis",
+      "networking",
+      "latency"
+    ]
+  },
+  {
+    "id": "keep_latency_network_5s",
+    "display_name": "Keep Network Latency Usable",
+    "description": "Keep effective latency below the danger zone while remote demand grows.",
+    "type": "latency_under",
+    "threshold": 5.0,
+    "summary": "Keep effective latency below 5 seconds.",
+    "tags": [
+      "latency",
+      "networking",
+      "failure"
+    ]
+  },
+  {
+    "id": "stabilize_cross_region_pressure",
+    "display_name": "Stabilize Cross-Region Pressure",
+    "description": "Reduce queue pressure caused by remote traffic taking expensive paths through the system.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "queue",
+    "threshold": 0.5,
+    "summary": "Bring queue pressure below 50% after cross-region demand spikes.",
+    "rewards": [
+      {
+        "type": "complete_scenario",
+        "message": "Cross-region latency stabilized. Packet Loss Crisis unlocked."
+      }
+    ],
+    "tags": [
+      "regional_scaling",
+      "queue",
+      "latency"
+    ]
+  },
+  {
+    "id": "survive_packet_loss_5_turns",
+    "display_name": "Survive Packet Loss",
+    "description": "Keep the platform alive while unstable links turn slow responses into retries.",
+    "type": "survive_duration",
+    "summary": "Survive 5 turns of packet loss and retry amplification.",
+    "duration_turns": 5,
+    "tags": [
+      "packet_loss",
+      "retry",
+      "networking"
+    ]
+  },
+  {
+    "id": "contain_congestion_pressure",
+    "display_name": "Contain Congestion Pressure",
+    "description": "Prevent a regional bandwidth hotspot from spreading queue pressure into the whole platform.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "queue",
+    "threshold": 0.52,
+    "summary": "Reduce congestion-driven queue pressure below 52%.",
+    "tags": [
+      "bandwidth",
+      "congestion",
+      "regional_scaling"
+    ]
+  },
+  {
+    "id": "edge_cache_latency_goal",
+    "display_name": "Prove the Edge Helps",
+    "description": "Use regional caching to keep read latency controlled while repeated traffic grows.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "pressure": "persistence",
+    "threshold": 0.48,
+    "summary": "Reduce persistence pressure below 48% by moving repeated reads closer to users.",
+    "rewards": [
+      {
+        "type": "complete_scenario",
+        "message": "Edge cache rollout stabilized. Routing Instability unlocked."
+      }
+    ],
+    "tags": [
+      "edge",
+      "caching",
+      "latency"
+    ]
+  },
+  {
+    "id": "routing_instability_6_turns",
+    "display_name": "Survive Routing Instability",
+    "description": "Survive uneven regional traffic and intermittent congestion without letting retries dominate.",
+    "type": "survive_duration",
+    "summary": "Survive 6 operational cycles of routing instability.",
+    "duration_turns": 6,
+    "tags": [
+      "routing",
+      "regional_scaling",
+      "reliability"
+    ]
+  },
+  {
+    "id": "network_lab_6_turns",
+    "display_name": "Run the Network Lab",
+    "description": "Compare edge placement, backpressure, retries, and capacity changes under mixed network pressure.",
+    "type": "survive_duration",
+    "summary": "Survive 6 networking lab turns.",
+    "duration_turns": 6,
+    "tags": [
+      "sandbox",
+      "networking",
+      "systems_thinking"
+    ]
+  }
+]

@@ -1,0 +1,266 @@
+[
+  {
+    "id": "data_write_hotspot",
+    "display_name": "Write Hotspot",
+    "description": "A small set of records receives most writes, making the database the first unstable subsystem.",
+    "category": "database",
+    "moment": "planning_start",
+    "weight": 1.4,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.18,
+        "max": 1.36
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "write_pressure",
+      "database_pressure",
+      "hotspot"
+    ]
+  },
+  {
+    "id": "data_read_fanout",
+    "display_name": "Read Fanout",
+    "description": "One user-facing request now causes repeated downstream reads, increasing persistence pressure faster than API pressure.",
+    "category": "database",
+    "moment": "planning_start",
+    "weight": 1.2,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 1
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.12,
+        "max": 1.28
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "read_pressure",
+      "fanout",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "data_replication_delay",
+    "display_name": "Replication Delay",
+    "description": "Replica updates fall behind. Reads can be scaled, but consistency pressure becomes visible.",
+    "category": "consistency",
+    "moment": "planning_start",
+    "weight": 1.2,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "emit_feedback",
+      "latency_multiplier": {
+        "min": 1.15,
+        "max": 1.35
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "replication",
+      "consistency",
+      "lag"
+    ]
+  },
+  {
+    "id": "data_queue_backlog",
+    "display_name": "Queue Backlog",
+    "description": "Buffered work protects the API path, but delayed jobs accumulate faster than the platform drains them.",
+    "category": "queue",
+    "moment": "planning_start",
+    "weight": 1.4,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.22,
+        "max": 1.44
+      }
+    },
+    "duration_turns": 3,
+    "tags": [
+      "queue",
+      "backlog",
+      "async_processing"
+    ]
+  },
+  {
+    "id": "data_analytics_spike",
+    "display_name": "Analytics Spike",
+    "description": "Analytical reads compete with production traffic and expose the cost of sharing one storage path.",
+    "category": "analytics",
+    "moment": "planning_start",
+    "weight": 1.1,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 3
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.52,
+        "max": 0.7
+      },
+      "latency_multiplier": {
+        "min": 1.2,
+        "max": 1.45
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "analytics",
+      "database_pressure",
+      "isolation"
+    ]
+  },
+  {
+    "id": "data_index_rebuild",
+    "display_name": "Index Rebuild Window",
+    "description": "A maintenance window improves future reads but temporarily reduces database headroom.",
+    "category": "maintenance",
+    "moment": "planning_start",
+    "weight": 0.9,
+    "repeatable": false,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 3
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.62,
+        "max": 0.78
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "indexing",
+      "maintenance",
+      "tradeoff"
+    ]
+  },
+  {
+    "id": "data_batch_flush",
+    "display_name": "Batch Flush",
+    "description": "Delayed jobs arrive at storage together, creating a short but dangerous write spike.",
+    "category": "batching",
+    "moment": "planning_start",
+    "weight": 1.0,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 4
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.28,
+        "max": 1.55
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "batching",
+      "write_pressure",
+      "queue"
+    ]
+  },
+  {
+    "id": "data_cache_staleness_warning",
+    "display_name": "Stale Cache Warning",
+    "description": "Caching reduces storage load, but fast-changing data makes freshness trade-offs visible.",
+    "category": "cache",
+    "moment": "planning_start",
+    "weight": 0.9,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 2
+    },
+    "effect": {
+      "type": "emit_feedback",
+      "traffic_multiplier": {
+        "min": 1.04,
+        "max": 1.12
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "cache",
+      "consistency",
+      "freshness"
+    ]
+  },
+  {
+    "id": "data_partial_recovery",
+    "display_name": "Storage Headroom Recovers",
+    "description": "A mitigation starts working. The system gets a narrow recovery window before the next data wave.",
+    "category": "recovery",
+    "moment": "planning_start",
+    "weight": 0.8,
+    "repeatable": true,
+    "location": {
+      "scope": "global"
+    },
+    "trigger": {
+      "type": "time",
+      "turn": 5
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 0.78,
+        "max": 0.92
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "recovery",
+      "database_pressure"
+    ]
+  }
+]

@@ -1,0 +1,180 @@
+[
+  {
+    "id": "data_foundations",
+    "display_name": "Data Foundations",
+    "description": "Distinguish API pressure from persistence pressure, and separate read-heavy from write-heavy load.",
+    "tags": [
+      "data_systems"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Database utilization"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_read_replica",
+      "enable_cache"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "database",
+      "cache"
+    ]
+  },
+  {
+    "id": "read_write_scaling",
+    "display_name": "Read/Write Scaling",
+    "description": "Use caching and replicas when reads dominate, and use backpressure when writes dominate.",
+    "tags": [
+      "read_scaling",
+      "write_pressure"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Database utilization"
+    ],
+    "available_actions": [
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "latency",
+      "persistence",
+      "queue"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database"
+    ]
+  },
+  {
+    "id": "async_backlog",
+    "display_name": "Async Backlog",
+    "description": "Queues protect user-facing paths, but backlog becomes its own operational pressure.",
+    "tags": [
+      "queues",
+      "async_processing"
+    ],
+    "visible_metrics": [
+      "Queue depth",
+      "Processed req/s",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "add_queue",
+      "scale_up",
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "allowed_pressures": [
+      "queue",
+      "traffic",
+      "latency",
+      "retry"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "queue",
+      "database"
+    ]
+  },
+  {
+    "id": "analytics_and_consistency",
+    "display_name": "Analytics and Consistency",
+    "description": "Handle analytical reads, replica lag, and freshness trade-offs without destabilizing production.",
+    "tags": [
+      "analytics",
+      "consistency"
+    ],
+    "visible_metrics": [
+      "Database utilization",
+      "Latency",
+      "Queue depth",
+      "Processed req/s"
+    ],
+    "available_actions": [
+      "add_read_replica",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "persistence",
+      "latency",
+      "queue",
+      "traffic"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database"
+    ]
+  },
+  {
+    "id": "data_lab",
+    "display_name": "Data Systems Lab",
+    "description": "Combine reads, writes, queues, replication pressure, analytics load, and cache freshness trade-offs.",
+    "tags": [
+      "sandbox",
+      "data_systems"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts",
+      "Database utilization"
+    ],
+    "available_actions": [
+      "scale_up",
+      "throttle_traffic",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "add_queue",
+      "toggle_retries"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database",
+      "queue",
+      "cdn_edge"
+    ]
+  }
+]

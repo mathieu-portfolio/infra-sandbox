@@ -1,0 +1,141 @@
+[
+  {
+    "id": "network_foundations",
+    "display_name": "Network Foundations",
+    "description": "Read latency, bandwidth, queues, and regional distance as separate pressure sources.",
+    "tags": [
+      "networking"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_regional_cache"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache"
+    ]
+  },
+  {
+    "id": "loss_and_retries",
+    "display_name": "Loss and Retries",
+    "description": "Understand when retries help reliability and when they multiply network failures.",
+    "tags": [
+      "packet_loss",
+      "retry"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "scale_up",
+      "add_queue"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry",
+      "failure"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache"
+    ]
+  },
+  {
+    "id": "edge_and_congestion",
+    "display_name": "Edge and Congestion",
+    "description": "Move repeated reads closer to users and prevent a hotspot from consuming shared capacity.",
+    "tags": [
+      "edge",
+      "congestion"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "add_regional_cache",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "throttle_traffic"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database"
+    ]
+  },
+  {
+    "id": "network_lab",
+    "display_name": "Network Lab",
+    "description": "Combine edge placement, routing instability, retries, and congestion under a mixed scenario.",
+    "tags": [
+      "sandbox",
+      "networking"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Timeouts"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_regional_cache",
+      "toggle_retries",
+      "add_cache",
+      "enable_cache",
+      "add_queue"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry",
+      "persistence",
+      "failure"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "cache",
+      "database"
+    ]
+  }
+]

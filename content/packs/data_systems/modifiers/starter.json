@@ -1,0 +1,54 @@
+[
+  {
+    "id": "write_heavy_behavior",
+    "display_name": "Write-Heavy Behavior",
+    "description": "More requests change state, so caching alone cannot remove the persistence bottleneck.",
+    "traffic_multiplier": {
+      "min": 1.08,
+      "max": 1.18
+    },
+    "duration_turns": {
+      "min": 3,
+      "max": 4
+    },
+    "tags": [
+      "write_pressure",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "analytics_window",
+    "display_name": "Analytics Window",
+    "description": "Analytical reads share storage with production traffic for several turns.",
+    "traffic_multiplier": {
+      "min": 1.12,
+      "max": 1.28
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "tags": [
+      "analytics",
+      "database_pressure"
+    ]
+  },
+  {
+    "id": "freshness_sensitive_data",
+    "display_name": "Freshness-Sensitive Data",
+    "description": "Users notice stale results, making cache and replica choices more delicate.",
+    "traffic_multiplier": {
+      "min": 1.04,
+      "max": 1.12
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 4
+    },
+    "tags": [
+      "consistency",
+      "cache",
+      "freshness"
+    ]
+  }
+]

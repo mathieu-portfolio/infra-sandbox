@@ -1,0 +1,950 @@
+[
+  {
+    "id": "write_heavy_platform",
+    "display_name": "Write-Heavy Platform",
+    "description": "The product starts recording more state. API scaling helps briefly, but the database becomes the true bottleneck.",
+    "tags": [
+      "data_systems",
+      "write_pressure",
+      "intro"
+    ],
+    "archetype": "write_bottleneck",
+    "minimum_tier": "data_foundations",
+    "unlocks_scenarios": [
+      "read_fanout_pressure"
+    ],
+    "topology_template": "data_pipeline_lab",
+    "traffic_pattern": "write_hotspot_growth",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "write pressure",
+      "database bottlenecks",
+      "backpressure"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "queue",
+      "latency"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_read_replica",
+      "enable_cache"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 1,
+      "data": 2,
+      "operations": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "add_read_replica",
+      "enable_cache",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "throttle_traffic",
+      "add_read_replica"
+    ],
+    "objectives": [
+      {
+        "objective_id": "observe_data_path_1_turn",
+        "starts_active": true
+      },
+      {
+        "objective_id": "reduce_write_pressure_data"
+      }
+    ],
+    "events": [
+      "data_write_hotspot",
+      "data_read_fanout",
+      "data_cache_staleness_warning",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "writes_begin",
+        "display_name": "Writes concentrate",
+        "event_message": "Writes start hitting the same hot path.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.22
+      },
+      {
+        "id": "storage_limit",
+        "display_name": "Storage limit appears",
+        "event_message": "API capacity is no longer the only constraint.",
+        "start_turn": 3,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.58
+      },
+      {
+        "id": "stabilization_window",
+        "display_name": "Stabilization window",
+        "event_message": "Use backpressure, reads isolation, or cache carefully.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.36
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.2
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.4
+      },
+      {
+        "id": "eu_queue",
+        "processing_capacity_per_second": 3.2
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.45
+      },
+      {
+        "id": "write",
+        "share": 0.55
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.9
+    }
+  },
+  {
+    "id": "read_fanout_pressure",
+    "display_name": "Read Fanout Pressure",
+    "description": "Each request fans out into repeated reads. Caches and replicas help, but they can hide the storage pressure underneath.",
+    "tags": [
+      "data_systems",
+      "read_scaling",
+      "cache"
+    ],
+    "archetype": "read_scaling",
+    "minimum_tier": "read_write_scaling",
+    "required_completed_scenarios": [
+      "write_heavy_platform"
+    ],
+    "unlocks_scenarios": [
+      "replication_lag"
+    ],
+    "topology_template": "replica_consistency_lab",
+    "traffic_pattern": "read_fanout_growth",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "read scaling",
+      "cache trade-offs",
+      "database pressure"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "latency",
+      "traffic"
+    ],
+    "allowed_actions": [
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "throttle_traffic"
+    ],
+    "engineering_capacity": {
+      "backend": 1,
+      "infrastructure": 2,
+      "data": 2,
+      "operations": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "enable_cache",
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "add_cache",
+      "add_read_replica",
+      "clear_cache"
+    ],
+    "recommended_actions": [
+      "enable_cache",
+      "add_read_replica",
+      "clear_cache"
+    ],
+    "objectives": [
+      {
+        "objective_id": "cache_freshness_tradeoff"
+      },
+      {
+        "objective_id": "analytics_isolation_goal"
+      }
+    ],
+    "events": [
+      "data_read_fanout",
+      "data_cache_staleness_warning",
+      "data_analytics_spike",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "fanout_growth",
+        "display_name": "Fanout grows",
+        "event_message": "One request now means several downstream reads.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.18
+      },
+      {
+        "id": "cache_pressure",
+        "display_name": "Cache masks storage pressure",
+        "event_message": "Cache helps, but the underlying store is still close to saturation.",
+        "start_turn": 3,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.48
+      },
+      {
+        "id": "freshness_tradeoff",
+        "display_name": "Freshness trade-off",
+        "event_message": "Fast-changing data makes cache choices less obvious.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.34
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.5
+      },
+      {
+        "id": "eu_read_replica",
+        "processing_capacity_per_second": 2.1
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 3.8
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.82
+      },
+      {
+        "id": "write",
+        "share": 0.18
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.85
+    }
+  },
+  {
+    "id": "replication_lag",
+    "display_name": "Replication Lag",
+    "description": "Read replicas reduce load, but writes arrive fast enough that freshness and lag become part of the engineering problem.",
+    "tags": [
+      "data_systems",
+      "replication",
+      "consistency"
+    ],
+    "archetype": "consistency_tradeoff",
+    "minimum_tier": "analytics_and_consistency",
+    "required_completed_scenarios": [
+      "read_fanout_pressure"
+    ],
+    "unlocks_scenarios": [
+      "async_backlog_recovery"
+    ],
+    "topology_template": "replica_consistency_lab",
+    "traffic_pattern": "replica_lag_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "replication lag",
+      "eventual consistency",
+      "read replicas"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "latency",
+      "queue"
+    ],
+    "allowed_actions": [
+      "add_read_replica",
+      "enable_cache",
+      "clear_cache",
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "engineering_capacity": {
+      "backend": 1,
+      "infrastructure": 2,
+      "data": 3,
+      "operations": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "add_read_replica",
+      "enable_cache"
+    ],
+    "unlockable_actions": [
+      "clear_cache",
+      "scale_up",
+      "throttle_traffic"
+    ],
+    "recommended_actions": [
+      "add_read_replica",
+      "clear_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "survive_replication_lag_5_turns"
+      },
+      {
+        "objective_id": "cache_freshness_tradeoff"
+      }
+    ],
+    "events": [
+      "data_replication_delay",
+      "data_cache_staleness_warning",
+      "data_write_hotspot",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "replicas_help",
+        "display_name": "Replicas help",
+        "event_message": "Reads become cheaper, but writes are still centralized.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.16
+      },
+      {
+        "id": "lag_visible",
+        "display_name": "Lag becomes visible",
+        "event_message": "The replica path is not free: freshness starts to matter.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.42
+      },
+      {
+        "id": "tradeoff_window",
+        "display_name": "Trade-off window",
+        "event_message": "Balance read load reduction against stale data pressure.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.26
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.35
+      },
+      {
+        "id": "eu_read_replica",
+        "processing_capacity_per_second": 2.6
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.68
+      },
+      {
+        "id": "write",
+        "share": 0.32
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.95
+    }
+  },
+  {
+    "id": "async_backlog_recovery",
+    "display_name": "Async Backlog Recovery",
+    "description": "A queue protects user-facing requests at first, then delayed work accumulates and starts threatening storage.",
+    "tags": [
+      "data_systems",
+      "queues",
+      "async_processing"
+    ],
+    "archetype": "backlog_recovery",
+    "minimum_tier": "async_backlog",
+    "required_completed_scenarios": [
+      "replication_lag"
+    ],
+    "unlocks_scenarios": [
+      "analytics_overload"
+    ],
+    "topology_template": "data_pipeline_lab",
+    "traffic_pattern": "async_backlog_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "queues",
+      "backlog",
+      "delayed consequences"
+    ],
+    "guaranteed_pressures": [
+      "queue",
+      "persistence",
+      "latency"
+    ],
+    "allowed_actions": [
+      "add_queue",
+      "scale_up",
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "data": 2,
+      "operations": 2,
+      "total": 4
+    },
+    "starting_actions": [
+      "add_queue",
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "scale_up",
+      "toggle_retries"
+    ],
+    "recommended_actions": [
+      "add_queue",
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "objectives": [
+      {
+        "objective_id": "drain_data_backlog_5_turns"
+      },
+      {
+        "objective_id": "reduce_write_pressure_data"
+      }
+    ],
+    "events": [
+      "data_queue_backlog",
+      "data_batch_flush",
+      "data_write_hotspot",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "buffering",
+        "display_name": "Buffering hides the burst",
+        "event_message": "The queue absorbs incoming work before the database sees all of it.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.2
+      },
+      {
+        "id": "backlog_compounds",
+        "display_name": "Backlog compounds",
+        "event_message": "Delayed jobs arrive faster than the storage path drains.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.65
+      },
+      {
+        "id": "drain_window",
+        "display_name": "Drain window",
+        "event_message": "Stabilize the queue before delayed writes return as latency.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.38
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.4
+      },
+      {
+        "id": "eu_queue",
+        "processing_capacity_per_second": 2.8
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.5
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.52
+      },
+      {
+        "id": "write",
+        "share": 0.48
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.7
+    }
+  },
+  {
+    "id": "analytics_overload",
+    "display_name": "Analytics Overload",
+    "description": "Product analytics now competes with production reads. The lesson is isolation, not just more capacity.",
+    "tags": [
+      "data_systems",
+      "analytics",
+      "isolation"
+    ],
+    "archetype": "analytics_isolation",
+    "minimum_tier": "analytics_and_consistency",
+    "required_completed_scenarios": [
+      "async_backlog_recovery"
+    ],
+    "unlocks_scenarios": [
+      "data_systems_lab"
+    ],
+    "topology_template": "replica_consistency_lab",
+    "traffic_pattern": "analytics_batch_pressure",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "analytics workloads",
+      "production isolation",
+      "storage contention"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "latency",
+      "traffic"
+    ],
+    "allowed_actions": [
+      "add_read_replica",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "throttle_traffic"
+    ],
+    "engineering_capacity": {
+      "backend": 1,
+      "infrastructure": 2,
+      "data": 3,
+      "operations": 2,
+      "total": 4
+    },
+    "starting_actions": [
+      "add_read_replica",
+      "enable_cache"
+    ],
+    "unlockable_actions": [
+      "add_cache",
+      "clear_cache",
+      "throttle_traffic"
+    ],
+    "recommended_actions": [
+      "add_read_replica",
+      "enable_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "analytics_isolation_goal"
+      },
+      {
+        "objective_id": "cache_freshness_tradeoff"
+      }
+    ],
+    "events": [
+      "data_analytics_spike",
+      "data_index_rebuild",
+      "data_read_fanout",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "analytics_arrives",
+        "display_name": "Analytics arrives",
+        "event_message": "Analytical queries compete with user-facing reads.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.24
+      },
+      {
+        "id": "contention",
+        "display_name": "Storage contention",
+        "event_message": "The same storage path now serves two different workloads.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.52
+      },
+      {
+        "id": "isolation_window",
+        "display_name": "Isolation window",
+        "event_message": "Separate or reduce analytical pressure without breaking production traffic.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.34
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.45
+      },
+      {
+        "id": "eu_read_replica",
+        "processing_capacity_per_second": 2.3
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 4.0
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.72
+      },
+      {
+        "id": "write",
+        "share": 0.28
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.85
+    }
+  },
+  {
+    "id": "data_systems_lab",
+    "display_name": "Data Systems Lab",
+    "description": "A mixed data platform: writes, fanout, queues, lag, analytics, and cache freshness all interact.",
+    "tags": [
+      "data_systems",
+      "sandbox",
+      "distributed_systems"
+    ],
+    "archetype": "data_lab",
+    "minimum_tier": "data_lab",
+    "topology_template": "data_pipeline_lab",
+    "traffic_pattern": "mixed_data_lab_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "data systems",
+      "distributed systems",
+      "trade-offs"
+    ],
+    "guaranteed_pressures": [
+      "persistence",
+      "queue",
+      "latency",
+      "traffic"
+    ],
+    "allowed_actions": [
+      "scale_up",
+      "throttle_traffic",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "add_read_replica",
+      "add_queue",
+      "toggle_retries"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "data": 3,
+      "operations": 2,
+      "total": 5
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "enable_cache",
+      "add_queue"
+    ],
+    "unlockable_actions": [
+      "scale_up",
+      "add_cache",
+      "add_read_replica",
+      "clear_cache",
+      "toggle_retries"
+    ],
+    "recommended_actions": [
+      "add_queue",
+      "add_read_replica",
+      "enable_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "data_lab_7_turns"
+      },
+      {
+        "objective_id": "reduce_write_pressure_data"
+      },
+      {
+        "objective_id": "analytics_isolation_goal"
+      }
+    ],
+    "events": [
+      "data_write_hotspot",
+      "data_queue_backlog",
+      "data_replication_delay",
+      "data_analytics_spike",
+      "data_batch_flush",
+      "data_partial_recovery"
+    ],
+    "failure_conditions": [
+      "data_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "mixed_start",
+        "display_name": "Mixed workload starts",
+        "event_message": "Reads and writes rise together.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.18
+      },
+      {
+        "id": "systems_interact",
+        "display_name": "Systems interact",
+        "event_message": "Queues, caches, and storage now push pressure into each other.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.58
+      },
+      {
+        "id": "lab_escalation",
+        "display_name": "Lab escalation",
+        "event_message": "Analytics and backlog pressure arrive together.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.72
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.5
+      },
+      {
+        "id": "eu_queue",
+        "processing_capacity_per_second": 3.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.45
+      },
+      {
+        "id": "eu_cache",
+        "processing_capacity_per_second": 4.6
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.58
+      },
+      {
+        "id": "write",
+        "share": 0.42
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.78
+    }
+  }
+]

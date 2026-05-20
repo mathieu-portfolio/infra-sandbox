@@ -1,0 +1,960 @@
+[
+  {
+    "id": "latency_basics",
+    "display_name": "Latency Basics",
+    "description": "Remote demand is close enough to hurt but not yet catastrophic. Learn to separate distance-driven latency from compute capacity.",
+    "tags": [
+      "networking",
+      "intro",
+      "latency"
+    ],
+    "archetype": "network_diagnosis",
+    "minimum_tier": "network_foundations",
+    "unlocks_scenarios": [
+      "packet_loss_crisis"
+    ],
+    "topology_template": "network_edge_lab",
+    "traffic_pattern": "cross_region_latency_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "latency",
+      "geography",
+      "edge caching"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "traffic",
+      "queue"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_regional_cache"
+    ],
+    "engineering_capacity": {
+      "backend": 1,
+      "infrastructure": 2,
+      "operations": 1,
+      "data": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "throttle_traffic"
+    ],
+    "unlockable_actions": [
+      "add_regional_cache",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "add_regional_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "read_network_signals_1_turn",
+        "starts_active": true
+      },
+      {
+        "objective_id": "stabilize_cross_region_pressure"
+      }
+    ],
+    "events": [
+      "net_latency_spike",
+      "net_cross_region_overflow",
+      "net_observability_gap",
+      "net_route_recovery"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "remote_growth",
+        "display_name": "Remote demand grows",
+        "event_message": "Remote users become the dominant source of latency.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.25
+      },
+      {
+        "id": "distance_cost",
+        "display_name": "Distance cost compounds",
+        "event_message": "Cross-region traffic makes queue pressure look like a compute problem.",
+        "start_turn": 3,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.55
+      },
+      {
+        "id": "edge_window",
+        "display_name": "Edge window",
+        "event_message": "Use regional caching or backpressure before retries turn latency into extra load.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 3.8
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.7
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 3.0
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.85
+      },
+      {
+        "id": "write",
+        "share": 0.15
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.8
+    }
+  },
+  {
+    "id": "packet_loss_crisis",
+    "display_name": "Packet Loss Crisis",
+    "description": "Unstable links make slow responses look like failures. Tune retries and reduce accepted work before the network creates its own overload.",
+    "tags": [
+      "networking",
+      "packet_loss",
+      "retry"
+    ],
+    "archetype": "packet_loss",
+    "minimum_tier": "loss_and_retries",
+    "required_completed_scenarios": [
+      "latency_basics"
+    ],
+    "unlocks_scenarios": [
+      "regional_congestion"
+    ],
+    "topology_template": "network_edge_lab",
+    "traffic_pattern": "packet_loss_retry_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "packet loss",
+      "retries",
+      "cascading failures"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "retry",
+      "queue",
+      "failure"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "scale_up",
+      "add_queue"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "operations": 2,
+      "total": 3
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "toggle_retries"
+    ],
+    "unlockable_actions": [
+      "add_queue",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "survive_packet_loss_5_turns",
+        "starts_active": true
+      },
+      {
+        "objective_id": "keep_latency_network_5s"
+      }
+    ],
+    "events": [
+      "net_packet_loss",
+      "net_latency_spike",
+      "net_dns_instability",
+      "net_route_recovery"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "loss_starts",
+        "display_name": "Packet loss starts",
+        "event_message": "Timeouts rise before raw traffic fully explains the overload.",
+        "start_turn": 1,
+        "duration_turns": 1,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.3
+      },
+      {
+        "id": "retry_feedback",
+        "display_name": "Retry feedback",
+        "event_message": "Retries multiply work on an already unstable path.",
+        "start_turn": 2,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.75,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 2.0,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "policy_window",
+        "display_name": "Policy window",
+        "event_message": "Tune retries and shed work before the next unstable wave.",
+        "start_turn": 5,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.45
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.5
+      }
+    ],
+    "modifiers": [
+      "latency_sensitive_users"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 2,
+      "retry_delay_seconds": 0.45
+    }
+  },
+  {
+    "id": "regional_congestion",
+    "display_name": "Regional Congestion",
+    "description": "A regional hotspot consumes shared bandwidth and creates queue pressure far from the original source.",
+    "tags": [
+      "networking",
+      "bandwidth",
+      "congestion"
+    ],
+    "archetype": "regional_congestion",
+    "minimum_tier": "edge_and_congestion",
+    "required_completed_scenarios": [
+      "packet_loss_crisis"
+    ],
+    "unlocks_scenarios": [
+      "edge_cache_rollout"
+    ],
+    "topology_template": "regional_congestion_lab",
+    "traffic_pattern": "bandwidth_hotspot",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "bandwidth",
+      "regional traffic",
+      "congestion"
+    ],
+    "guaranteed_pressures": [
+      "traffic",
+      "latency",
+      "queue"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "add_regional_cache",
+      "scale_up",
+      "add_cache"
+    ],
+    "engineering_capacity": {
+      "infrastructure": 2,
+      "backend": 1,
+      "operations": 1,
+      "data": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "add_regional_cache"
+    ],
+    "unlockable_actions": [
+      "add_cache",
+      "scale_up"
+    ],
+    "recommended_actions": [
+      "add_regional_cache",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "contain_congestion_pressure",
+        "starts_active": true
+      },
+      {
+        "objective_id": "keep_latency_network_5s"
+      }
+    ],
+    "events": [
+      "net_bandwidth_hotspot",
+      "net_cross_region_overflow",
+      "net_observability_gap",
+      "net_route_recovery"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "hotspot",
+        "display_name": "Hotspot forms",
+        "event_message": "One region receives more demand than the path can absorb cleanly.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      },
+      {
+        "id": "shared_path",
+        "display_name": "Shared path saturates",
+        "event_message": "Congestion on one path now affects global queue pressure.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.75,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 1.8,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "relief",
+        "display_name": "Relief window",
+        "event_message": "Move repeated traffic to edge capacity or limit accepted work.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.4
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.4
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.8
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 2.8
+      },
+      {
+        "id": "eu_cache",
+        "processing_capacity_per_second": 3.0
+      }
+    ],
+    "modifiers": [
+      "remote_region_skew",
+      "bandwidth_constrained_window"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.7
+    }
+  },
+  {
+    "id": "edge_cache_rollout",
+    "display_name": "Edge Cache Rollout",
+    "description": "Read traffic is now distance-sensitive. Prove that moving repeated responses closer to users helps more than blindly scaling the API.",
+    "tags": [
+      "networking",
+      "edge",
+      "caching"
+    ],
+    "archetype": "edge_rollout",
+    "minimum_tier": "edge_and_congestion",
+    "required_completed_scenarios": [
+      "regional_congestion"
+    ],
+    "unlocks_scenarios": [
+      "routing_instability"
+    ],
+    "topology_template": "network_edge_lab",
+    "traffic_pattern": "edge_rollout_pressure",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "edge caching",
+      "read paths",
+      "latency"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "persistence",
+      "traffic"
+    ],
+    "allowed_actions": [
+      "add_regional_cache",
+      "enable_cache",
+      "clear_cache",
+      "add_cache",
+      "throttle_traffic"
+    ],
+    "engineering_capacity": {
+      "infrastructure": 2,
+      "backend": 1,
+      "data": 2,
+      "operations": 1,
+      "total": 3
+    },
+    "starting_actions": [
+      "add_regional_cache",
+      "enable_cache"
+    ],
+    "unlockable_actions": [
+      "clear_cache",
+      "add_cache"
+    ],
+    "recommended_actions": [
+      "add_regional_cache",
+      "enable_cache"
+    ],
+    "objectives": [
+      {
+        "objective_id": "edge_cache_latency_goal",
+        "starts_active": true
+      },
+      {
+        "objective_id": "keep_latency_network_5s"
+      }
+    ],
+    "events": [
+      "net_latency_spike",
+      "net_edge_cache_warmup",
+      "net_cross_region_overflow",
+      "net_observability_gap"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "cold_edge",
+        "display_name": "Cold edge",
+        "event_message": "The first waves still travel through remote paths while cache value builds.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.3
+      },
+      {
+        "id": "read_pressure",
+        "display_name": "Read pressure",
+        "event_message": "Repeated reads grow and storage becomes a hidden network dependency.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.6
+      },
+      {
+        "id": "warm_edge",
+        "display_name": "Warm edge",
+        "event_message": "A good edge setup should now protect storage and latency.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.32
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.0
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.4
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 2.4
+      }
+    ],
+    "request_types": [
+      {
+        "id": "interactive_read",
+        "share": 0.9
+      },
+      {
+        "id": "write",
+        "share": 0.1
+      }
+    ],
+    "modifiers": [
+      "remote_region_skew"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.8
+    }
+  },
+  {
+    "id": "routing_instability",
+    "display_name": "Routing Instability",
+    "description": "Traffic shifts between regions unpredictably. Keep latency and queue pressure stable while routing noise moves the bottleneck around.",
+    "tags": [
+      "networking",
+      "routing",
+      "regional_scaling"
+    ],
+    "archetype": "routing_instability",
+    "minimum_tier": "network_lab",
+    "required_completed_scenarios": [
+      "edge_cache_rollout"
+    ],
+    "unlocks_scenarios": [
+      "networking_lab"
+    ],
+    "topology_template": "regional_congestion_lab",
+    "traffic_pattern": "routing_instability_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "routing",
+      "regional imbalance",
+      "systems diagnosis"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "traffic",
+      "queue",
+      "retry"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "add_regional_cache",
+      "enable_cache",
+      "scale_up",
+      "add_queue"
+    ],
+    "engineering_capacity": {
+      "infrastructure": 2,
+      "operations": 2,
+      "backend": 2,
+      "data": 1,
+      "total": 4
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "add_regional_cache"
+    ],
+    "unlockable_actions": [
+      "enable_cache",
+      "scale_up",
+      "add_queue"
+    ],
+    "recommended_actions": [
+      "throttle_traffic",
+      "toggle_retries",
+      "add_regional_cache"
+    ],
+    "objectives": [
+      {
+        "objective_id": "routing_instability_6_turns",
+        "starts_active": true
+      },
+      {
+        "objective_id": "keep_latency_network_5s"
+      }
+    ],
+    "events": [
+      "net_dns_instability",
+      "net_bandwidth_hotspot",
+      "net_packet_loss",
+      "net_route_recovery",
+      "net_observability_gap"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "route_noise",
+        "display_name": "Route noise",
+        "event_message": "The same amount of traffic now takes worse paths.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.35
+      },
+      {
+        "id": "regional_swing",
+        "display_name": "Regional swing",
+        "event_message": "The bottleneck moves between regions and makes simple scaling unreliable.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.7,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 1.9,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "stabilize_routes",
+        "display_name": "Stabilize routes",
+        "event_message": "Use edge capacity, backpressure, and retry tuning to survive the last swings.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.45
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.5
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.8
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 2.6
+      }
+    ],
+    "modifiers": [
+      "latency_sensitive_users",
+      "remote_region_skew"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 2,
+      "retry_delay_seconds": 0.55
+    }
+  },
+  {
+    "id": "networking_lab",
+    "display_name": "Networking Lab",
+    "description": "Sandbox-style networking scenario combining latency, packet loss, congestion, and edge caching so you can compare strategies.",
+    "tags": [
+      "networking",
+      "sandbox",
+      "systems"
+    ],
+    "archetype": "sandbox",
+    "minimum_tier": "network_lab",
+    "required_completed_scenarios": [
+      "routing_instability"
+    ],
+    "topology_template": "regional_congestion_lab",
+    "traffic_pattern": "routing_instability_wave",
+    "turn_duration": {
+      "value": 1,
+      "unit": "turns",
+      "label": "operational cycle",
+      "simulation_turn_seconds": 60.0,
+      "advance_calendar": false
+    },
+    "educational_focus": [
+      "latency",
+      "bandwidth",
+      "retries",
+      "edge caching"
+    ],
+    "guaranteed_pressures": [
+      "latency",
+      "queue",
+      "traffic",
+      "retry",
+      "persistence"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_regional_cache",
+      "toggle_retries",
+      "add_cache",
+      "enable_cache",
+      "add_queue",
+      "clear_cache"
+    ],
+    "engineering_capacity": {
+      "infrastructure": 3,
+      "backend": 2,
+      "operations": 2,
+      "data": 2,
+      "total": 5
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "add_regional_cache",
+      "toggle_retries"
+    ],
+    "unlockable_actions": [
+      "scale_up",
+      "add_cache",
+      "enable_cache",
+      "add_queue",
+      "clear_cache"
+    ],
+    "recommended_actions": [
+      "add_regional_cache",
+      "toggle_retries",
+      "throttle_traffic"
+    ],
+    "objectives": [
+      {
+        "objective_id": "network_lab_6_turns",
+        "starts_active": true
+      },
+      {
+        "objective_id": "keep_latency_network_5s"
+      }
+    ],
+    "events": [
+      "net_latency_spike",
+      "net_bandwidth_hotspot",
+      "net_packet_loss",
+      "net_dns_instability",
+      "net_edge_cache_warmup",
+      "sandbox_latency_spike_net",
+      "sandbox_packet_loss_net"
+    ],
+    "failure_conditions": [
+      "keep_latency_network_5s"
+    ],
+    "phases": [
+      {
+        "id": "mixed_start",
+        "display_name": "Mixed pressure starts",
+        "event_message": "Traffic already has distance and bandwidth pressure.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.3
+      },
+      {
+        "id": "network_stress",
+        "display_name": "Network stress",
+        "event_message": "Latency, loss, and regional skew overlap.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.75,
+        "burst_override": {
+          "enabled": true,
+          "multiplier": 2.0,
+          "period_turns": 2,
+          "duration_turns": 1
+        }
+      },
+      {
+        "id": "operational_recovery",
+        "display_name": "Operational recovery",
+        "event_message": "Compare which mitigations actually moved pressure instead of hiding it.",
+        "start_turn": 6,
+        "duration_turns": 2,
+        "transition_duration": {
+          "value": 1,
+          "unit": "turns",
+          "label": "operational cycle",
+          "simulation_turn_seconds": 60.0,
+          "advance_calendar": false
+        },
+        "traffic_multiplier": 1.45
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 4.2
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.6
+      },
+      {
+        "id": "na_cache",
+        "processing_capacity_per_second": 2.5
+      },
+      {
+        "id": "eu_cache",
+        "processing_capacity_per_second": 2.8
+      }
+    ],
+    "modifiers": [
+      "latency_sensitive_users",
+      "remote_region_skew",
+      "bandwidth_constrained_window"
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 2,
+      "retry_delay_seconds": 0.55
+    }
+  }
+]

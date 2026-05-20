@@ -1,0 +1,18 @@
+{
+  "id": "data_systems",
+  "display_name": "Data Systems",
+  "description": "Focused content pack about data movement, storage pressure, read/write scaling, queues, replication lag, and analytics load.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "depends_on": [
+    "common"
+  ],
+  "default_scenario_id": "write_heavy_platform",
+  "tags": [
+    "data_systems",
+    "databases",
+    "queues",
+    "consistency",
+    "analytics"
+  ]
+}

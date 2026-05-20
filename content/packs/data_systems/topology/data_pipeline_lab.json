@@ -1,0 +1,136 @@
+{
+  "id": "data_pipeline_lab",
+  "display_name": "Data Pipeline Lab",
+  "description": "API, queue, cache, and database topology for exploring writes, backlog, and storage pressure without requiring a dedicated worker node type.",
+  "tags": [
+    "data_systems",
+    "queues",
+    "database_pressure"
+  ],
+  "regions": [
+    "Europe",
+    "NorthAmerica"
+  ],
+  "nodes": [
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "request_rate_per_second": 4.8
+    },
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 3.8
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 4.6,
+      "timeout_seconds": 4.5
+    },
+    {
+      "id": "eu_queue",
+      "display_name": "EU job queue",
+      "type": "queue",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.66,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.8,
+      "timeout_seconds": 5.0
+    },
+    {
+      "id": "eu_cache",
+      "display_name": "EU cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.65,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.6,
+      "timeout_seconds": 5.2
+    }
+  ],
+  "links": [
+    {
+      "source": "eu_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.22,
+      "bandwidth_per_second": 28.0
+    },
+    {
+      "source": "na_users",
+      "target": "eu_api",
+      "base_latency_seconds": 1.28,
+      "bandwidth_per_second": 14.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_cache",
+      "base_latency_seconds": 0.18,
+      "bandwidth_per_second": 45.0
+    },
+    {
+      "source": "eu_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 0.18,
+      "bandwidth_per_second": 45.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_queue",
+      "base_latency_seconds": 0.2,
+      "bandwidth_per_second": 40.0
+    },
+    {
+      "source": "eu_queue",
+      "target": "eu_database",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 32.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_database",
+      "base_latency_seconds": 0.34,
+      "bandwidth_per_second": 36.0
+    },
+    {
+      "source": "eu_database",
+      "target": "eu_api",
+      "base_latency_seconds": 0.34,
+      "bandwidth_per_second": 36.0
+    }
+  ]
+}

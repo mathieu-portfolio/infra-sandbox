@@ -1,0 +1,136 @@
+{
+  "id": "replica_consistency_lab",
+  "display_name": "Replica Consistency Lab",
+  "description": "Read-heavy topology with cache and database paths for teaching replicas, lag, freshness, and analytics pressure.",
+  "tags": [
+    "replication",
+    "consistency",
+    "read_scaling"
+  ],
+  "regions": [
+    "Europe",
+    "NorthAmerica"
+  ],
+  "nodes": [
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 48.85,
+        "longitude": 2.35,
+        "region": "Europe"
+      },
+      "request_rate_per_second": 4.5
+    },
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 4.2
+    },
+    {
+      "id": "na_cache",
+      "display_name": "NA cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 39.1,
+        "longitude": -94.58,
+        "region": "NorthAmerica"
+      },
+      "processing_capacity_per_second": 4.6,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 4.6
+    },
+    {
+      "id": "eu_database",
+      "display_name": "Primary database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.8,
+      "timeout_seconds": 5.2
+    },
+    {
+      "id": "eu_read_replica",
+      "display_name": "Read replica",
+      "type": "database",
+      "geo": {
+        "latitude": 48.85,
+        "longitude": 2.35,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.4,
+      "timeout_seconds": 5.0
+    }
+  ],
+  "links": [
+    {
+      "source": "eu_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.22,
+      "bandwidth_per_second": 30.0
+    },
+    {
+      "source": "na_users",
+      "target": "na_cache",
+      "base_latency_seconds": 0.2,
+      "bandwidth_per_second": 24.0
+    },
+    {
+      "source": "na_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 1.1,
+      "bandwidth_per_second": 16.0
+    },
+    {
+      "source": "na_users",
+      "target": "eu_api",
+      "base_latency_seconds": 1.35,
+      "bandwidth_per_second": 12.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_database",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 38.0
+    },
+    {
+      "source": "eu_database",
+      "target": "eu_api",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 38.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_read_replica",
+      "base_latency_seconds": 0.36,
+      "bandwidth_per_second": 32.0
+    },
+    {
+      "source": "eu_read_replica",
+      "target": "eu_api",
+      "base_latency_seconds": 0.36,
+      "bandwidth_per_second": 32.0
+    }
+  ]
+}

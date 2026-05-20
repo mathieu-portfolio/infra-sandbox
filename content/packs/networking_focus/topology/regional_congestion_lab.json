@@ -1,0 +1,166 @@
+{
+  "id": "regional_congestion_lab",
+  "display_name": "Regional Congestion Lab",
+  "description": "Two regions share a central API path. One region can become a hotspot and consume bandwidth that the rest of the system needs.",
+  "tags": [
+    "networking",
+    "congestion",
+    "regional_scaling"
+  ],
+  "regions": [
+    "NorthAmerica",
+    "Europe"
+  ],
+  "nodes": [
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "network_identity": {
+        "hostname": "clients.na.congestion.local",
+        "ip_address": "10.30.0.10",
+        "endpoint": "https://clients.na.example.net"
+      },
+      "request_rate_per_second": 6.0
+    },
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 48.85,
+        "longitude": 2.35,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "clients.eu.congestion.local",
+        "ip_address": "10.40.0.10",
+        "endpoint": "https://clients.eu.example.net"
+      },
+      "request_rate_per_second": 4.0
+    },
+    {
+      "id": "eu_cache",
+      "display_name": "EU cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 50.85,
+        "longitude": 4.35,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "cache.eu.congestion.local",
+        "ip_address": "10.40.1.20",
+        "endpoint": "https://cache.eu.example.net"
+      },
+      "processing_capacity_per_second": 4.0,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "na_cache",
+      "display_name": "NA cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 39.1,
+        "longitude": -94.58,
+        "region": "NorthAmerica"
+      },
+      "network_identity": {
+        "hostname": "cache.na.congestion.local",
+        "ip_address": "10.30.1.20",
+        "endpoint": "https://cache.na.example.net"
+      },
+      "processing_capacity_per_second": 4.0,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "api.eu.congestion.local",
+        "ip_address": "10.40.0.20",
+        "endpoint": "https://api.eu.example.net"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 4.5
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "db.eu.congestion.local",
+        "ip_address": "10.40.1.30",
+        "endpoint": "https://db.eu.example.net"
+      },
+      "processing_capacity_per_second": 3.4,
+      "timeout_seconds": 4.8
+    }
+  ],
+  "links": [
+    {
+      "source": "na_users",
+      "target": "na_cache",
+      "base_latency_seconds": 0.22,
+      "bandwidth_per_second": 20.0
+    },
+    {
+      "source": "na_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 1.15,
+      "bandwidth_per_second": 12.0
+    },
+    {
+      "source": "na_users",
+      "target": "eu_api",
+      "base_latency_seconds": 1.35,
+      "bandwidth_per_second": 10.0
+    },
+    {
+      "source": "eu_users",
+      "target": "eu_cache",
+      "base_latency_seconds": 0.16,
+      "bandwidth_per_second": 22.0
+    },
+    {
+      "source": "eu_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 25.0
+    },
+    {
+      "source": "eu_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 24.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_database",
+      "base_latency_seconds": 0.3,
+      "bandwidth_per_second": 45.0
+    },
+    {
+      "source": "eu_database",
+      "target": "eu_api",
+      "base_latency_seconds": 0.3,
+      "bandwidth_per_second": 45.0
+    }
+  ]
+}

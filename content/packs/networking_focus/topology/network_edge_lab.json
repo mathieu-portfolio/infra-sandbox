@@ -1,0 +1,138 @@
+{
+  "id": "network_edge_lab",
+  "display_name": "Network Edge Lab",
+  "description": "Distance-sensitive topology with remote users, a regional cache, one API service, and central storage. Designed to expose latency and bandwidth bottlenecks.",
+  "tags": [
+    "networking",
+    "edge",
+    "regional",
+    "latency"
+  ],
+  "regions": [
+    "NorthAmerica",
+    "Europe"
+  ],
+  "nodes": [
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "network_identity": {
+        "hostname": "clients.na.network.local",
+        "ip_address": "10.10.0.10",
+        "endpoint": "https://clients.na.example.net"
+      },
+      "request_rate_per_second": 5.0
+    },
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "clients.eu.network.local",
+        "ip_address": "10.20.0.10",
+        "endpoint": "https://clients.eu.example.net"
+      },
+      "request_rate_per_second": 3.5
+    },
+    {
+      "id": "na_cache",
+      "display_name": "NA edge cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 39.1,
+        "longitude": -94.58,
+        "region": "NorthAmerica"
+      },
+      "network_identity": {
+        "hostname": "cache.na-edge.network.local",
+        "ip_address": "10.10.1.20",
+        "endpoint": "https://cache.na-edge.example.net"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "api.eu-west.network.local",
+        "ip_address": "10.20.0.20",
+        "endpoint": "https://api.eu-west.example.net"
+      },
+      "processing_capacity_per_second": 4.2,
+      "timeout_seconds": 4.2
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "network_identity": {
+        "hostname": "db.eu-west.network.local",
+        "ip_address": "10.20.1.30",
+        "endpoint": "https://db.eu-west.example.net"
+      },
+      "processing_capacity_per_second": 3.0,
+      "timeout_seconds": 4.5
+    }
+  ],
+  "links": [
+    {
+      "source": "na_users",
+      "target": "na_cache",
+      "base_latency_seconds": 0.18,
+      "bandwidth_per_second": 24.0
+    },
+    {
+      "source": "na_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 1.25,
+      "bandwidth_per_second": 16.0
+    },
+    {
+      "source": "na_users",
+      "target": "eu_api",
+      "base_latency_seconds": 1.45,
+      "bandwidth_per_second": 14.0
+    },
+    {
+      "source": "eu_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 30.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_database",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 55.0
+    },
+    {
+      "source": "eu_database",
+      "target": "eu_api",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 55.0
+    }
+  ]
+}

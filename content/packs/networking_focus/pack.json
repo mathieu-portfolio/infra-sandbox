@@ -1,0 +1,11 @@
+{
+  "id": "networking_focus",
+  "display_name": "Networking Focus",
+  "description": "Focused scenarios about latency, geography, congestion, packet loss, edge placement, and routing pressure.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "depends_on": [
+    "common"
+  ],
+  "default_scenario_id": "latency_basics"
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "id": "latency_sensitive_users",
+    "display_name": "Latency-Sensitive Users",
+    "description": "Users abandon or retry quickly when response time rises.",
+    "traffic_multiplier": {
+      "min": 1.08,
+      "max": 1.18
+    },
+    "retry_delay_multiplier": {
+      "min": 0.65,
+      "max": 0.85
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "tags": [
+      "latency",
+      "retry"
+    ]
+  },
+  {
+    "id": "remote_region_skew",
+    "display_name": "Remote Region Skew",
+    "description": "A larger share of demand comes from users far from the main service region.",
+    "traffic_multiplier": {
+      "min": 1.12,
+      "max": 1.26
+    },
+    "duration_turns": {
+      "min": 3,
+      "max": 4
+    },
+    "tags": [
+      "regional_scaling",
+      "geography"
+    ]
+  },
+  {
+    "id": "bandwidth_constrained_window",
+    "display_name": "Bandwidth-Constrained Window",
+    "description": "Traffic pressure increases because a network path cannot carry bursts cleanly.",
+    "traffic_multiplier": {
+      "min": 1.18,
+      "max": 1.35
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "tags": [
+      "bandwidth",
+      "congestion"
+    ]
+  }
+]
