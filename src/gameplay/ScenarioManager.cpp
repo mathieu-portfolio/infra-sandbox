@@ -762,6 +762,21 @@ bool ScenarioManager::objectiveSatisfied(const ScenarioObjective& objective, con
         if (objective.conditionMetric == "timeout_rate") return metrics.timeoutRatePerSecond <= objective.threshold;
         if (objective.conditionMetric == "api_queue") return metrics.apiQueueDepth <= static_cast<int>(objective.threshold);
         if (objective.conditionMetric == "database_queue") return metrics.databaseQueueDepth <= static_cast<int>(objective.threshold);
+        if (objective.conditionMetric == "retry_pressure") {
+            double maxRetry = 0.0;
+            for (const auto& nodePressure : pressure.nodes) maxRetry = std::max(maxRetry, nodePressure.retryContribution);
+            return maxRetry <= objective.threshold;
+        }
+        if (objective.conditionMetric == "dependency_pressure") {
+            double maxDependency = 0.0;
+            for (const auto& nodePressure : pressure.nodes) maxDependency = std::max(maxDependency, nodePressure.dependencyPressure);
+            return maxDependency <= objective.threshold;
+        }
+        if (objective.conditionMetric == "instability") {
+            double maxInstability = 0.0;
+            for (const auto& nodePressure : pressure.nodes) maxInstability = std::max(maxInstability, nodePressure.instability);
+            return maxInstability <= objective.threshold;
+        }
         return false;
     case ObjectiveConditionType::ActionUsed:
         return std::find(actionsTriggered_.begin(), actionsTriggered_.end(), mechanicFromObjectiveId(objective.conditionMetric)) != actionsTriggered_.end();

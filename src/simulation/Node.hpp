@@ -77,6 +77,12 @@ struct Node {
     double timeoutPressure = 0.0;
     double retryPressure = 0.0;
 
+    // Propagated instability coming from dependencies/upstream systems.
+    // This creates cascading failures and delayed recovery without introducing
+    // a separate graph simulation layer.
+    double propagatedPressure = 0.0;
+    double propagatedInstability = 0.0;
+
     // Recent request counters with exponential decay, used to avoid binary
     // health changes and to let client clusters become degraded when their
     // traffic experiences retries, timeouts, or long waits.

@@ -146,5 +146,50 @@
       "incidents",
       "reliability"
     ]
+  },
+  {
+    "id": "reduce_retry_pressure_ops",
+    "display_name": "Break Retry Amplification",
+    "description": "Bring retry pressure down instead of only adding capacity to the loudest node.",
+    "type": "stabilize_metric",
+    "condition": "metric_below",
+    "metric": "retry_pressure",
+    "threshold": 0.28,
+    "summary": "Reduce retry pressure below 28%.",
+    "duration_turns": 0,
+    "starts_active": false,
+    "rewards": [
+      {
+        "type": "emit_feedback",
+        "message": "Retry pressure is under control. The system should now recover instead of feeding the cascade."
+      }
+    ],
+    "tags": [
+      "diagnosis",
+      "retries",
+      "cascading_failures"
+    ]
+  },
+  {
+    "id": "reduce_dependency_pressure_ops",
+    "display_name": "Isolate the Real Dependency",
+    "description": "Reduce propagated dependency pressure so symptoms stop spreading upstream.",
+    "type": "stabilize_metric",
+    "condition": "metric_below",
+    "metric": "dependency_pressure",
+    "threshold": 0.36,
+    "summary": "Reduce dependency pressure below 36%.",
+    "starts_active": false,
+    "rewards": [
+      {
+        "type": "emit_feedback",
+        "message": "Dependency pressure is no longer the dominant cascade source."
+      }
+    ],
+    "tags": [
+      "diagnosis",
+      "dependencies",
+      "cascading_failures"
+    ]
   }
 ]

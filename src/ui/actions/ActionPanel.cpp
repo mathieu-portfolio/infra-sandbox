@@ -449,12 +449,17 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
         if (selected == nullptr) {
             actions_ui::drawWrappedTextClipped("Select a node to inspect suspected root causes.", {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, overview.height - 62.0f}, 13, {139, 148, 158, 255});
         } else {
-            const double overall = actions_ui::overallPressure(selectedPressure, selected);
-            const char* confidence = overall >= 0.72 ? "Confidence: medium" : overall >= 0.42 ? "Confidence: low" : "Confidence: low";
+            const double confidenceValue = selectedPressure != nullptr ? selectedPressure->diagnosisConfidence : 0.0;
+            const char* confidence = confidenceValue >= 0.70 ? "Confidence: high" : confidenceValue >= 0.45 ? "Confidence: medium" : "Confidence: low";
             drawTextClipped(confidence, {overview.x + 14.0f, overview.y + 48.0f, overview.width - 28.0f, 18.0f}, 13, {230, 237, 243, 255});
-            actions_ui::drawWrappedTextClipped(selectedPressure != nullptr && !selectedPressure->explanation.empty()
-                    ? std::string("Suspected pressure source: ") + selectedPressure->explanation
-                    : "No strong root cause detected. Diagnostics should support reasoning, not replace it.",
+            std::string diagnosticText = "No strong root cause detected. Diagnostics should support reasoning, not replace it.";
+            if (selectedPressure != nullptr && !selectedPressure->suspectedSource.empty()) {
+                diagnosticText = "Suspected source: " + selectedPressure->suspectedSource;
+                if (!selectedPressure->pressureChain.empty()) {
+                    diagnosticText += "\nChain: " + selectedPressure->pressureChain;
+                }
+            }
+            actions_ui::drawWrappedTextClipped(diagnosticText,
                 {overview.x + 14.0f, overview.y + 78.0f, overview.width - 28.0f, 92.0f}, 12, {139, 148, 158, 255});
         }
     }

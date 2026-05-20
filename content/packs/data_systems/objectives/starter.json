@@ -120,5 +120,27 @@
       "data_systems",
       "distributed_systems"
     ]
+  },
+  {
+    "id": "reduce_data_instability",
+    "display_name": "Stop Data Path Instability",
+    "description": "Stabilize the propagated pressure created by queues, workers, and persistence before it reaches the API layer.",
+    "type": "stabilize_metric",
+    "condition": "metric_below",
+    "metric": "instability",
+    "threshold": 0.42,
+    "summary": "Reduce max node instability below 42%.",
+    "starts_active": false,
+    "rewards": [
+      {
+        "type": "emit_feedback",
+        "message": "The data path is stable enough for the platform to recover."
+      }
+    ],
+    "tags": [
+      "diagnosis",
+      "data_systems",
+      "cascading_failures"
+    ]
   }
 ]

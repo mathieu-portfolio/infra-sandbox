@@ -82,6 +82,7 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
         ? pressure->explanation
         : "Inspect adjacent paths to compare local and dependency pressure.";
     const bool hasDependencySummary = pressure != nullptr && !pressure->dependencySummary.empty();
+    const bool hasDiagnosis = pressure != nullptr && !pressure->suspectedSource.empty();
     const float summaryHeight = measureTextWrappedHeight(summary, contentWidth, kSummaryFontSize, kSummaryMaxLines);
     const float dependencySummaryHeight = hasDependencySummary
         ? measureTextWrappedHeight(pressure->dependencySummary, contentWidth, kSummaryFontSize, kSummaryMaxLines)

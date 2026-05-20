@@ -108,19 +108,43 @@ void PressureAnalysisSystem::update(double timeSeconds, double dt, const Infrast
         pressure.retryContribution = std::max(node.retryPressure, clamp01(metrics.retryRatePerSecond / config_.retryRateScale) * std::max(pressure.queuePressure, node.type == NodeType::Database ? config_.databaseRetryFloor : config_.processorRetryFloor));
         double downstreamPressure = 0.0;
         int downstreamCount = 0;
+        const Node* strongestDependency = nullptr;
+        double strongestDependencyPressure = -1.0;
         for (const auto& link : graph.links()) {
             if (!link.enabled || link.sourceNodeId != node.id) {
                 continue;
             }
             if (const Node* target = graph.node(link.targetNodeId)) {
-                downstreamPressure += std::max(target->queuePressure, target->stressScore);
+                const double targetPressure = std::max({target->queuePressure, target->stressScore, target->propagatedPressure, target->propagatedInstability});
+                downstreamPressure += targetPressure;
                 ++downstreamCount;
+                if (targetPressure > strongestDependencyPressure) {
+                    strongestDependencyPressure = targetPressure;
+                    strongestDependency = target;
+                }
             }
         }
-        pressure.dependencyPressure = downstreamCount > 0 ? downstreamPressure / downstreamCount : 0.0;
-        pressure.instability = std::max({pressure.queuePressure, pressure.computePressure, pressure.timeoutContribution, pressure.retryContribution, node.stressScore});
+        pressure.dependencyPressure = std::max(node.propagatedPressure, downstreamCount > 0 ? downstreamPressure / downstreamCount : 0.0);
+        pressure.instability = std::max({pressure.queuePressure, pressure.computePressure, pressure.timeoutContribution, pressure.retryContribution, pressure.dependencyPressure, node.propagatedInstability, node.stressScore});
         pressure.dominant = dominantFor(node, metrics, pressure, config_);
         pressure.explanation = explanationFor(node, metrics, pressure, config_);
+
+        if (pressure.dependencyPressure > config_.dependencyPressureThreshold) {
+            pressure.suspectedSource = strongestDependency != nullptr ? strongestDependency->name : "Dependency instability";
+            pressure.pressureChain = strongestDependency != nullptr
+                ? strongestDependency->name + " -> " + node.name
+                : std::string("Dependency -> ") + node.name;
+            pressure.diagnosisConfidence = std::clamp(0.40 + pressure.dependencyPressure * 0.42 + node.propagatedInstability * 0.18, 0.0, 0.86);
+        } else if (pressure.retryContribution > config_.retryDominantThreshold) {
+            pressure.suspectedSource = "Retry amplification";
+            pressure.pressureChain = "Latency -> Retries -> Traffic";
+            pressure.diagnosisConfidence = std::clamp(0.48 + pressure.retryContribution * 0.38, 0.0, 0.82);
+        } else if (pressure.queuePressure > config_.queuePressureThreshold) {
+            pressure.suspectedSource = node.type == NodeType::QueueBroker ? "Queue backlog" : node.name;
+            pressure.pressureChain = node.type == NodeType::QueueBroker ? "Worker capacity -> Queue backlog" : "Queue -> Latency";
+            pressure.diagnosisConfidence = std::clamp(0.42 + pressure.queuePressure * 0.35, 0.0, 0.78);
+        }
+
         if (pressure.dependencyPressure > config_.dependencyPressureThreshold) {
             pressure.dependencySummary = config_.dependencyPressureSummary;
         } else if (downstreamCount > 0) {

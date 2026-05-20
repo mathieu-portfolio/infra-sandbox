@@ -32,6 +32,9 @@ struct NodePressure {
     double dependencyPressure = 0.0;
     std::string explanation;
     std::string dependencySummary;
+    std::string suspectedSource;
+    std::string pressureChain;
+    double diagnosisConfidence = 0.0;
 };
 
 struct PressureEvent {

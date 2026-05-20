@@ -101,6 +101,7 @@ private:
     [[nodiscard]] bool cacheHit(int key);
     void storeCache(int key);
     void expireCacheEntries();
+    void updatePropagatedPressure(double dt);
     void updateNodeHealth(double dt);
     void updateMetricsNodeStates();
     void refreshEffectiveCapacities();
