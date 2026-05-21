@@ -46,6 +46,7 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
     FrontendMetrics frontend;
     frontend.renderLatency = snapshot.averageLatencySeconds
         + state.frontend.renderComplexity * 0.18
+        + state.frontend.assetWeight * 0.08
         + (1.0 - state.frontend.mobileCompatibility) * 0.10;
     frontend.framePressure = clampPercent(
         busiestNodeUtilization * 55.0
@@ -116,6 +117,9 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
     snapshot.runtime = runtime;
 
     const double latencyPenalty = clampPercent(frontend.perceivedLatency * 26.0);
+    const double assetLatencyPenalty = state.frontend.assetWeight * 5.0;
+    const double backendQueueLatencyPenalty = state.backend.queuePressure * 8.0;
+    const double networkLatencyPenalty = state.network.latencySensitivity * 5.0;
     const double framePenalty = frontend.framePressure * 0.18;
     const double warmthBonus = frontend.sessionWarmth * 0.08;
     const double assetPressure = frontend.assetBandwidth * 0.22;
@@ -162,6 +166,9 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
     snapshot.global = global;
 
     addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Frontend, "Perceived latency", -latencyPenalty);
+    addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Frontend, "Asset weight latency", -assetLatencyPenalty);
+    addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Backend, "Backend queue delay", -backendQueueLatencyPenalty);
+    addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Network, "Network latency sensitivity", -networkLatencyPenalty);
     addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Frontend, "Frame pressure", -framePenalty);
     addContribution(snapshot, GlobalMetricId::UserExperience, MetricContributionDomain::Frontend, "Session warmth", warmthBonus);
     addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Frontend, "Asset bandwidth", assetPressure);

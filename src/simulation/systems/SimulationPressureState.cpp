@@ -1,5 +1,7 @@
 #include "simulation/core/Simulation.hpp"
 
+#include "simulation/metrics/CrossDomainInteraction.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -138,6 +140,8 @@ void Simulation::updatePressureState(double dt)
     pressureState_.frontend.realtimeIntensity = approach(pressureState_.frontend.realtimeIntensity, std::clamp(0.08 + pressureState_.network.trafficBurstiness * 0.32 + pressureState_.backend.queuePressure * 0.14 + context.frontend.realtimeIntensity, 0.0, 1.0), smoothing);
     pressureState_.frontend.sessionPersistence = approach(pressureState_.frontend.sessionPersistence, std::clamp(0.58 + pressureState_.frontend.cacheEfficiency * 0.18 - pressureState_.backend.serviceFragmentation * 0.10 + context.frontend.sessionPersistence, 0.0, 1.0), smoothing * 0.45);
     pressureState_.frontend.mobileCompatibility = approach(pressureState_.frontend.mobileCompatibility, std::clamp(0.80 - pressureState_.frontend.assetWeight * 0.16 - pressureState_.frontend.renderComplexity * 0.10 + context.frontend.mobileCompatibility, 0.0, 1.0), smoothing * 0.35);
+
+    pressureState_ = CrossDomainInteraction::apply(pressureState_);
 }
 
 void Simulation::nudgePressureState(const PressureState& delta)

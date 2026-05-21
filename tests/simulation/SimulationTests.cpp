@@ -2,6 +2,7 @@
 #include "gameplay/scenario/ScenarioManager.hpp"
 #include "core/simulation/Mechanics.hpp"
 #include "simulation/core/Simulation.hpp"
+#include "simulation/metrics/CrossDomainInteraction.hpp"
 #include "core/topology/Geography.hpp"
 #include "core/topology/NodeDefinition.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
@@ -262,6 +263,58 @@ TEST(MetricsAggregatorTests, HiddenPressureStateDerivesSpecializedMetrics)
     EXPECT_TRUE(std::any_of(snapshot.contributions.begin(), snapshot.contributions.end(), [](const MetricContribution& contribution) {
         return contribution.domain == MetricContributionDomain::Runtime;
     }));
+}
+
+TEST(CrossDomainInteractionTests, FrontendRealtimeCreatesBackendNetworkAndRuntimePressure)
+{
+    PressureState state;
+    state.frontend.realtimeIntensity = 0.8;
+
+    const PressureState propagated = CrossDomainInteraction::apply(state);
+
+    EXPECT_GT(propagated.backend.requestLoad, state.backend.requestLoad);
+    EXPECT_GT(propagated.network.bandwidthPressure, state.network.bandwidthPressure);
+    EXPECT_GT(propagated.runtime.cpuPressure, state.runtime.cpuPressure);
+}
+
+TEST(CrossDomainInteractionTests, PropagationClampsWithoutRunawayValues)
+{
+    PressureState state;
+    state.frontend.realtimeIntensity = 1.0;
+    state.frontend.assetWeight = 1.0;
+    state.backend.queuePressure = 1.0;
+    state.backend.serviceFragmentation = 1.0;
+    state.network.trafficBurstiness = 1.0;
+    state.database.contention = 1.0;
+    state.runtime.memoryPressure = 1.0;
+
+    for (int i = 0; i < 100; ++i) {
+        state = CrossDomainInteraction::apply(state);
+    }
+
+    EXPECT_LE(state.backend.requestLoad, 1.0);
+    EXPECT_LE(state.backend.queuePressure, 1.0);
+    EXPECT_LE(state.network.bandwidthPressure, 1.0);
+    EXPECT_LE(state.runtime.schedulingPressure, 1.0);
+    EXPECT_LE(state.database.replicationLag, 1.0);
+}
+
+TEST(CrossDomainInteractionTests, DatabaseContentionFlowsIntoFrontendLatencyThroughBackendQueues)
+{
+    PressureState state;
+    state.database.contention = 0.8;
+
+    MetricsSnapshot baseline;
+    baseline.pressureState = state;
+    MetricsAggregator::update(baseline);
+
+    MetricsSnapshot propagated;
+    propagated.pressureState = CrossDomainInteraction::apply(state);
+    MetricsAggregator::update(propagated);
+
+    EXPECT_GT(propagated.pressureState.backend.queuePressure, baseline.pressureState.backend.queuePressure);
+    EXPECT_GT(propagated.frontend.perceivedLatency, baseline.frontend.perceivedLatency);
+    EXPECT_LT(propagated.global.userExperience, baseline.global.userExperience);
 }
 
 TEST(ActionEffectTests, ActionPressureEffectCanModifyHiddenPressureState)
