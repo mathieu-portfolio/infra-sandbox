@@ -533,5 +533,317 @@
       "observability",
       "diagnostics"
     ]
+  },
+  {
+    "id": "rate_limit_public_api",
+    "display_name": "Rate Limit Public API",
+    "description": "Limit excessive public traffic before it overwhelms backend services.",
+    "categories": ["Reliability", "Network"],
+    "useful_when": "traffic bursts or abusive clients are driving queue and retry pressure",
+    "tradeoffs": "Some requests are rejected or delayed to preserve stability.",
+    "icon_id": "action.generic",
+    "affected_pressures": ["traffic", "retry", "latency"],
+    "pressure_effects": {
+      "backend": {"request_load": -0.12, "queue_pressure": -0.06},
+      "network": {"traffic_burstiness": -0.08}
+    },
+    "complexity_delta": {"min": 0.04, "max": 0.10},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["rate_limiting", "backpressure", "api"]
+  },
+  {
+    "id": "add_request_timeout",
+    "display_name": "Add Request Timeout",
+    "description": "Stop slow requests from occupying resources indefinitely.",
+    "categories": ["Reliability"],
+    "useful_when": "slow dependencies are filling queues and tying up workers",
+    "tradeoffs": "Failures become visible sooner instead of waiting silently.",
+    "icon_id": "alert.warning",
+    "affected_pressures": ["queue", "failure", "latency"],
+    "pressure_effects": {
+      "backend": {"queue_pressure": -0.08, "compute_intensity": -0.04},
+      "network": {"traffic_burstiness": 0.02}
+    },
+    "event_intensity_multiplier": {"min": 0.92, "max": 1.0},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["timeouts", "failure_boundaries"]
+  },
+  {
+    "id": "add_circuit_breaker",
+    "display_name": "Add Circuit Breaker",
+    "description": "Stop calling unhealthy dependencies before failures spread.",
+    "categories": ["Reliability"],
+    "useful_when": "retry storms or downstream failures are amplifying load",
+    "tradeoffs": "Some features are unavailable while the breaker is open.",
+    "icon_id": "layer.reliability",
+    "affected_pressures": ["retry", "failure", "queue"],
+    "pressure_effects": {
+      "backend": {"queue_pressure": -0.07, "service_fragmentation": 0.03},
+      "network": {"traffic_burstiness": -0.06},
+      "frontend": {"realtime_intensity": -0.04}
+    },
+    "pressure_resistance": {"min": 0.04, "max": 0.08},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["circuit_breaker", "dependency_isolation"]
+  },
+  {
+    "id": "move_static_assets_to_object_storage",
+    "display_name": "Move Static Assets to Object Storage",
+    "description": "Serve heavy files from object storage instead of application servers.",
+    "categories": ["Storage", "Frontend"],
+    "useful_when": "large static payloads are competing with app traffic",
+    "tradeoffs": "Adds a storage and delivery dependency to manage.",
+    "icon_id": "node.database",
+    "affected_pressures": ["traffic", "latency", "compute"],
+    "pressure_effects": {
+      "frontend": {"asset_weight": -0.10},
+      "backend": {"request_load": -0.06, "compute_intensity": -0.04},
+      "network": {"bandwidth_pressure": -0.05},
+      "database": {"read_pressure": 0.03}
+    },
+    "complexity_delta": {"min": 0.08, "max": 0.18},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["object_storage", "static_assets"]
+  },
+  {
+    "id": "enable_blue_green_deploy",
+    "display_name": "Enable Blue-Green Deploy",
+    "description": "Deploy new versions beside old versions before switching traffic.",
+    "categories": ["Deployment", "Reliability"],
+    "useful_when": "release events or risky changes are causing instability",
+    "tradeoffs": "Runs duplicate infrastructure and increases release coordination.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": ["failure"],
+    "event_intensity_multiplier": {"min": 0.72, "max": 0.86},
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.04},
+      "runtime": {"scheduling_pressure": 0.04}
+    },
+    "complexity_delta": {"min": 0.15, "max": 0.28},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.1},
+    "tags": ["deployment", "blue_green"]
+  },
+  {
+    "id": "canary_release",
+    "display_name": "Canary Release",
+    "description": "Expose a small group of users to a risky change before full rollout.",
+    "categories": ["Deployment", "Observability"],
+    "useful_when": "a release might fail but you need evidence before rolling back",
+    "tradeoffs": "Operational routing and analysis become more complex.",
+    "icon_id": "metric.objective",
+    "affected_pressures": ["failure", "latency"],
+    "event_intensity_multiplier": {"min": 0.78, "max": 0.9},
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.03},
+      "network": {"latency_sensitivity": 0.02}
+    },
+    "complexity_delta": {"min": 0.08, "max": 0.18},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.1},
+    "tags": ["canary", "progressive_delivery"]
+  },
+  {
+    "id": "add_feature_flags",
+    "display_name": "Add Feature Flags",
+    "description": "Control features at runtime without redeploying the whole system.",
+    "categories": ["Deployment", "Platform"],
+    "useful_when": "release risk is high and you need a fast kill switch",
+    "tradeoffs": "Configuration paths become shared runtime dependencies.",
+    "icon_id": "action.generic",
+    "affected_pressures": ["failure"],
+    "event_intensity_multiplier": {"min": 0.82, "max": 0.94},
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.04},
+      "runtime": {"scheduling_pressure": 0.03}
+    },
+    "complexity_delta": {"min": 0.10, "max": 0.22},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.1},
+    "tags": ["feature_flags", "rollout"]
+  },
+  {
+    "id": "centralize_auth",
+    "display_name": "Centralize Authentication",
+    "description": "Route protected requests through a shared identity provider.",
+    "categories": ["Security", "Platform"],
+    "useful_when": "security consistency matters more than keeping auth local to every service",
+    "tradeoffs": "Auth becomes a shared dependency and possible bottleneck.",
+    "icon_id": "node.generic",
+    "affected_pressures": ["latency", "failure", "queue"],
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.05, "queue_pressure": 0.03},
+      "network": {"latency_sensitivity": 0.02},
+      "runtime": {"scheduling_pressure": 0.02}
+    },
+    "pressure_resistance": {"min": 0.02, "max": 0.05},
+    "complexity_delta": {"min": 0.10, "max": 0.22},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.1},
+    "tags": ["auth", "identity", "security"]
+  },
+  {
+    "id": "add_ddos_protection",
+    "display_name": "Add DDoS Protection",
+    "description": "Filter malicious or excessive traffic at the edge.",
+    "categories": ["Network", "Security"],
+    "useful_when": "bursty or abusive traffic is saturating entry points",
+    "tradeoffs": "Adds routing rules and false-positive risk.",
+    "icon_id": "alert.warning",
+    "affected_pressures": ["traffic", "failure", "latency"],
+    "pressure_effects": {
+      "backend": {"request_load": -0.08},
+      "network": {"traffic_burstiness": -0.14, "bandwidth_pressure": -0.08, "latency_sensitivity": 0.02}
+    },
+    "complexity_delta": {"min": 0.08, "max": 0.18},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["ddos", "edge_filtering"]
+  },
+  {
+    "id": "tune_dns_failover",
+    "display_name": "Tune DNS Failover",
+    "description": "Redirect traffic away from unhealthy regions or services.",
+    "categories": ["Network", "Reliability"],
+    "useful_when": "regional instability is worse than added routing latency",
+    "tradeoffs": "Traffic may become imbalanced while records converge.",
+    "icon_id": "legend.link",
+    "affected_pressures": ["failure", "latency", "traffic"],
+    "pressure_effects": {
+      "network": {"latency_sensitivity": 0.04, "traffic_burstiness": -0.04},
+      "backend": {"queue_pressure": -0.03}
+    },
+    "pressure_resistance": {"min": 0.03, "max": 0.06},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.1},
+    "tags": ["dns", "failover", "regional"]
+  },
+  {
+    "id": "add_service_mesh",
+    "display_name": "Add Service Mesh",
+    "description": "Add shared routing, retry, and observability between services.",
+    "categories": ["Platform", "Observability"],
+    "useful_when": "service-to-service failures are hard to trace or isolate",
+    "tradeoffs": "Sidecars add latency, resource use, and operational complexity.",
+    "icon_id": "node.service",
+    "affected_pressures": ["latency", "retry"],
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.08, "queue_pressure": -0.03},
+      "network": {"latency_sensitivity": 0.05, "traffic_burstiness": -0.03},
+      "runtime": {"cpu_pressure": 0.04, "memory_pressure": 0.04}
+    },
+    "pressure_resistance": {"min": 0.03, "max": 0.07},
+    "complexity_delta": {"min": 0.22, "max": 0.38},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.8, "max": 1.1},
+    "unlocks_observability": ["dependencies"],
+    "tags": ["service_mesh", "observability"]
+  },
+  {
+    "id": "introduce_kubernetes",
+    "display_name": "Introduce Kubernetes",
+    "description": "Move services onto an orchestrated compute pool.",
+    "categories": ["Platform", "Scaling"],
+    "useful_when": "manual service capacity management is becoming the bottleneck",
+    "tradeoffs": "Scheduling and operational complexity rise.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": ["compute", "queue"],
+    "capacity_bonus": {
+      "infrastructure": {"min": 1, "max": 2}
+    },
+    "pressure_effects": {
+      "backend": {"compute_intensity": -0.06, "queue_pressure": -0.04, "service_fragmentation": 0.08},
+      "runtime": {"scheduling_pressure": 0.08, "memory_pressure": 0.03}
+    },
+    "complexity_delta": {"min": 0.28, "max": 0.46},
+    "duration_turns": {"min": 2, "max": 4},
+    "intensity_range": {"min": 0.8, "max": 1.1},
+    "tags": ["kubernetes", "orchestration"]
+  },
+  {
+    "id": "enable_autoscaling",
+    "display_name": "Enable Autoscaling",
+    "description": "Automatically add capacity when sustained load rises.",
+    "categories": ["Platform", "Scaling"],
+    "useful_when": "sustained load is high but short bursts still need buffering",
+    "tradeoffs": "Scaling reacts after load is observed and can chase bursty traffic.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": ["compute", "queue", "latency"],
+    "capacity_bonus": {
+      "infrastructure": {"min": 1, "max": 1}
+    },
+    "pressure_effects": {
+      "backend": {"compute_intensity": -0.08, "queue_pressure": -0.06},
+      "network": {"traffic_burstiness": 0.03},
+      "runtime": {"scheduling_pressure": 0.04}
+    },
+    "complexity_delta": {"min": 0.12, "max": 0.24},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["autoscaling", "capacity"]
+  },
+  {
+    "id": "add_time_series_storage",
+    "display_name": "Add Time-Series Storage",
+    "description": "Store metrics in a system optimized for high-volume telemetry.",
+    "categories": ["Observability", "Data"],
+    "useful_when": "telemetry volume is hiding useful diagnosis signals",
+    "tradeoffs": "More metrics writes and retention rules add storage pressure.",
+    "icon_id": "metric.traffic",
+    "affected_pressures": ["persistence", "traffic", "queue"],
+    "capacity_bonus": {
+      "data": {"min": 1, "max": 1}
+    },
+    "pressure_effects": {
+      "database": {"write_pressure": 0.06, "contention": -0.03},
+      "runtime": {"memory_pressure": 0.02}
+    },
+    "complexity_delta": {"min": 0.08, "max": 0.18},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "unlocks_observability": ["metrics"],
+    "tags": ["time_series", "observability"]
+  },
+  {
+    "id": "add_ai_inference_gateway",
+    "display_name": "Add AI Inference Gateway",
+    "description": "Route AI requests through a slower, more expensive compute path.",
+    "categories": ["AI", "Platform"],
+    "useful_when": "AI features need isolation from normal application requests",
+    "tradeoffs": "Inference adds queue sensitivity, compute cost, and latency.",
+    "icon_id": "node.service",
+    "affected_pressures": ["compute", "queue", "latency"],
+    "pressure_effects": {
+      "backend": {"request_load": 0.05, "queue_pressure": 0.06},
+      "runtime": {"cpu_pressure": 0.14, "memory_pressure": 0.08, "scheduling_pressure": 0.05},
+      "network": {"latency_sensitivity": 0.04}
+    },
+    "complexity_delta": {"min": 0.16, "max": 0.32},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["ai", "inference"]
+  },
+  {
+    "id": "add_vector_search",
+    "display_name": "Add Vector Search",
+    "description": "Add semantic retrieval before AI responses or recommendations.",
+    "categories": ["AI", "Data"],
+    "useful_when": "semantic features need retrieval instead of simple keyword lookup",
+    "tradeoffs": "Retrieval adds persistence load, memory pressure, and latency.",
+    "icon_id": "node.database",
+    "affected_pressures": ["persistence", "latency", "compute"],
+    "pressure_effects": {
+      "database": {"read_pressure": 0.08, "contention": 0.04},
+      "runtime": {"memory_pressure": 0.06, "cpu_pressure": 0.04},
+      "network": {"latency_sensitivity": 0.03}
+    },
+    "complexity_delta": {"min": 0.12, "max": 0.26},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["ai", "vector_database", "rag"]
   }
 ]

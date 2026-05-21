@@ -112,5 +112,47 @@
       "postmortem",
       "learning"
     ]
+  },
+  {
+    "id": "define_slos",
+    "display_name": "Define SLOs",
+    "description": "Turn vague health into explicit reliability targets.",
+    "categories": [
+      "Reliability",
+      "Observability"
+    ],
+    "useful_when": "teams need clearer tradeoffs before choosing mitigations",
+    "tradeoffs": "Improves diagnosis and event response, but does not add capacity.",
+    "icon_id": "metric.objective",
+    "affected_pressures": [
+      "failure",
+      "latency",
+      "queue"
+    ],
+    "pressure_resistance": {
+      "min": 0.04,
+      "max": 0.08
+    },
+    "event_intensity_multiplier": {
+      "min": 0.82,
+      "max": 0.94
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.15
+    },
+    "unlocks_observability": [
+      "metrics",
+      "diagnostics"
+    ],
+    "tags": [
+      "slos",
+      "error_budget",
+      "reliability"
+    ]
   }
 ]

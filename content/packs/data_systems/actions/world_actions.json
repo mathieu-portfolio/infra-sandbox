@@ -80,5 +80,158 @@
       "analytics",
       "isolation"
     ]
+  },
+  {
+    "id": "add_data_warehouse",
+    "display_name": "Add Data Warehouse",
+    "description": "Move analytical workloads away from production databases.",
+    "categories": [
+      "Data",
+      "Analytics"
+    ],
+    "useful_when": "analytics queries are competing with user-facing reads",
+    "tradeoffs": "Batch storage and coordination complexity increase.",
+    "icon_id": "node.database",
+    "affected_pressures": [
+      "persistence",
+      "queue"
+    ],
+    "capacity_bonus": {
+      "data": {
+        "min": 1,
+        "max": 2
+      },
+      "total": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    "pressure_effects": {
+      "database": {
+        "read_pressure": -0.10,
+        "contention": -0.08,
+        "write_pressure": 0.04
+      },
+      "backend": {
+        "queue_pressure": -0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.12,
+      "max": 0.24
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "warehouse",
+      "analytics",
+      "isolation"
+    ]
+  },
+  {
+    "id": "add_etl_pipeline",
+    "display_name": "Add ETL Pipeline",
+    "description": "Transform production data into delayed analytical batches.",
+    "categories": [
+      "Data",
+      "Batch"
+    ],
+    "useful_when": "direct analytics reads are adding production database pressure",
+    "tradeoffs": "Data freshness worsens and batch queues must be drained.",
+    "icon_id": "action.queue",
+    "affected_pressures": [
+      "persistence",
+      "queue",
+      "latency"
+    ],
+    "capacity_bonus": {
+      "data": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    "pressure_effects": {
+      "database": {
+        "read_pressure": -0.07,
+        "write_pressure": 0.05,
+        "replication_lag": 0.04
+      },
+      "backend": {
+        "queue_pressure": 0.05
+      },
+      "runtime": {
+        "scheduling_pressure": 0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.10,
+      "max": 0.22
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "etl",
+      "batch",
+      "freshness"
+    ]
+  },
+  {
+    "id": "enable_change_data_capture",
+    "display_name": "Enable Change Data Capture",
+    "description": "Stream database changes instead of repeatedly polling tables.",
+    "categories": [
+      "Data",
+      "Streaming"
+    ],
+    "useful_when": "polling is creating repeated read pressure on the primary store",
+    "tradeoffs": "Stream and queue pressure increase while read pressure falls.",
+    "icon_id": "layer.flow",
+    "affected_pressures": [
+      "persistence",
+      "queue",
+      "traffic"
+    ],
+    "pressure_effects": {
+      "database": {
+        "read_pressure": -0.10,
+        "write_pressure": 0.04,
+        "replication_lag": 0.05
+      },
+      "backend": {
+        "queue_pressure": 0.04
+      },
+      "network": {
+        "traffic_burstiness": 0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.12,
+      "max": 0.24
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "cdc",
+      "streaming",
+      "polling"
+    ]
   }
 ]
