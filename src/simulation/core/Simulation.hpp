@@ -17,6 +17,15 @@
 #include <unordered_map>
 #include <vector>
 
+
+class SimulationRequestFlowSystem;
+class SimulationHealthSystem;
+class SimulationModifierSystem;
+class SimulationPressureSystem;
+class SimulationTopologySystem;
+class SimulationTuningSystem;
+class SimulationScenarioBuilder;
+
 class Simulation {
 public:
     explicit Simulation(const ScenarioDefinition& scenario, SimulationConfig config = {});
@@ -73,49 +82,18 @@ public:
     [[nodiscard]] double recommendedComplexityThreshold() const;
 
 private:
+    friend class SimulationRequestFlowSystem;
+    friend class SimulationHealthSystem;
+    friend class SimulationModifierSystem;
+    friend class SimulationPressureSystem;
+    friend class SimulationTopologySystem;
+    friend class SimulationTuningSystem;
+    friend class SimulationScenarioBuilder;
+
     struct CacheEntry {
         int key = 0;
         double expiresAt = 0.0;
     };
-
-    void buildFromScenario(const ScenarioDefinition& scenario);
-    void generateClientRequests(double dt);
-    void createRequest(Node& clientNode, Link& link);
-    void retryRequest(Request& request);
-    void updateLinks(double dt);
-    void updateProcessors(double dt);
-    void updateRetryWaits();
-    void updateTimeouts(Node& node);
-    void enqueueAtNode(Request& request, Node& node);
-    void completeRequest(Request& request, Node& node);
-    void timeOutRequest(Request& request, Node& node);
-    void timeOutRequest(Request& request);
-    void routeFromApi(Request& request);
-    void routeFromDatabase(Request& request);
-    void routeToLink(Request& request, Link& link, RequestRouteStage nextStage);
-    [[nodiscard]] Link* selectOutgoingLink(int sourceNodeId, RequestRouteStage routeStage);
-    [[nodiscard]] Link* selectClientIngressLink(const Node& clientNode);
-    [[nodiscard]] double trafficEvolutionMultiplierFor(const Node& node, double burstMultiplier) const;
-    [[nodiscard]] double retryEvolutionDelayMultiplierFor(const Node& node) const;
-    [[nodiscard]] Link* linkBetween(int sourceNodeId, int targetNodeId);
-    [[nodiscard]] std::optional<int> firstNodeOfType(NodeType type) const;
-    [[nodiscard]] double processingCost(const Request& request, const Node& node) const;
-    [[nodiscard]] bool eventLocationMatches(const EventLocation& location, const Node& node) const;
-    [[nodiscard]] double localizedTrafficMultiplierFor(const Node& node) const;
-    [[nodiscard]] double localizedCapacityMultiplierFor(const Node& node) const;
-    [[nodiscard]] double localizedRetryDelayMultiplierFor(const Node& node) const;
-    [[nodiscard]] bool requestTimedOut(const Request& request) const;
-    [[nodiscard]] bool cacheHit(int key);
-    void storeCache(int key);
-    void expireCacheEntries();
-    void updatePropagatedPressure(double dt);
-    void updateNodeHealth(double dt);
-    void updateMetricsNodeStates();
-    void updatePressureState(double dt);
-    void nudgePressureState(const PressureState& delta);
-    void refreshEffectiveCapacities();
-    void refreshRegionSlots();
-    void pruneOldRequests();
 
     InfrastructureGraph graph_;
     ScenarioDefinition scenario_;

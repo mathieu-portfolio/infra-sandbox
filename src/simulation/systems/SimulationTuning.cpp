@@ -1,3 +1,8 @@
+#include "simulation/systems/SimulationTuningSystem.hpp"
+#include "simulation/systems/SimulationPressureSystem.hpp"
+#include "simulation/systems/SimulationModifierSystem.hpp"
+#include "simulation/systems/SimulationTopologySystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -22,9 +27,9 @@ std::optional<GeoLocation> regionCenter(const std::string& regionName)
 }
 
 
-void Simulation::adjustClientRequestRates(double deltaPerSecond)
+void SimulationTuningSystem::adjustClientRequestRates(Simulation& simulation, double deltaPerSecond)
 {
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (NodeRegistry::generatesRequests(node.type)) {
             node.requestRatePerSecond = std::max(0.0, node.requestRatePerSecond + deltaPerSecond);
             node.baseRequestRatePerSecond = node.requestRatePerSecond;
@@ -34,19 +39,19 @@ void Simulation::adjustClientRequestRates(double deltaPerSecond)
         PressureState delta;
         delta.backend.requestLoad = deltaPerSecond * 0.015;
         delta.network.trafficBurstiness = deltaPerSecond * 0.010;
-        nudgePressureState(delta);
+        SimulationPressureSystem::nudgePressureState(simulation, delta);
     }
 }
 
-void Simulation::scaleApiCapacity(double multiplier)
+void SimulationTuningSystem::scaleApiCapacity(Simulation& simulation, double multiplier)
 {
-    (void)scaleApiCapacity(-1, multiplier, 3, 0.72, 1.0);
+    (void)scaleApiCapacity(simulation, -1, multiplier, 3, 0.72, 1.0);
 }
 
-bool Simulation::scaleApiCapacity(int targetId, double multiplier, int maxScaleLevel, double diminishingReturn, double complexityCost)
+bool SimulationTuningSystem::scaleApiCapacity(Simulation& simulation, int targetId, double multiplier, int maxScaleLevel, double diminishingReturn, double complexityCost)
 {
     bool applied = false;
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (node.type != NodeType::ApiService) {
             continue;
         }
@@ -68,136 +73,136 @@ bool Simulation::scaleApiCapacity(int targetId, double multiplier, int maxScaleL
         delta.backend.computeIntensity = -0.05;
         delta.backend.queuePressure = -0.03;
         delta.backend.serviceFragmentation = complexityCost * 0.025;
-        nudgePressureState(delta);
-        addComplexity(complexityCost);
-        refreshEffectiveCapacities();
+        SimulationPressureSystem::nudgePressureState(simulation, delta);
+        addComplexity(simulation, complexityCost);
+        SimulationModifierSystem::refreshEffectiveCapacities(simulation);
     }
     return applied;
 }
 
-void Simulation::toggleCache()
+void SimulationTuningSystem::toggleCache(Simulation& simulation)
 {
-    cacheEnabled_ = !cacheEnabled_;
+    simulation.cacheEnabled_ = !simulation.cacheEnabled_;
     PressureState delta;
-    delta.frontend.cacheEfficiency = cacheEnabled_ ? 0.14 : -0.14;
-    delta.frontend.sessionPersistence = cacheEnabled_ ? 0.04 : -0.04;
-    delta.backend.computeIntensity = cacheEnabled_ ? -0.03 : 0.03;
-    nudgePressureState(delta);
+    delta.frontend.cacheEfficiency = simulation.cacheEnabled_ ? 0.14 : -0.14;
+    delta.frontend.sessionPersistence = simulation.cacheEnabled_ ? 0.04 : -0.04;
+    delta.backend.computeIntensity = simulation.cacheEnabled_ ? -0.03 : 0.03;
+    SimulationPressureSystem::nudgePressureState(simulation, delta);
 }
 
-void Simulation::clearCache()
+void SimulationTuningSystem::clearCache(Simulation& simulation)
 {
-    cacheEntries_.clear();
+    simulation.cacheEntries_.clear();
     PressureState delta;
     delta.frontend.cacheEfficiency = -0.08;
     delta.frontend.sessionPersistence = -0.03;
-    nudgePressureState(delta);
+    SimulationPressureSystem::nudgePressureState(simulation, delta);
 }
 
-void Simulation::toggleBurstMode()
+void SimulationTuningSystem::toggleBurstMode(Simulation& simulation)
 {
-    burstModeEnabled_ = !burstModeEnabled_;
-    if (burstModeEnabled_) {
+    simulation.burstModeEnabled_ = !simulation.burstModeEnabled_;
+    if (simulation.burstModeEnabled_) {
         PressureState delta;
         delta.backend.requestLoad = 0.08;
         delta.frontend.realtimeIntensity = 0.05;
         delta.network.trafficBurstiness = 0.18;
-        nudgePressureState(delta);
+        SimulationPressureSystem::nudgePressureState(simulation, delta);
     }
 }
 
-void Simulation::toggleRetries()
+void SimulationTuningSystem::toggleRetries(Simulation& simulation)
 {
-    scenario_.retries.enabled = !scenario_.retries.enabled;
+    simulation.scenario_.retries.enabled = !simulation.scenario_.retries.enabled;
     PressureState delta;
-    delta.frontend.realtimeIntensity = scenario_.retries.enabled ? 0.04 : -0.04;
-    delta.network.trafficBurstiness = scenario_.retries.enabled ? 0.04 : -0.04;
-    nudgePressureState(delta);
+    delta.frontend.realtimeIntensity = simulation.scenario_.retries.enabled ? 0.04 : -0.04;
+    delta.network.trafficBurstiness = simulation.scenario_.retries.enabled ? 0.04 : -0.04;
+    SimulationPressureSystem::nudgePressureState(simulation, delta);
 }
 
-void Simulation::resetProcessingCapacity()
+void SimulationTuningSystem::resetProcessingCapacity(Simulation& simulation)
 {
-    cacheEnabled_ = scenario_.cache.enabled;
-    burstModeEnabled_ = scenario_.bursts.enabled;
-    cacheEntries_.clear();
-    for (auto& node : graph_.nodes()) {
+    simulation.cacheEnabled_ = simulation.scenario_.cache.enabled;
+    simulation.burstModeEnabled_ = simulation.scenario_.bursts.enabled;
+    simulation.cacheEntries_.clear();
+    for (auto& node : simulation.graph_.nodes()) {
         if (node.isProcessor()) {
             node.mechanicCapacityMultiplier = 1.0;
             node.eventCapacityMultiplier = 1.0;
             node.scaleLevel = 0;
         }
     }
-    complexityScore_ = 0.0;
-    pressureState_ = {};
-    metrics_.setPressureState(pressureState_);
-    refreshRegionSlots();
-    refreshEffectiveCapacities();
+    simulation.complexityScore_ = 0.0;
+    simulation.pressureState_ = {};
+    simulation.metrics_.setPressureState(simulation.pressureState_);
+    SimulationTopologySystem::refreshRegionSlots(simulation);
+    SimulationModifierSystem::refreshEffectiveCapacities(simulation);
 }
 
-void Simulation::setSimulationSpeed(double speed)
+void SimulationTuningSystem::setSimulationSpeed(Simulation& simulation, double speed)
 {
-    simulationSpeed_ = std::max(0.0, speed);
-    timeSystem_.setSpeed(simulationSpeed_);
-    metrics_.setSimulationSpeed(simulationSpeed_);
+    simulation.simulationSpeed_ = std::max(0.0, speed);
+    simulation.timeSystem_.setSpeed(simulation.simulationSpeed_);
+    simulation.metrics_.setSimulationSpeed(simulation.simulationSpeed_);
 }
 
-void Simulation::setScenarioTrafficMultiplier(double multiplier)
+void SimulationTuningSystem::setScenarioTrafficMultiplier(Simulation& simulation, double multiplier)
 {
-    scenarioTrafficMultiplier_ = std::max(0.0, multiplier);
+    simulation.scenarioTrafficMultiplier_ = std::max(0.0, multiplier);
 }
 
-void Simulation::setScenarioBurst(const BurstScenario& burst)
+void SimulationTuningSystem::setScenarioBurst(Simulation& simulation, const BurstScenario& burst)
 {
-    scenarioBurstOverride_ = burst;
+    simulation.scenarioBurstOverride_ = burst;
 }
 
-void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
+void SimulationTuningSystem::setScenarioDatabaseCapacityMultiplier(Simulation& simulation, double multiplier)
 {
-    scenarioDatabaseCapacityMultiplier_ = std::max(0.1, multiplier);
-    for (auto& node : graph_.nodes()) {
+    simulation.scenarioDatabaseCapacityMultiplier_ = std::max(0.1, multiplier);
+    for (auto& node : simulation.graph_.nodes()) {
         if (node.type == NodeType::Database) {
-            node.eventCapacityMultiplier = scenarioDatabaseCapacityMultiplier_;
+            node.eventCapacityMultiplier = simulation.scenarioDatabaseCapacityMultiplier_;
         }
     }
-    refreshEffectiveCapacities();
+    SimulationModifierSystem::refreshEffectiveCapacities(simulation);
 }
 
-void Simulation::setScenarioLatencyMultiplier(double multiplier)
+void SimulationTuningSystem::setScenarioLatencyMultiplier(Simulation& simulation, double multiplier)
 {
-    scenarioLatencyMultiplier_ = std::max(0.1, multiplier);
+    simulation.scenarioLatencyMultiplier_ = std::max(0.1, multiplier);
 }
 
-void Simulation::setScenarioDatabaseHeavyShareOverride(std::optional<double> share)
+void SimulationTuningSystem::setScenarioDatabaseHeavyShareOverride(Simulation& simulation, std::optional<double> share)
 {
-    scenarioDatabaseHeavyShareOverride_ = share;
+    simulation.scenarioDatabaseHeavyShareOverride_ = share;
 }
 
-void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
+void SimulationTuningSystem::setScenarioRetryDelayMultiplier(Simulation& simulation, double multiplier)
 {
-    scenarioRetryDelayMultiplier_ = std::max(0.1, multiplier);
+    simulation.scenarioRetryDelayMultiplier_ = std::max(0.1, multiplier);
 }
 
-void Simulation::setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers)
+void SimulationTuningSystem::setLocalizedEventModifiers(Simulation& simulation, std::vector<LocalizedEventModifier> modifiers)
 {
-    localizedEventModifiers_ = std::move(modifiers);
-    refreshEffectiveCapacities();
+    simulation.localizedEventModifiers_ = std::move(modifiers);
+    SimulationModifierSystem::refreshEffectiveCapacities(simulation);
 }
 
-bool Simulation::addRegionalDemandSource(const EventLocation& location, double requestRatePerSecond)
+bool SimulationTuningSystem::addRegionalDemandSource(Simulation& simulation, const EventLocation& location, double requestRatePerSecond)
 {
     if (location.scope != EventLocationScope::Region || location.region.empty() || requestRatePerSecond <= 0.0) {
         return false;
     }
 
-    auto nudgeRegionalDemand = [this, requestRatePerSecond]() {
+    auto nudgeRegionalDemand = [&simulation, requestRatePerSecond]() {
         PressureState delta;
         delta.backend.requestLoad = requestRatePerSecond * 0.018;
         delta.network.bandwidthPressure = requestRatePerSecond * 0.010;
         delta.network.trafficBurstiness = requestRatePerSecond * 0.012;
-        nudgePressureState(delta);
+        SimulationPressureSystem::nudgePressureState(simulation, delta);
     };
 
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (node.type == NodeType::ClientCluster && node.hasGeoLocation && node.geoLocation.regionName == location.region) {
             node.requestRatePerSecond += requestRatePerSecond;
             node.baseRequestRatePerSecond = node.requestRatePerSecond;
@@ -213,7 +218,7 @@ bool Simulation::addRegionalDemandSource(const EventLocation& location, double r
 
     const Node* targetApi = nullptr;
     double bestDistance = std::numeric_limits<double>::max();
-    for (const auto& node : graph_.nodes()) {
+    for (const auto& node : simulation.graph_.nodes()) {
         if (node.type != NodeType::ApiService) {
             continue;
         }
@@ -239,7 +244,7 @@ bool Simulation::addRegionalDemandSource(const EventLocation& location, double r
     node.position = MapProjection::projectEquirectangular(node.geoLocation);
     node.requestRatePerSecond = requestRatePerSecond;
     node.baseRequestRatePerSecond = requestRatePerSecond;
-    const int sourceId = graph_.addNode(std::move(node));
+    const int sourceId = simulation.graph_.addNode(std::move(node));
 
     Link link;
     link.sourceNodeId = sourceId;
@@ -251,36 +256,36 @@ bool Simulation::addRegionalDemandSource(const EventLocation& location, double r
         link.geographicDistanceKm = MapProjection::greatCircleKilometers(*locationCenter, targetApi->geoLocation);
         link.geographicLatencyContributionSeconds = std::max(0.0, link.baseLatencySeconds - 0.18);
     }
-    graph_.addLink(std::move(link));
-    refreshRegionSlots();
+    simulation.graph_.addLink(std::move(link));
+    SimulationTopologySystem::refreshRegionSlots(simulation);
     return true;
 }
 
-void Simulation::setScenarioTime(double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays)
+void SimulationTuningSystem::setScenarioTime(Simulation& simulation, double elapsedSeconds, double phaseElapsedSeconds, double calendarElapsedDays)
 {
-    timeSystem_.setScenarioElapsed(elapsedSeconds);
-    timeSystem_.setPhaseElapsed(phaseElapsedSeconds);
-    timeSystem_.setCalendarElapsedDays(calendarElapsedDays);
+    simulation.timeSystem_.setScenarioElapsed(elapsedSeconds);
+    simulation.timeSystem_.setPhaseElapsed(phaseElapsedSeconds);
+    simulation.timeSystem_.setCalendarElapsedDays(calendarElapsedDays);
 }
 
-void Simulation::clearScenarioBurstOverride()
+void SimulationTuningSystem::clearScenarioBurstOverride(Simulation& simulation)
 {
-    scenarioBurstOverride_.reset();
+    simulation.scenarioBurstOverride_.reset();
 }
 
-void Simulation::setPaused(bool paused)
+void SimulationTuningSystem::setPaused(Simulation& simulation, bool paused)
 {
-    timeSystem_.setPaused(paused);
+    simulation.timeSystem_.setPaused(paused);
 }
 
-void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
+void SimulationTuningSystem::setAllowedMechanics(Simulation& simulation, const std::vector<MechanicType>& mechanics)
 {
-    allowedMechanics_.fill(false);
+    simulation.allowedMechanics_.fill(false);
     if (mechanics.empty()) {
         for (const auto& definition : MechanicRegistry::definitions()) {
             const auto index = static_cast<std::size_t>(definition.type);
-            if (index < allowedMechanics_.size()) {
-                allowedMechanics_[index] = definition.available;
+            if (index < simulation.allowedMechanics_.size()) {
+                simulation.allowedMechanics_[index] = definition.available;
             }
         }
         return;
@@ -288,25 +293,25 @@ void Simulation::setAllowedMechanics(const std::vector<MechanicType>& mechanics)
 
     for (const auto mechanic : mechanics) {
         const auto index = static_cast<std::size_t>(mechanic);
-        if (index < allowedMechanics_.size()) {
-            allowedMechanics_[index] = true;
+        if (index < simulation.allowedMechanics_.size()) {
+            simulation.allowedMechanics_[index] = true;
         }
     }
 }
 
-void Simulation::addComplexity(double amount)
+void SimulationTuningSystem::addComplexity(Simulation& simulation, double amount)
 {
-    complexityScore_ = std::max(0.0, complexityScore_ + amount);
-    metrics_.setComplexity(complexityScore_, recommendedComplexityThreshold_);
+    simulation.complexityScore_ = std::max(0.0, simulation.complexityScore_ + amount);
+    simulation.metrics_.setComplexity(simulation.complexityScore_, simulation.recommendedComplexityThreshold_);
 }
 
-bool Simulation::canScaleNode(int nodeId, int maxScaleLevel) const
+bool SimulationTuningSystem::canScaleNode(const Simulation& simulation, int nodeId, int maxScaleLevel)
 {
     if (nodeId >= 0) {
-        const Node* node = graph_.node(nodeId);
-        return node != nullptr && node->type == NodeType::ApiService && node->scaleLevel < maxScaleLevelForNode(nodeId, maxScaleLevel);
+        const Node* node = simulation.graph_.node(nodeId);
+        return node != nullptr && node->type == NodeType::ApiService && node->scaleLevel < maxScaleLevelForNode(simulation, nodeId, maxScaleLevel);
     }
-    for (const auto& node : graph_.nodes()) {
+    for (const auto& node : simulation.graph_.nodes()) {
         if (node.type == NodeType::ApiService && node.scaleLevel < std::max(1, maxScaleLevel)) {
             return true;
         }
@@ -314,15 +319,15 @@ bool Simulation::canScaleNode(int nodeId, int maxScaleLevel) const
     return false;
 }
 
-int Simulation::scaleLevelForNode(int nodeId) const
+int SimulationTuningSystem::scaleLevelForNode(const Simulation& simulation, int nodeId)
 {
-    const Node* node = graph_.node(nodeId);
+    const Node* node = simulation.graph_.node(nodeId);
     return node != nullptr ? node->scaleLevel : 0;
 }
 
-int Simulation::maxScaleLevelForNode(int nodeId, int contentMaxScaleLevel) const
+int SimulationTuningSystem::maxScaleLevelForNode(const Simulation& simulation, int nodeId, int contentMaxScaleLevel)
 {
-    const Node* node = graph_.node(nodeId);
+    const Node* node = simulation.graph_.node(nodeId);
     if (node == nullptr) {
         return std::max(1, contentMaxScaleLevel);
     }

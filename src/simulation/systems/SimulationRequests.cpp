@@ -1,3 +1,6 @@
+#include "simulation/systems/SimulationRequestFlowSystem.hpp"
+#include "simulation/systems/SimulationModifierSystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -9,33 +12,33 @@
 #include <utility>
 
 
-void Simulation::generateClientRequests(double dt)
+void SimulationRequestFlowSystem::generateClientRequests(Simulation& simulation, double dt)
 {
     double burstMultiplier = 1.0;
-    const BurstScenario activeBurst = scenarioBurstOverride_.value_or(scenario_.bursts);
-    if (burstModeEnabled_ || activeBurst.enabled) {
-        const double phase = std::fmod(timeSeconds_, activeBurst.periodSeconds);
+    const BurstScenario activeBurst = simulation.scenarioBurstOverride_.value_or(simulation.scenario_.bursts);
+    if (simulation.burstModeEnabled_ || activeBurst.enabled) {
+        const double phase = std::fmod(simulation.timeSeconds_, activeBurst.periodSeconds);
         if (phase < activeBurst.durationSeconds) {
             burstMultiplier = activeBurst.multiplier;
         }
     }
 
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (!NodeRegistry::generatesRequests(node.type)) {
             continue;
         }
 
-        Link* link = selectClientIngressLink(node);
+        Link* link = selectClientIngressLink(simulation, node);
         if (link == nullptr) {
             continue;
         }
 
-        const double evolutionMultiplier = trafficEvolutionMultiplierFor(node, burstMultiplier);
-        node.generationAccumulator += node.requestRatePerSecond * scenarioTrafficMultiplier_ * localizedTrafficMultiplierFor(node) * burstMultiplier * evolutionMultiplier * dt;
+        const double evolutionMultiplier = trafficEvolutionMultiplierFor(simulation, node, burstMultiplier);
+        node.generationAccumulator += node.requestRatePerSecond * simulation.scenarioTrafficMultiplier_ * SimulationModifierSystem::localizedTrafficMultiplierFor(simulation, node) * burstMultiplier * evolutionMultiplier * dt;
         while (node.generationAccumulator >= 1.0) {
-            createRequest(node, *link);
+            createRequest(simulation, node, *link);
             node.generationAccumulator -= 1.0;
-            link = selectClientIngressLink(node);
+            link = selectClientIngressLink(simulation, node);
             if (link == nullptr) {
                 break;
             }
@@ -43,41 +46,41 @@ void Simulation::generateClientRequests(double dt)
     }
 }
 
-void Simulation::createRequest(Node& clientNode, Link& link)
+void SimulationRequestFlowSystem::createRequest(Simulation& simulation, Node& clientNode, Link& link)
 {
     Request request;
-    request.id = nextRequestId_++;
+    request.id = simulation.nextRequestId_++;
     request.sourceNodeId = clientNode.id;
     request.targetNodeId = link.targetNodeId;
     request.currentLinkId = link.id;
     request.state = RequestState::InTransit;
     request.routeStage = RequestRouteStage::ToApi;
-    request.creationTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
+    request.creationTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
 
     const int sequence = static_cast<int>(request.id % 100);
-    const double lightweightShare = scenarioDatabaseHeavyShareOverride_
-        ? 1.0 - *scenarioDatabaseHeavyShareOverride_
-        : scenario_.requestTypes.lightweightShare;
+    const double lightweightShare = simulation.scenarioDatabaseHeavyShareOverride_
+        ? 1.0 - *simulation.scenarioDatabaseHeavyShareOverride_
+        : simulation.scenario_.requestTypes.lightweightShare;
     const int lightThreshold = static_cast<int>(lightweightShare * 100.0);
     request.type = sequence < lightThreshold ? RequestType::Lightweight : RequestType::DatabaseHeavy;
     const int cacheRoll = static_cast<int>((request.id * 37U) % 100U);
-    request.cacheKey = static_cast<int>(request.id % std::max(1, scenario_.requestTypes.cacheKeySpace));
+    request.cacheKey = static_cast<int>(request.id % std::max(1, simulation.scenario_.requestTypes.cacheKeySpace));
     request.cacheable = request.type == RequestType::DatabaseHeavy
-        && cacheRoll < static_cast<int>(scenario_.requestTypes.databaseHeavyCacheableShare * 100.0);
+        && cacheRoll < static_cast<int>(simulation.scenario_.requestTypes.databaseHeavyCacheableShare * 100.0);
 
     link.inFlightRequests.push_back(request.id);
-    requests_.emplace(request.id, request);
+    simulation.requests_.emplace(request.id, request);
     clientNode.recentGenerated += 1.0;
-    metrics_.recordGenerated();
+    simulation.metrics_.recordGenerated();
 }
 
-void Simulation::retryRequest(Request& request)
+void SimulationRequestFlowSystem::retryRequest(Simulation& simulation, Request& request)
 {
-    Link* link = selectOutgoingLink(request.sourceNodeId, RequestRouteStage::ToApi);
+    Link* link = selectOutgoingLink(simulation, request.sourceNodeId, RequestRouteStage::ToApi);
     if (link == nullptr) {
         request.state = RequestState::TimedOut;
-        request.completedTime = timeSeconds_;
+        request.completedTime = simulation.timeSeconds_;
         return;
     }
 
@@ -86,30 +89,30 @@ void Simulation::retryRequest(Request& request)
     request.currentLinkId = link->id;
     request.routeStage = RequestRouteStage::ToApi;
     request.state = RequestState::InTransit;
-    request.creationTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
+    request.creationTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
     request.transitProgress = 0.0;
     request.servedFromCache = false;
     link->inFlightRequests.push_back(request.id);
-    if (Node* source = graph_.node(request.sourceNodeId)) {
+    if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
         source->recentRetries += 1.0;
     }
-    metrics_.recordRetry();
+    simulation.metrics_.recordRetry();
 }
 
-void Simulation::updateRetryWaits()
+void SimulationRequestFlowSystem::updateRetryWaits(Simulation& simulation)
 {
-    for (auto& [id, request] : requests_) {
+    for (auto& [id, request] : simulation.requests_) {
         (void)id;
-        if (request.state == RequestState::RetryWaiting && timeSeconds_ >= request.retryDueTime) {
-            retryRequest(request);
+        if (request.state == RequestState::RetryWaiting && simulation.timeSeconds_ >= request.retryDueTime) {
+            retryRequest(simulation, request);
         }
     }
 }
 
-void Simulation::updateLinks(double dt)
+void SimulationRequestFlowSystem::updateLinks(Simulation& simulation, double dt)
 {
-    for (auto& link : graph_.links()) {
+    for (auto& link : simulation.graph_.links()) {
         if (!link.enabled) {
             continue;
         }
@@ -117,23 +120,23 @@ void Simulation::updateLinks(double dt)
         stillInFlight.reserve(link.inFlightRequests.size());
 
         for (const auto requestId : link.inFlightRequests) {
-            auto requestIt = requests_.find(requestId);
-            if (requestIt == requests_.end()) {
+            auto requestIt = simulation.requests_.find(requestId);
+            if (requestIt == simulation.requests_.end()) {
                 continue;
             }
 
             Request& request = requestIt->second;
-            if (requestTimedOut(request)) {
-                timeOutRequest(request);
+            if (requestTimedOut(simulation, request)) {
+                timeOutRequest(simulation, request);
                 continue;
             }
 
-            const double latency = std::max(0.01, link.baseLatencySeconds * scenarioLatencyMultiplier_);
+            const double latency = std::max(0.01, link.baseLatencySeconds * simulation.scenarioLatencyMultiplier_);
             request.transitProgress += dt / latency;
 
             if (request.transitProgress >= 1.0) {
-                if (Node* target = graph_.node(link.targetNodeId)) {
-                    enqueueAtNode(request, *target);
+                if (Node* target = simulation.graph_.node(link.targetNodeId)) {
+                    enqueueAtNode(simulation, request, *target);
                 }
             } else {
                 stillInFlight.push_back(requestId);
@@ -144,14 +147,14 @@ void Simulation::updateLinks(double dt)
     }
 }
 
-void Simulation::updateProcessors(double dt)
+void SimulationRequestFlowSystem::updateProcessors(Simulation& simulation, double dt)
 {
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (!node.isProcessor()) {
             continue;
         }
 
-        updateTimeouts(node);
+        updateTimeouts(simulation, node);
 
         const auto startedWithQueueDepth = node.queue.size();
         const double cascadeCapacityPenalty = std::clamp(1.0 - node.propagatedInstability * 0.35, 0.45, 1.0);
@@ -161,14 +164,14 @@ void Simulation::updateProcessors(double dt)
 
         while (!node.queue.empty()) {
             const auto requestId = node.queue.front();
-            auto requestIt = requests_.find(requestId);
-            if (requestIt == requests_.end()) {
+            auto requestIt = simulation.requests_.find(requestId);
+            if (requestIt == simulation.requests_.end()) {
                 node.queue.pop_front();
                 continue;
             }
 
             Request& request = requestIt->second;
-            const double cost = processingCost(request, node);
+            const double cost = processingCost(simulation, request, node);
 
             // Model response/finalization work explicitly for API requests that
             // complete at the API during this processing pass. This keeps API
@@ -180,10 +183,10 @@ void Simulation::updateProcessors(double dt)
                 const bool lightweightCompletesAtApi = request.type == RequestType::Lightweight;
                 const bool cacheHitCompletesAtApi = request.type == RequestType::DatabaseHeavy
                     && request.cacheable
-                    && cacheEnabled_
-                    && cacheHit(request.cacheKey);
+                    && simulation.cacheEnabled_
+                    && cacheHit(simulation, request.cacheKey);
                 if (lightweightCompletesAtApi || cacheHitCompletesAtApi) {
-                    completionCost = scenario_.requestTypes.apiCostReturn;
+                    completionCost = simulation.scenario_.requestTypes.apiCostReturn;
                 }
             }
 
@@ -196,12 +199,12 @@ void Simulation::updateProcessors(double dt)
             node.processingAccumulator -= totalCost;
             consumedProcessingBudget += totalCost;
 
-            if (requestTimedOut(request)) {
-                timeOutRequest(request);
+            if (requestTimedOut(simulation, request)) {
+                timeOutRequest(simulation, request);
                 continue;
             }
 
-            completeRequest(request, node);
+            completeRequest(simulation, request, node);
         }
 
         (void)startedWithQueueDepth;
@@ -226,7 +229,7 @@ void Simulation::updateProcessors(double dt)
     }
 }
 
-void Simulation::updateTimeouts(Node& node)
+void SimulationRequestFlowSystem::updateTimeouts(Simulation& simulation, Node& node)
 {
     std::deque<std::uint64_t> retained;
     double waitSum = 0.0;
@@ -236,16 +239,16 @@ void Simulation::updateTimeouts(Node& node)
         const auto requestId = node.queue.front();
         node.queue.pop_front();
 
-        auto requestIt = requests_.find(requestId);
-        if (requestIt == requests_.end()) {
+        auto requestIt = simulation.requests_.find(requestId);
+        if (requestIt == simulation.requests_.end()) {
             continue;
         }
 
         Request& request = requestIt->second;
-        if (requestTimedOut(request)) {
-            timeOutRequest(request);
+        if (requestTimedOut(simulation, request)) {
+            timeOutRequest(simulation, request);
         } else {
-            waitSum += timeSeconds_ - request.stateEnteredTime;
+            waitSum += simulation.timeSeconds_ - request.stateEnteredTime;
             ++waitSamples;
             retained.push_back(requestId);
         }
@@ -255,13 +258,13 @@ void Simulation::updateTimeouts(Node& node)
     node.queue = std::move(retained);
 }
 
-void Simulation::enqueueAtNode(Request& request, Node& node)
+void SimulationRequestFlowSystem::enqueueAtNode(Simulation& simulation, Request& request, Node& node)
 {
     request.currentNodeId = node.id;
     request.currentLinkId = -1;
     request.targetNodeId = node.id;
     request.state = RequestState::Queued;
-    request.stateEnteredTime = timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
     request.transitProgress = 1.0;
 
     if (node.type == NodeType::ApiService && request.routeStage == RequestRouteStage::ToApi) {
@@ -275,192 +278,192 @@ void Simulation::enqueueAtNode(Request& request, Node& node)
     node.queue.push_back(request.id);
 }
 
-void Simulation::completeRequest(Request& request, Node& node)
+void SimulationRequestFlowSystem::completeRequest(Simulation& simulation, Request& request, Node& node)
 {
     if (node.type == NodeType::ApiService) {
-        routeFromApi(request);
+        routeFromApi(simulation, request);
         return;
     }
 
     if (node.type == NodeType::Database) {
-        routeFromDatabase(request);
+        routeFromDatabase(simulation, request);
         return;
     }
 
     if (node.type == NodeType::ReadReplica) {
-        routeFromDatabase(request);
+        routeFromDatabase(simulation, request);
         return;
     }
 
     if (node.type == NodeType::QueueBroker) {
-        if (const auto workerId = firstNodeOfType(NodeType::Worker)) {
-            if (Link* link = linkBetween(node.id, *workerId)) {
-                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+        if (const auto workerId = firstNodeOfType(simulation, NodeType::Worker)) {
+            if (Link* link = linkBetween(simulation, node.id, *workerId)) {
+                routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
                 return;
             }
         }
 
-        if (const auto databaseId = firstNodeOfType(NodeType::Database)) {
-            if (Link* link = linkBetween(node.id, *databaseId)) {
-                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+        if (const auto databaseId = firstNodeOfType(simulation, NodeType::Database)) {
+            if (Link* link = linkBetween(simulation, node.id, *databaseId)) {
+                routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
                 return;
             }
         }
     }
 
     if (node.type == NodeType::Worker || node.type == NodeType::Cache) {
-        const auto databaseId = firstNodeOfType(NodeType::Database);
+        const auto databaseId = firstNodeOfType(simulation, NodeType::Database);
         if (databaseId) {
-            if (Link* link = linkBetween(node.id, *databaseId)) {
-                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+            if (Link* link = linkBetween(simulation, node.id, *databaseId)) {
+                routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
                 return;
             }
         }
     }
 
     request.state = RequestState::Completed;
-    request.completedTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
-    if (Node* source = graph_.node(request.sourceNodeId)) {
+    request.completedTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
+    if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
         source->recentCompleted += 1.0;
     }
-    metrics_.recordProcessed(timeSeconds_ - request.creationTime);
+    simulation.metrics_.recordProcessed(simulation.timeSeconds_ - request.creationTime);
 }
 
-void Simulation::timeOutRequest(Request& request, Node&)
+void SimulationRequestFlowSystem::timeOutRequest(Simulation& simulation, Request& request, Node&)
 {
-    timeOutRequest(request);
+    timeOutRequest(simulation, request);
 }
 
-void Simulation::timeOutRequest(Request& request)
+void SimulationRequestFlowSystem::timeOutRequest(Simulation& simulation, Request& request)
 {
-    if (scenario_.retries.enabled && request.retryCount < scenario_.retries.maxRetries) {
+    if (simulation.scenario_.retries.enabled && request.retryCount < simulation.scenario_.retries.maxRetries) {
         ++request.retryCount;
         request.state = RequestState::RetryWaiting;
         request.currentLinkId = -1;
-        request.completedTime = timeSeconds_;
-        const Node* source = graph_.node(request.sourceNodeId);
-        const double localizedRetryDelayMultiplier = source != nullptr ? localizedRetryDelayMultiplierFor(*source) : 1.0;
-        const double evolutionRetryDelayMultiplier = source != nullptr ? retryEvolutionDelayMultiplierFor(*source) : 1.0;
-        request.retryDueTime = timeSeconds_ + scenario_.retries.retryDelaySeconds * scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier * evolutionRetryDelayMultiplier;
-        request.stateEnteredTime = timeSeconds_;
-        if (Node* mutableSource = graph_.node(request.sourceNodeId)) {
+        request.completedTime = simulation.timeSeconds_;
+        const Node* source = simulation.graph_.node(request.sourceNodeId);
+        const double localizedRetryDelayMultiplier = source != nullptr ? SimulationModifierSystem::localizedRetryDelayMultiplierFor(simulation, *source) : 1.0;
+        const double evolutionRetryDelayMultiplier = source != nullptr ? retryEvolutionDelayMultiplierFor(simulation, *source) : 1.0;
+        request.retryDueTime = simulation.timeSeconds_ + simulation.scenario_.retries.retryDelaySeconds * simulation.scenarioRetryDelayMultiplier_ * localizedRetryDelayMultiplier * evolutionRetryDelayMultiplier;
+        request.stateEnteredTime = simulation.timeSeconds_;
+        if (Node* mutableSource = simulation.graph_.node(request.sourceNodeId)) {
             mutableSource->recentTimedOut += 1.0;
         }
-        metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
+        simulation.metrics_.recordTimedOut(simulation.timeSeconds_ - request.creationTime);
         return;
     }
 
     request.state = RequestState::TimedOut;
     request.currentLinkId = -1;
-    request.completedTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
-    if (Node* source = graph_.node(request.sourceNodeId)) {
+    request.completedTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
+    if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
         source->recentTimedOut += 1.0;
     }
-    metrics_.recordTimedOut(timeSeconds_ - request.creationTime);
+    simulation.metrics_.recordTimedOut(simulation.timeSeconds_ - request.creationTime);
 }
 
-void Simulation::routeFromApi(Request& request)
+void SimulationRequestFlowSystem::routeFromApi(Simulation& simulation, Request& request)
 {
     if (request.routeStage == RequestRouteStage::ApiReturn || request.type == RequestType::Lightweight) {
-        if (request.type == RequestType::DatabaseHeavy && request.cacheable && cacheEnabled_) {
-            storeCache(request.cacheKey);
+        if (request.type == RequestType::DatabaseHeavy && request.cacheable && simulation.cacheEnabled_) {
+            storeCache(simulation, request.cacheKey);
         }
         request.state = RequestState::Completed;
-        request.completedTime = timeSeconds_;
-        request.stateEnteredTime = timeSeconds_;
-        if (Node* source = graph_.node(request.sourceNodeId)) {
+        request.completedTime = simulation.timeSeconds_;
+        request.stateEnteredTime = simulation.timeSeconds_;
+        if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
             source->recentCompleted += 1.0;
         }
-        metrics_.recordProcessed(timeSeconds_ - request.creationTime);
+        simulation.metrics_.recordProcessed(simulation.timeSeconds_ - request.creationTime);
         return;
     }
 
     if (request.type == RequestType::DatabaseHeavy) {
-        if (request.cacheable && cacheEnabled_) {
-            const bool hit = cacheHit(request.cacheKey);
-            metrics_.recordCacheLookup(hit);
+        if (request.cacheable && simulation.cacheEnabled_) {
+            const bool hit = cacheHit(simulation, request.cacheKey);
+            simulation.metrics_.recordCacheLookup(hit);
             if (hit) {
                 request.servedFromCache = true;
                 request.state = RequestState::Completed;
-                request.completedTime = timeSeconds_;
-                request.stateEnteredTime = timeSeconds_;
-                if (Node* source = graph_.node(request.sourceNodeId)) {
+                request.completedTime = simulation.timeSeconds_;
+                request.stateEnteredTime = simulation.timeSeconds_;
+                if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
                     source->recentCompleted += 1.0;
                 }
-                metrics_.recordProcessed(timeSeconds_ - request.creationTime);
+                simulation.metrics_.recordProcessed(simulation.timeSeconds_ - request.creationTime);
                 return;
             }
         }
 
         if (request.cacheable) {
-            const auto replicaId = firstNodeOfType(NodeType::ReadReplica);
+            const auto replicaId = firstNodeOfType(simulation, NodeType::ReadReplica);
             if (replicaId) {
-                if (Link* link = linkBetween(request.currentNodeId, *replicaId)) {
-                    routeToLink(request, *link, RequestRouteStage::ToDatabase);
+                if (Link* link = linkBetween(simulation, request.currentNodeId, *replicaId)) {
+                    routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
                     return;
                 }
             }
         }
 
-        const auto databaseId = firstNodeOfType(NodeType::Database);
+        const auto databaseId = firstNodeOfType(simulation, NodeType::Database);
         if (databaseId) {
-            if (Link* link = linkBetween(request.currentNodeId, *databaseId)) {
-                routeToLink(request, *link, RequestRouteStage::ToDatabase);
+            if (Link* link = linkBetween(simulation, request.currentNodeId, *databaseId)) {
+                routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
                 return;
             }
         }
 
-        if (Link* link = selectOutgoingLink(request.currentNodeId, RequestRouteStage::ToDatabase)) {
-            routeToLink(request, *link, RequestRouteStage::ToDatabase);
+        if (Link* link = selectOutgoingLink(simulation, request.currentNodeId, RequestRouteStage::ToDatabase)) {
+            routeToLink(simulation, request, *link, RequestRouteStage::ToDatabase);
             return;
         }
     }
 
     request.state = RequestState::Completed;
-    request.completedTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
-    if (Node* source = graph_.node(request.sourceNodeId)) {
+    request.completedTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
+    if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
         source->recentCompleted += 1.0;
     }
-    metrics_.recordProcessed(timeSeconds_ - request.creationTime);
+    simulation.metrics_.recordProcessed(simulation.timeSeconds_ - request.creationTime);
 }
 
-void Simulation::routeFromDatabase(Request& request)
+void SimulationRequestFlowSystem::routeFromDatabase(Simulation& simulation, Request& request)
 {
-    const auto apiId = firstNodeOfType(NodeType::ApiService);
+    const auto apiId = firstNodeOfType(simulation, NodeType::ApiService);
     if (apiId) {
-        if (Link* link = linkBetween(request.currentNodeId, *apiId)) {
-            routeToLink(request, *link, RequestRouteStage::BackToApi);
+        if (Link* link = linkBetween(simulation, request.currentNodeId, *apiId)) {
+            routeToLink(simulation, request, *link, RequestRouteStage::BackToApi);
             return;
         }
     }
 
     request.state = RequestState::Completed;
-    request.completedTime = timeSeconds_;
-    request.stateEnteredTime = timeSeconds_;
-    if (Node* source = graph_.node(request.sourceNodeId)) {
+    request.completedTime = simulation.timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
+    if (Node* source = simulation.graph_.node(request.sourceNodeId)) {
         source->recentCompleted += 1.0;
     }
-    metrics_.recordProcessed(timeSeconds_ - request.creationTime);
+    simulation.metrics_.recordProcessed(simulation.timeSeconds_ - request.creationTime);
 }
 
-void Simulation::routeToLink(Request& request, Link& link, RequestRouteStage nextStage)
+void SimulationRequestFlowSystem::routeToLink(Simulation& simulation, Request& request, Link& link, RequestRouteStage nextStage)
 {
     request.currentLinkId = link.id;
     request.targetNodeId = link.targetNodeId;
     request.routeStage = nextStage;
     request.state = RequestState::InTransit;
-    request.stateEnteredTime = timeSeconds_;
+    request.stateEnteredTime = simulation.timeSeconds_;
     request.transitProgress = 0.0;
     link.inFlightRequests.push_back(request.id);
 }
 
-Link* Simulation::selectOutgoingLink(int sourceNodeId, RequestRouteStage routeStage)
+Link* SimulationRequestFlowSystem::selectOutgoingLink(Simulation& simulation, int sourceNodeId, RequestRouteStage routeStage)
 {
     std::vector<Link*> candidates;
-    for (auto& link : graph_.links()) {
+    for (auto& link : simulation.graph_.links()) {
         if (link.enabled && link.sourceNodeId == sourceNodeId) {
             candidates.push_back(&link);
         }
@@ -469,7 +472,7 @@ Link* Simulation::selectOutgoingLink(int sourceNodeId, RequestRouteStage routeSt
         return nullptr;
     }
 
-    const auto& evolution = scenario_.trafficProfile.evolution;
+    const auto& evolution = simulation.scenario_.trafficProfile.evolution;
     if (!evolution.enabled || (evolution.reroutePressureSensitivity <= 0.0 && evolution.rerouteLatencySensitivity <= 0.0)) {
         return candidates.front();
     }
@@ -477,7 +480,7 @@ Link* Simulation::selectOutgoingLink(int sourceNodeId, RequestRouteStage routeSt
     Link* selected = candidates.front();
     double bestScore = std::numeric_limits<double>::max();
     for (Link* link : candidates) {
-        const Node* target = graph_.node(link->targetNodeId);
+        const Node* target = simulation.graph_.node(link->targetNodeId);
         const double targetPressure = target != nullptr
             ? std::max({target->queuePressure, target->latencyPressure, target->retryPressure, target->propagatedInstability})
             : 0.0;
@@ -494,15 +497,15 @@ Link* Simulation::selectOutgoingLink(int sourceNodeId, RequestRouteStage routeSt
     return selected;
 }
 
-Link* Simulation::selectClientIngressLink(const Node& clientNode)
+Link* SimulationRequestFlowSystem::selectClientIngressLink(Simulation& simulation, const Node& clientNode)
 {
-    Link* selected = selectOutgoingLink(clientNode.id, RequestRouteStage::ToApi);
-    const auto& evolution = scenario_.trafficProfile.evolution;
+    Link* selected = selectOutgoingLink(simulation, clientNode.id, RequestRouteStage::ToApi);
+    const auto& evolution = simulation.scenario_.trafficProfile.evolution;
     if (selected == nullptr || !evolution.enabled || evolution.migrationSensitivity <= 0.0) {
         return selected;
     }
 
-    const Node* target = graph_.node(selected->targetNodeId);
+    const Node* target = simulation.graph_.node(selected->targetNodeId);
     if (target == nullptr) {
         return selected;
     }
@@ -513,11 +516,11 @@ Link* Simulation::selectClientIngressLink(const Node& clientNode)
 
     Link* migrated = selected;
     double bestScore = std::numeric_limits<double>::max();
-    for (auto& link : graph_.links()) {
+    for (auto& link : simulation.graph_.links()) {
         if (!link.enabled || link.sourceNodeId != clientNode.id) {
             continue;
         }
-        const Node* candidateTarget = graph_.node(link.targetNodeId);
+        const Node* candidateTarget = simulation.graph_.node(link.targetNodeId);
         const double candidatePressure = candidateTarget != nullptr
             ? std::max(candidateTarget->queuePressure, candidateTarget->latencyPressure)
             : 0.0;
@@ -529,13 +532,13 @@ Link* Simulation::selectClientIngressLink(const Node& clientNode)
     }
 
     const double migrationGate = std::clamp(evolution.migrationSensitivity * clientStress, 0.0, 1.0);
-    const int deterministicRoll = static_cast<int>((nextRequestId_ * 53U + static_cast<std::uint64_t>(clientNode.id) * 17U) % 100U);
+    const int deterministicRoll = static_cast<int>((simulation.nextRequestId_ * 53U + static_cast<std::uint64_t>(clientNode.id) * 17U) % 100U);
     return deterministicRoll < static_cast<int>(migrationGate * 100.0) ? migrated : selected;
 }
 
-double Simulation::trafficEvolutionMultiplierFor(const Node& node, double burstMultiplier) const
+double SimulationRequestFlowSystem::trafficEvolutionMultiplierFor(const Simulation& simulation, const Node& node, double burstMultiplier)
 {
-    const auto& evolution = scenario_.trafficProfile.evolution;
+    const auto& evolution = simulation.scenario_.trafficProfile.evolution;
     if (!evolution.enabled) {
         return 1.0;
     }
@@ -552,9 +555,9 @@ double Simulation::trafficEvolutionMultiplierFor(const Node& node, double burstM
     return std::clamp(pressureBoost * churnLoss * burstBoost * failureChurn, 0.2, 3.0);
 }
 
-double Simulation::retryEvolutionDelayMultiplierFor(const Node& node) const
+double SimulationRequestFlowSystem::retryEvolutionDelayMultiplierFor(const Simulation& simulation, const Node& node)
 {
-    const auto& evolution = scenario_.trafficProfile.evolution;
+    const auto& evolution = simulation.scenario_.trafficProfile.evolution;
     if (!evolution.enabled || evolution.dynamicRetrySensitivity <= 0.0) {
         return 1.0;
     }
@@ -563,9 +566,9 @@ double Simulation::retryEvolutionDelayMultiplierFor(const Node& node) const
     return std::clamp(1.0 - evolution.dynamicRetrySensitivity * sourcePressure, 0.25, 1.0);
 }
 
-Link* Simulation::linkBetween(int sourceNodeId, int targetNodeId)
+Link* SimulationRequestFlowSystem::linkBetween(Simulation& simulation, int sourceNodeId, int targetNodeId)
 {
-    for (auto& link : graph_.links()) {
+    for (auto& link : simulation.graph_.links()) {
         if (link.enabled && link.sourceNodeId == sourceNodeId && link.targetNodeId == targetNodeId) {
             return &link;
         }
@@ -573,9 +576,9 @@ Link* Simulation::linkBetween(int sourceNodeId, int targetNodeId)
     return nullptr;
 }
 
-std::optional<int> Simulation::firstNodeOfType(NodeType type) const
+std::optional<int> SimulationRequestFlowSystem::firstNodeOfType(const Simulation& simulation, NodeType type)
 {
-    for (const auto& node : graph_.nodes()) {
+    for (const auto& node : simulation.graph_.nodes()) {
         if (node.type == type) {
             return node.id;
         }
@@ -583,10 +586,10 @@ std::optional<int> Simulation::firstNodeOfType(NodeType type) const
     return std::nullopt;
 }
 
-double Simulation::processingCost(const Request& request, const Node& node) const
+double SimulationRequestFlowSystem::processingCost(const Simulation& simulation, const Request& request, const Node& node)
 {
     if (node.type == NodeType::Database || node.type == NodeType::ReadReplica) {
-        return scenario_.requestTypes.databaseCostHeavy;
+        return simulation.scenario_.requestTypes.databaseCostHeavy;
     }
 
     if (node.type == NodeType::QueueBroker) {
@@ -602,63 +605,63 @@ double Simulation::processingCost(const Request& request, const Node& node) cons
     }
 
     if (request.routeStage == RequestRouteStage::ApiReturn) {
-        return scenario_.requestTypes.apiCostReturn;
+        return simulation.scenario_.requestTypes.apiCostReturn;
     }
 
     return request.type == RequestType::Lightweight
-        ? scenario_.requestTypes.apiCostLightweight
-        : scenario_.requestTypes.apiCostDatabaseHeavy;
+        ? simulation.scenario_.requestTypes.apiCostLightweight
+        : simulation.scenario_.requestTypes.apiCostDatabaseHeavy;
 }
 
-bool Simulation::requestTimedOut(const Request& request) const
+bool SimulationRequestFlowSystem::requestTimedOut(const Simulation& simulation, const Request& request)
 {
-    return timeSeconds_ - request.creationTime > scenario_.requestTimeoutSeconds;
+    return simulation.timeSeconds_ - request.creationTime > simulation.scenario_.requestTimeoutSeconds;
 }
 
-bool Simulation::cacheHit(int key)
+bool SimulationRequestFlowSystem::cacheHit(Simulation& simulation, int key)
 {
-    expireCacheEntries();
-    return std::any_of(cacheEntries_.begin(), cacheEntries_.end(), [key](const CacheEntry& entry) {
+    expireCacheEntries(simulation);
+    return std::any_of(simulation.cacheEntries_.begin(), simulation.cacheEntries_.end(), [key](const Simulation::CacheEntry& entry) {
         return entry.key == key;
     });
 }
 
-void Simulation::storeCache(int key)
+void SimulationRequestFlowSystem::storeCache(Simulation& simulation, int key)
 {
-    if (!cacheEnabled_) {
+    if (!simulation.cacheEnabled_) {
         return;
     }
 
-    cacheEntries_.erase(
-        std::remove_if(cacheEntries_.begin(), cacheEntries_.end(), [key](const CacheEntry& entry) {
+    simulation.cacheEntries_.erase(
+        std::remove_if(simulation.cacheEntries_.begin(), simulation.cacheEntries_.end(), [key](const Simulation::CacheEntry& entry) {
             return entry.key == key;
         }),
-        cacheEntries_.end());
+        simulation.cacheEntries_.end());
 
-    while (static_cast<int>(cacheEntries_.size()) >= scenario_.cache.maxEntries) {
-        cacheEntries_.pop_front();
+    while (static_cast<int>(simulation.cacheEntries_.size()) >= simulation.scenario_.cache.maxEntries) {
+        simulation.cacheEntries_.pop_front();
     }
 
-    cacheEntries_.push_back({key, timeSeconds_ + scenario_.cache.ttlSeconds});
+    simulation.cacheEntries_.push_back({key, simulation.timeSeconds_ + simulation.scenario_.cache.ttlSeconds});
 }
 
-void Simulation::expireCacheEntries()
+void SimulationRequestFlowSystem::expireCacheEntries(Simulation& simulation)
 {
-    cacheEntries_.erase(
-        std::remove_if(cacheEntries_.begin(), cacheEntries_.end(), [this](const CacheEntry& entry) {
-            return entry.expiresAt <= timeSeconds_;
+    simulation.cacheEntries_.erase(
+        std::remove_if(simulation.cacheEntries_.begin(), simulation.cacheEntries_.end(), [&simulation](const Simulation::CacheEntry& entry) {
+            return entry.expiresAt <= simulation.timeSeconds_;
         }),
-        cacheEntries_.end());
+        simulation.cacheEntries_.end());
 }
 
 
-void Simulation::pruneOldRequests()
+void SimulationRequestFlowSystem::pruneOldRequests(Simulation& simulation)
 {
-    for (auto it = requests_.begin(); it != requests_.end();) {
+    for (auto it = simulation.requests_.begin(); it != simulation.requests_.end();) {
         const Request& request = it->second;
         const bool terminal = request.state == RequestState::Completed || request.state == RequestState::TimedOut;
-        if (terminal && timeSeconds_ - request.completedTime > 3.0) {
-            it = requests_.erase(it);
+        if (terminal && simulation.timeSeconds_ - request.completedTime > 3.0) {
+            it = simulation.requests_.erase(it);
         } else {
             ++it;
         }

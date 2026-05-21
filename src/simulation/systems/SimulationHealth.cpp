@@ -1,3 +1,5 @@
+#include "simulation/systems/SimulationHealthSystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -8,7 +10,7 @@
 #include <utility>
 
 
-void Simulation::updatePropagatedPressure(double dt)
+void SimulationHealthSystem::updatePropagatedPressure(Simulation& simulation, double dt)
 {
     const double smoothing = 1.0 - std::exp(-std::max(0.0, dt) / 2.0);
     std::unordered_map<int, double> incomingPressure;
@@ -30,17 +32,17 @@ void Simulation::updatePropagatedPressure(double dt)
         }), 0.0, 1.0);
     };
 
-    for (const auto& node : graph_.nodes()) {
+    for (const auto& node : simulation.graph_.nodes()) {
         incomingPressure[node.id] = node.propagatedPressure * 0.72;
         incomingInstability[node.id] = node.propagatedInstability * 0.72;
     }
 
-    for (const auto& link : graph_.links()) {
+    for (const auto& link : simulation.graph_.links()) {
         if (!link.enabled) {
             continue;
         }
-        const Node* source = graph_.node(link.sourceNodeId);
-        const Node* target = graph_.node(link.targetNodeId);
+        const Node* source = simulation.graph_.node(link.sourceNodeId);
+        const Node* target = simulation.graph_.node(link.targetNodeId);
         if (source == nullptr || target == nullptr) {
             continue;
         }
@@ -64,7 +66,7 @@ void Simulation::updatePropagatedPressure(double dt)
         incomingInstability[target->id] = std::max(incomingInstability[target->id], std::clamp(upstreamContribution * 0.70 + source->propagatedInstability * 0.18, 0.0, 1.0));
     }
 
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         const double nextPressure = std::clamp(incomingPressure[node.id], 0.0, 1.0);
         const double nextInstability = std::clamp(incomingInstability[node.id], 0.0, 1.0);
         node.propagatedPressure += (nextPressure - node.propagatedPressure) * std::clamp(smoothing, 0.0, 1.0);
@@ -72,7 +74,7 @@ void Simulation::updatePropagatedPressure(double dt)
     }
 }
 
-void Simulation::updateNodeHealth(double dt)
+void SimulationHealthSystem::updateNodeHealth(Simulation& simulation, double dt)
 {
     constexpr double kWindowSeconds = 4.0;
     const double smoothing = 1.0 - std::exp(-std::max(0.0, dt) / 2.5);
@@ -82,16 +84,16 @@ void Simulation::updateNodeHealth(double dt)
         return current + (measured - current) * std::clamp(smoothing, 0.0, 1.0);
     };
 
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         const double recentAttempts = std::max(1.0, node.recentCompleted + node.recentTimedOut);
         const double measuredTimeoutPressure = std::clamp(node.recentTimedOut / recentAttempts, 0.0, 1.0);
         const double measuredRetryPressure = std::clamp(node.recentRetries / std::max(1.0, node.recentGenerated), 0.0, 1.0);
 
         if (node.isProcessor()) {
             const double safeCapacity = std::max(1.0, node.processingCapacityPerSecond);
-            const double queueFailureDepth = std::max(1.0, safeCapacity * std::max(1.0, scenario_.requestTimeoutSeconds) * 0.75);
+            const double queueFailureDepth = std::max(1.0, safeCapacity * std::max(1.0, simulation.scenario_.requestTimeoutSeconds) * 0.75);
             const double measuredQueuePressure = std::clamp(static_cast<double>(node.queue.size()) / queueFailureDepth, 0.0, 1.0);
-            const double measuredLatencyPressure = std::clamp(node.averageQueueWaitSeconds / std::max(0.25, scenario_.requestTimeoutSeconds), 0.0, 1.0);
+            const double measuredLatencyPressure = std::clamp(node.averageQueueWaitSeconds / std::max(0.25, simulation.scenario_.requestTimeoutSeconds), 0.0, 1.0);
             const double measuredStress = std::clamp(
                 node.currentUtilization * 0.32
                     + measuredQueuePressure * 0.28
@@ -114,7 +116,7 @@ void Simulation::updateNodeHealth(double dt)
         } else if (NodeRegistry::generatesRequests(node.type)) {
             int outstanding = 0;
             double waitSum = 0.0;
-            for (const auto& [id, request] : requests_) {
+            for (const auto& [id, request] : simulation.requests_) {
                 (void)id;
                 if (request.sourceNodeId != node.id) {
                     continue;
@@ -123,13 +125,13 @@ void Simulation::updateNodeHealth(double dt)
                     continue;
                 }
                 ++outstanding;
-                waitSum += std::max(0.0, timeSeconds_ - request.creationTime);
+                waitSum += std::max(0.0, simulation.timeSeconds_ - request.creationTime);
             }
 
             const double expectedRecentDemand = std::max(1.0, node.recentGenerated);
             const double measuredQueuePressure = std::clamp(static_cast<double>(outstanding) / (expectedRecentDemand * 2.5), 0.0, 1.0);
             const double measuredLatencyPressure = outstanding > 0
-                ? std::clamp((waitSum / outstanding) / std::max(0.25, scenario_.requestTimeoutSeconds), 0.0, 1.0)
+                ? std::clamp((waitSum / outstanding) / std::max(0.25, simulation.scenario_.requestTimeoutSeconds), 0.0, 1.0)
                 : 0.0;
             const double measuredStress = std::clamp(
                 measuredLatencyPressure * 0.34
@@ -175,27 +177,24 @@ void Simulation::updateNodeHealth(double dt)
     }
 }
 
-void Simulation::updateMetricsNodeStates()
+void SimulationHealthSystem::updateMetricsNodeStates(Simulation& simulation)
 {
     int apiQueueDepth = 0;
     int databaseQueueDepth = 0;
     double apiUtilization = 0.0;
     double databaseUtilization = 0.0;
 
-    if (const auto apiId = firstNodeOfType(NodeType::ApiService)) {
-        if (const Node* api = graph_.node(*apiId)) {
-            apiQueueDepth = static_cast<int>(api->queue.size());
-            apiUtilization = api->currentUtilization;
+    for (const auto& node : simulation.graph_.nodes()) {
+        if (node.type == NodeType::ApiService && apiQueueDepth == 0 && apiUtilization == 0.0) {
+            apiQueueDepth = static_cast<int>(node.queue.size());
+            apiUtilization = node.currentUtilization;
+        }
+        if (node.type == NodeType::Database && databaseQueueDepth == 0 && databaseUtilization == 0.0) {
+            databaseQueueDepth = static_cast<int>(node.queue.size());
+            databaseUtilization = node.currentUtilization;
         }
     }
 
-    if (const auto databaseId = firstNodeOfType(NodeType::Database)) {
-        if (const Node* database = graph_.node(*databaseId)) {
-            databaseQueueDepth = static_cast<int>(database->queue.size());
-            databaseUtilization = database->currentUtilization;
-        }
-    }
-
-    metrics_.setNodeStates(apiQueueDepth, apiUtilization, databaseQueueDepth, databaseUtilization);
+    simulation.metrics_.setNodeStates(apiQueueDepth, apiUtilization, databaseQueueDepth, databaseUtilization);
 }
 

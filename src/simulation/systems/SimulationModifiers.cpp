@@ -1,3 +1,5 @@
+#include "simulation/systems/SimulationModifierSystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -8,7 +10,7 @@
 #include <utility>
 
 
-bool Simulation::eventLocationMatches(const EventLocation& location, const Node& node) const
+bool SimulationModifierSystem::eventLocationMatches(const EventLocation& location, const Node& node)
 {
     switch (location.scope) {
     case EventLocationScope::Global:
@@ -21,10 +23,10 @@ bool Simulation::eventLocationMatches(const EventLocation& location, const Node&
     return false;
 }
 
-double Simulation::localizedTrafficMultiplierFor(const Node& node) const
+double SimulationModifierSystem::localizedTrafficMultiplierFor(const Simulation& simulation, const Node& node)
 {
     double multiplier = 1.0;
-    for (const auto& modifier : localizedEventModifiers_) {
+    for (const auto& modifier : simulation.localizedEventModifiers_) {
         if (eventLocationMatches(modifier.location, node)) {
             multiplier *= modifier.effect.trafficMultiplier;
         }
@@ -32,10 +34,10 @@ double Simulation::localizedTrafficMultiplierFor(const Node& node) const
     return multiplier;
 }
 
-double Simulation::localizedCapacityMultiplierFor(const Node& node) const
+double SimulationModifierSystem::localizedCapacityMultiplierFor(const Simulation& simulation, const Node& node)
 {
     double multiplier = 1.0;
-    for (const auto& modifier : localizedEventModifiers_) {
+    for (const auto& modifier : simulation.localizedEventModifiers_) {
         if (eventLocationMatches(modifier.location, node)) {
             multiplier *= modifier.effect.databaseCapacityMultiplier;
         }
@@ -43,10 +45,10 @@ double Simulation::localizedCapacityMultiplierFor(const Node& node) const
     return multiplier;
 }
 
-double Simulation::localizedRetryDelayMultiplierFor(const Node& node) const
+double SimulationModifierSystem::localizedRetryDelayMultiplierFor(const Simulation& simulation, const Node& node)
 {
     double multiplier = 1.0;
-    for (const auto& modifier : localizedEventModifiers_) {
+    for (const auto& modifier : simulation.localizedEventModifiers_) {
         if (eventLocationMatches(modifier.location, node)) {
             multiplier *= modifier.effect.retryDelayMultiplier;
         }
@@ -54,15 +56,15 @@ double Simulation::localizedRetryDelayMultiplierFor(const Node& node) const
     return multiplier;
 }
 
-void Simulation::refreshEffectiveCapacities()
+void SimulationModifierSystem::refreshEffectiveCapacities(Simulation& simulation)
 {
-    for (auto& node : graph_.nodes()) {
+    for (auto& node : simulation.graph_.nodes()) {
         if (!node.isProcessor()) {
             continue;
         }
         node.processingCapacityPerSecond = std::max(
             0.1,
-            node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier * localizedCapacityMultiplierFor(node));
+            node.baseProcessingCapacityPerSecond * node.mechanicCapacityMultiplier * node.eventCapacityMultiplier * SimulationModifierSystem::localizedCapacityMultiplierFor(simulation, node));
     }
 }
 

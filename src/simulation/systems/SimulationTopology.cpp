@@ -1,3 +1,8 @@
+#include "simulation/systems/SimulationTopologySystem.hpp"
+#include "simulation/systems/SimulationTuningSystem.hpp"
+#include "simulation/systems/SimulationPressureSystem.hpp"
+#include "simulation/systems/SimulationModifierSystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -8,11 +13,11 @@
 #include <utility>
 
 
-bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
+bool SimulationTopologySystem::applyTopologyMutation(Simulation& simulation, const TopologyMutation& mutation)
 {
     if (mutation.regionSlotUsage > 0) {
         for (const auto& node : mutation.nodesToCreate) {
-            if (node.hasGeoLocation && !canUseRegionSlots(node.geoLocation.regionName, mutation.regionSlotUsage)) {
+            if (node.hasGeoLocation && !canUseRegionSlots(simulation, node.geoLocation.regionName, mutation.regionSlotUsage)) {
                 return false;
             }
         }
@@ -21,14 +26,14 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
     std::vector<int> createdNodeIds;
     createdNodeIds.reserve(mutation.nodesToCreate.size());
     for (auto node : mutation.nodesToCreate) {
-        createdNodeIds.push_back(graph_.addNode(std::move(node)));
+        createdNodeIds.push_back(simulation.graph_.addNode(std::move(node)));
     }
-    refreshRegionSlots();
+    SimulationTopologySystem::refreshRegionSlots(simulation);
 
     for (const int linkId : mutation.linksToDisable) {
-        if (Link* link = graph_.link(linkId)) {
+        if (Link* link = simulation.graph_.link(linkId)) {
             link->enabled = false;
-            graph_.markTopologyChanged();
+            simulation.graph_.markTopologyChanged();
         }
     }
 
@@ -41,8 +46,8 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
                 link.targetNodeId = createdId;
             }
         }
-        const Node* source = graph_.node(link.sourceNodeId);
-        const Node* target = graph_.node(link.targetNodeId);
+        const Node* source = simulation.graph_.node(link.sourceNodeId);
+        const Node* target = simulation.graph_.node(link.targetNodeId);
         if (source != nullptr && target != nullptr && source->hasGeoLocation && target->hasGeoLocation) {
             const GeographicSystem geography;
             const double geographicLatency = geography.latencySeconds(source->geoLocation, target->geoLocation, link.baseLatencySeconds);
@@ -50,7 +55,7 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
             link.geographicLatencyContributionSeconds = std::max(0.0, geographicLatency - link.baseLatencySeconds);
             link.baseLatencySeconds = geographicLatency;
         }
-        graph_.addLink(std::move(link));
+        simulation.graph_.addLink(std::move(link));
     }
 
     const bool applied = !createdNodeIds.empty() || !mutation.linksToDisable.empty() || !mutation.linksToCreate.empty();
@@ -70,56 +75,56 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
             delta.network.trafficBurstiness = -0.04;
             delta.backend.serviceFragmentation = std::max(delta.backend.serviceFragmentation, 0.04);
         }
-        nudgePressureState(delta);
-        addComplexity(mutation.complexityCost);
+        SimulationPressureSystem::nudgePressureState(simulation, delta);
+        SimulationTuningSystem::addComplexity(simulation, mutation.complexityCost);
     }
     return applied;
 }
 
-bool Simulation::canUseRegionSlots(const std::string& region, int slots) const
+bool SimulationTopologySystem::canUseRegionSlots(const Simulation& simulation, const std::string& region, int slots)
 {
     if (slots <= 0 || region.empty()) {
         return true;
     }
-    return regionSlotsUsed(region) + slots <= regionSlotLimit(region);
+    return regionSlotsUsed(simulation, region) + slots <= regionSlotLimit(simulation, region);
 }
 
-bool Simulation::hasAnyRegionCapacity(int slots) const
+bool SimulationTopologySystem::hasAnyRegionCapacity(const Simulation& simulation, int slots)
 {
-    if (slots <= 0 || regionSlotLimits_.empty()) {
+    if (slots <= 0 || simulation.regionSlotLimits_.empty()) {
         return true;
     }
-    for (const auto& [region, limit] : regionSlotLimits_) {
-        if (regionSlotsUsed(region) + slots <= limit) {
+    for (const auto& [region, limit] : simulation.regionSlotLimits_) {
+        if (regionSlotsUsed(simulation, region) + slots <= limit) {
             return true;
         }
     }
     return false;
 }
 
-int Simulation::regionSlotsUsed(const std::string& region) const
+int SimulationTopologySystem::regionSlotsUsed(const Simulation& simulation, const std::string& region)
 {
-    const auto it = regionSlotsUsed_.find(region);
-    return it != regionSlotsUsed_.end() ? it->second : 0;
+    const auto it = simulation.regionSlotsUsed_.find(region);
+    return it != simulation.regionSlotsUsed_.end() ? it->second : 0;
 }
 
-int Simulation::regionSlotLimit(const std::string& region) const
+int SimulationTopologySystem::regionSlotLimit(const Simulation& simulation, const std::string& region)
 {
-    const auto it = regionSlotLimits_.find(region);
-    return it != regionSlotLimits_.end() ? it->second : 5;
+    const auto it = simulation.regionSlotLimits_.find(region);
+    return it != simulation.regionSlotLimits_.end() ? it->second : 5;
 }
 
-void Simulation::refreshRegionSlots()
+void SimulationTopologySystem::refreshRegionSlots(Simulation& simulation)
 {
-    regionSlotsUsed_.clear();
-    regionSlotLimits_.clear();
-    for (const auto& node : graph_.nodes()) {
+    simulation.regionSlotsUsed_.clear();
+    simulation.regionSlotLimits_.clear();
+    for (const auto& node : simulation.graph_.nodes()) {
         if (!node.hasGeoLocation || node.geoLocation.regionName.empty()) {
             continue;
         }
-        regionSlotLimits_.try_emplace(node.geoLocation.regionName, 5);
+        simulation.regionSlotLimits_.try_emplace(node.geoLocation.regionName, 5);
         if (node.type != NodeType::ClientCluster) {
-            ++regionSlotsUsed_[node.geoLocation.regionName];
+            ++simulation.regionSlotsUsed_[node.geoLocation.regionName];
         }
     }
 }

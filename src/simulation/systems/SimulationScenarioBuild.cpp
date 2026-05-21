@@ -1,3 +1,9 @@
+#include "simulation/systems/SimulationScenarioBuilder.hpp"
+#include "simulation/systems/SimulationTuningSystem.hpp"
+#include "simulation/systems/SimulationModifierSystem.hpp"
+#include "simulation/systems/SimulationPressureSystem.hpp"
+#include "simulation/systems/SimulationTopologySystem.hpp"
+
 #include "simulation/core/Simulation.hpp"
 
 #include "core/topology/Geography.hpp"
@@ -8,37 +14,37 @@
 #include <utility>
 
 
-void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
+void SimulationScenarioBuilder::buildFromScenario(Simulation& simulation, const ScenarioDefinition& scenario)
 {
-    scenario_ = scenario;
-    graph_ = InfrastructureGraph{};
-    requests_.clear();
-    cacheEntries_.clear();
-    metrics_.reset();
-    scenarioPressureContext_ = scenario.pressureContext;
-    eventPressureContext_ = {};
-    pressureState_ = scenarioPressureContext_;
-    scenarioPressureSignals_ = scenario.pressureSignals;
-    eventPressureSignals_.clear();
-    pressureAnalysis_.reset();
-    pressureAnalysis_.setConfig(config_.pressureAnalysis);
-    nextRequestId_ = 1;
-    timeSeconds_ = 0.0;
-    simulationSpeed_ = 1.0;
-    timeSystem_.reset();
-    timeSystem_.setSpeed(simulationSpeed_);
-    scenarioTrafficMultiplier_ = 1.0;
-    scenarioDatabaseCapacityMultiplier_ = 1.0;
-    scenarioRetryDelayMultiplier_ = 1.0;
-    scenarioLatencyMultiplier_ = 1.0;
-    complexityScore_ = 0.0;
-    cacheEnabled_ = scenario.cache.enabled;
-    burstModeEnabled_ = scenario.bursts.enabled;
-    scenarioBurstOverride_.reset();
-    scenarioDatabaseHeavyShareOverride_.reset();
-    localizedEventModifiers_.clear();
-    setAllowedMechanics(scenario.allowedMechanics);
-    runtimeSystems_.initialize(config_);
+    simulation.scenario_ = scenario;
+    simulation.graph_ = InfrastructureGraph{};
+    simulation.requests_.clear();
+    simulation.cacheEntries_.clear();
+    simulation.metrics_.reset();
+    simulation.scenarioPressureContext_ = scenario.pressureContext;
+    simulation.eventPressureContext_ = {};
+    simulation.pressureState_ = simulation.scenarioPressureContext_;
+    simulation.scenarioPressureSignals_ = scenario.pressureSignals;
+    simulation.eventPressureSignals_.clear();
+    simulation.pressureAnalysis_.reset();
+    simulation.pressureAnalysis_.setConfig(simulation.config_.pressureAnalysis);
+    simulation.nextRequestId_ = 1;
+    simulation.timeSeconds_ = 0.0;
+    simulation.simulationSpeed_ = 1.0;
+    simulation.timeSystem_.reset();
+    simulation.timeSystem_.setSpeed(simulation.simulationSpeed_);
+    simulation.scenarioTrafficMultiplier_ = 1.0;
+    simulation.scenarioDatabaseCapacityMultiplier_ = 1.0;
+    simulation.scenarioRetryDelayMultiplier_ = 1.0;
+    simulation.scenarioLatencyMultiplier_ = 1.0;
+    simulation.complexityScore_ = 0.0;
+    simulation.cacheEnabled_ = scenario.cache.enabled;
+    simulation.burstModeEnabled_ = scenario.bursts.enabled;
+    simulation.scenarioBurstOverride_.reset();
+    simulation.scenarioDatabaseHeavyShareOverride_.reset();
+    simulation.localizedEventModifiers_.clear();
+    SimulationTuningSystem::setAllowedMechanics(simulation, scenario.allowedMechanics);
+    simulation.runtimeSystems_.initialize(simulation.config_);
 
     for (const auto& nodeScenario : scenario.nodes) {
         const auto& definition = NodeRegistry::definition(nodeScenario.type);
@@ -65,9 +71,9 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         node.memoryWeight = nodeScenario.resourceProfile.memory;
         node.storageWeight = nodeScenario.resourceProfile.storage;
         node.networkWeight = nodeScenario.resourceProfile.network;
-        graph_.addNode(std::move(node));
+        simulation.graph_.addNode(std::move(node));
     }
-    refreshRegionSlots();
+    SimulationTopologySystem::refreshRegionSlots(simulation);
 
     for (const auto& linkScenario : scenario.links) {
         Link link;
@@ -75,8 +81,8 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         link.targetNodeId = linkScenario.targetNode;
         link.baseLatencySeconds = linkScenario.baseLatencySeconds;
         link.bandwidthPerSecond = linkScenario.bandwidthPerSecond;
-        const Node* source = graph_.node(link.sourceNodeId);
-        const Node* target = graph_.node(link.targetNodeId);
+        const Node* source = simulation.graph_.node(link.sourceNodeId);
+        const Node* target = simulation.graph_.node(link.targetNodeId);
         if (source != nullptr && target != nullptr && source->hasGeoLocation && target->hasGeoLocation) {
             const GeographicSystem geography;
             const double geographicLatency = geography.latencySeconds(source->geoLocation, target->geoLocation, link.baseLatencySeconds);
@@ -84,6 +90,6 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
             link.geographicLatencyContributionSeconds = std::max(0.0, geographicLatency - link.baseLatencySeconds);
             link.baseLatencySeconds = geographicLatency;
         }
-        graph_.addLink(std::move(link));
+        simulation.graph_.addLink(std::move(link));
     }
 }

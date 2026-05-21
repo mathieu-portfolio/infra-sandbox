@@ -1,5 +1,10 @@
 #include "simulation/core/Simulation.hpp"
 
+#include "simulation/systems/SimulationHealthSystem.hpp"
+#include "simulation/systems/SimulationPressureSystem.hpp"
+#include "simulation/systems/SimulationRequestFlowSystem.hpp"
+#include "simulation/systems/SimulationScenarioBuilder.hpp"
+
 #include "core/topology/Geography.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 
@@ -13,7 +18,7 @@ Simulation::Simulation(const ScenarioDefinition& scenario, SimulationConfig conf
     : config_(config)
 {
     pressureAnalysis_.setConfig(config_.pressureAnalysis);
-    buildFromScenario(scenario);
+    SimulationScenarioBuilder::buildFromScenario(*this, scenario);
 }
 
 void Simulation::update(double dt)
@@ -21,15 +26,15 @@ void Simulation::update(double dt)
     timeSystem_.update(dt);
     timeSeconds_ = timeSystem_.state().elapsedSeconds;
     runtimeSystems_.update(dt);
-    expireCacheEntries();
-    generateClientRequests(dt);
-    updateRetryWaits();
-    updateLinks(dt);
-    updateProcessors(dt);
-    updatePropagatedPressure(dt);
-    updateNodeHealth(dt);
-    updateMetricsNodeStates();
-    updatePressureState(dt);
+    SimulationRequestFlowSystem::expireCacheEntries(*this);
+    SimulationRequestFlowSystem::generateClientRequests(*this, dt);
+    SimulationRequestFlowSystem::updateRetryWaits(*this);
+    SimulationRequestFlowSystem::updateLinks(*this, dt);
+    SimulationRequestFlowSystem::updateProcessors(*this, dt);
+    SimulationHealthSystem::updatePropagatedPressure(*this, dt);
+    SimulationHealthSystem::updateNodeHealth(*this, dt);
+    SimulationHealthSystem::updateMetricsNodeStates(*this);
+    SimulationPressureSystem::updatePressureState(*this, dt);
 
     metrics_.setSimulationSpeed(simulationSpeed_);
     metrics_.setRuntimeSystemCounts(runtimeSystems_.enabledCount(), static_cast<int>(runtimeSystems_.states().size()));
@@ -40,5 +45,5 @@ void Simulation::update(double dt)
     metrics_.setActivePressureSignals(std::move(activeSignals));
     metrics_.update(dt);
     pressureAnalysis_.update(timeSeconds_, dt, graph_, metrics_.snapshot());
-    pruneOldRequests();
+    SimulationRequestFlowSystem::pruneOldRequests(*this);
 }
