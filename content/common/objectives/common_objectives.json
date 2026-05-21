@@ -1,0 +1,117 @@
+{
+  "objectives": [
+    {
+      "id": "maintain_low_latency",
+      "name": "Maintain Low Latency",
+      "category": "Reliability",
+      "description": "Keep average request latency under control during growth.",
+      "target_metrics": [
+        "latency"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "survive_traffic_spike",
+      "name": "Survive Traffic Spike",
+      "category": "Scalability",
+      "description": "Handle a sudden burst of traffic without major outages.",
+      "target_metrics": [
+        "traffic",
+        "failure"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "reduce_retry_storms",
+      "name": "Reduce Retry Storms",
+      "category": "Reliability",
+      "description": "Prevent retries from amplifying backend instability.",
+      "target_metrics": [
+        "retry",
+        "failure"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "stabilize_global_platform",
+      "name": "Stabilize Global Platform",
+      "category": "Infrastructure",
+      "description": "Keep multiple regions healthy during heavy worldwide usage.",
+      "target_metrics": [
+        "latency",
+        "failure",
+        "traffic"
+      ],
+      "difficulty": "hard"
+    },
+    {
+      "id": "scale_ai_inference",
+      "name": "Scale AI Inference",
+      "category": "AI",
+      "description": "Serve AI requests without saturating compute capacity.",
+      "target_metrics": [
+        "compute",
+        "queue",
+        "latency"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "protect_authentication_stack",
+      "name": "Protect Authentication Stack",
+      "category": "Security",
+      "description": "Prevent authentication systems from becoming a bottleneck.",
+      "target_metrics": [
+        "failure",
+        "latency",
+        "queue"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "control_infrastructure_costs",
+      "name": "Control Infrastructure Costs",
+      "category": "Operations",
+      "description": "Scale carefully without excessive infrastructure expansion.",
+      "target_metrics": [
+        "compute",
+        "traffic"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "improve_cache_efficiency",
+      "name": "Improve Cache Efficiency",
+      "category": "Performance",
+      "description": "Reduce origin load by increasing cache effectiveness.",
+      "target_metrics": [
+        "latency",
+        "traffic"
+      ],
+      "difficulty": "easy"
+    },
+    {
+      "id": "stabilize_data_pipeline",
+      "name": "Stabilize Data Pipeline",
+      "category": "Data",
+      "description": "Keep analytics and ETL systems operating under heavy ingestion.",
+      "target_metrics": [
+        "queue",
+        "persistence"
+      ],
+      "difficulty": "medium"
+    },
+    {
+      "id": "prevent_cascading_failures",
+      "name": "Prevent Cascading Failures",
+      "category": "Reliability",
+      "description": "Stop one unhealthy service from destabilizing the platform.",
+      "target_metrics": [
+        "failure",
+        "retry",
+        "queue"
+      ],
+      "difficulty": "hard"
+    }
+  ]
+}
