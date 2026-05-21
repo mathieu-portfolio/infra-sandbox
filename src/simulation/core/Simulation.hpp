@@ -109,6 +109,8 @@ private:
     void updatePropagatedPressure(double dt);
     void updateNodeHealth(double dt);
     void updateMetricsNodeStates();
+    void updatePressureState(double dt);
+    void nudgePressureState(const PressureState& delta);
     void refreshEffectiveCapacities();
     void refreshRegionSlots();
     void pruneOldRequests();
@@ -119,6 +121,7 @@ private:
     RuntimeSystems runtimeSystems_;
     SimulationTimeSystem timeSystem_;
     Metrics metrics_;
+    PressureState pressureState_;
     PressureAnalysisSystem pressureAnalysis_;
     std::unordered_map<std::uint64_t, Request> requests_;
     std::deque<CacheEntry> cacheEntries_;

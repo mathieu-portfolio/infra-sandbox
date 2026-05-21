@@ -225,6 +225,31 @@ TEST(MetricsAggregatorTests, ComputesGlobalMetricsFromFrontendSignals)
     EXPECT_FALSE(snapshot.contributions.empty());
 }
 
+TEST(MetricsAggregatorTests, HiddenPressureStateDerivesSpecializedMetrics)
+{
+    MetricsSnapshot snapshot;
+    snapshot.averageLatencySeconds = 0.2;
+    snapshot.inputRatePerSecond = 8.0;
+    snapshot.processedPerSecond = 8.0;
+    snapshot.pressureState.frontend.assetWeight = 0.9;
+    snapshot.pressureState.frontend.renderComplexity = 0.8;
+    snapshot.pressureState.frontend.realtimeIntensity = 0.7;
+    snapshot.pressureState.frontend.sessionPersistence = 0.2;
+    snapshot.pressureState.frontend.mobileCompatibility = 0.3;
+    snapshot.pressureState.backend.serviceFragmentation = 0.6;
+    snapshot.pressureState.network.bandwidthPressure = 0.7;
+    snapshot.pressureState.network.trafficBurstiness = 0.8;
+
+    MetricsAggregator::update(snapshot);
+
+    EXPECT_GT(snapshot.frontend.assetBandwidth, 40.0);
+    EXPECT_GT(snapshot.frontend.websocketPressure, 40.0);
+    EXPECT_GT(snapshot.frontend.sessionStalenessRisk, 20.0);
+    EXPECT_GT(snapshot.backend.serviceFragmentation, 50.0);
+    EXPECT_GT(snapshot.network.deliveryPressure, 40.0);
+    EXPECT_GT(snapshot.global.infrastructurePressure, 20.0);
+}
+
 TEST(EngineeringCapacityTests, SpecialtyIncreasesAreCappedAtTotalBudget)
 {
     const EngineeringCapacity fullCapacity{
@@ -421,6 +446,20 @@ TEST(SimulationTests, DefaultScenarioGeneratesAndCompletesRequests)
     EXPECT_GT(metrics.totalGenerated, 0U);
     EXPECT_GT(metrics.totalProcessed, 0U);
     EXPECT_GT(metrics.averageLatencySeconds, 0.0);
+}
+
+TEST(SimulationTests, HiddenPressureStateEvolvesUnderBurstLoad)
+{
+    Simulation simulation(ScenarioRegistry::burstTraffic());
+    simulation.toggleBurstMode();
+
+    runFor(simulation, 2.0);
+
+    const auto& metrics = simulation.metrics();
+    EXPECT_GT(metrics.pressureState.backend.requestLoad, 0.0);
+    EXPECT_GT(metrics.pressureState.network.trafficBurstiness, 0.0);
+    EXPECT_GT(metrics.backend.requestLoad, 0.0);
+    EXPECT_GT(metrics.network.trafficBurstiness, 0.0);
 }
 
 TEST(SimulationTests, QueueBuildsWhenDemandExceedsCapacity)

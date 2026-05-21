@@ -91,4 +91,3 @@ double Simulation::recommendedComplexityThreshold() const
 {
     return recommendedComplexityThreshold_;
 }
-

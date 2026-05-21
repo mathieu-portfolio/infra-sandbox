@@ -55,6 +55,22 @@ bool Simulation::applyTopologyMutation(const TopologyMutation& mutation)
 
     const bool applied = !createdNodeIds.empty() || !mutation.linksToDisable.empty() || !mutation.linksToCreate.empty();
     if (applied) {
+        PressureState delta;
+        delta.backend.serviceFragmentation = mutation.complexityCost * 0.035;
+        if (mutation.type == TopologyMutationType::AddCache || mutation.type == TopologyMutationType::AddRegionalCache) {
+            delta.frontend.cacheEfficiency = 0.08;
+            delta.network.bandwidthPressure = -0.03;
+        }
+        if (mutation.type == TopologyMutationType::AddReadReplica) {
+            delta.backend.queuePressure = -0.04;
+            delta.network.latencySensitivity = 0.02;
+        }
+        if (mutation.type == TopologyMutationType::AddQueue) {
+            delta.backend.queuePressure = -0.03;
+            delta.network.trafficBurstiness = -0.04;
+            delta.backend.serviceFragmentation = std::max(delta.backend.serviceFragmentation, 0.04);
+        }
+        nudgePressureState(delta);
         addComplexity(mutation.complexityCost);
     }
     return applied;
@@ -107,4 +123,3 @@ void Simulation::refreshRegionSlots()
         }
     }
 }
-

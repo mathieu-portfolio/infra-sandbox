@@ -28,12 +28,13 @@ void Simulation::update(double dt)
     updatePropagatedPressure(dt);
     updateNodeHealth(dt);
     updateMetricsNodeStates();
+    updatePressureState(dt);
 
     metrics_.setSimulationSpeed(simulationSpeed_);
     metrics_.setRuntimeSystemCounts(runtimeSystems_.enabledCount(), static_cast<int>(runtimeSystems_.states().size()));
     metrics_.setComplexity(complexityScore_, recommendedComplexityThreshold_);
+    metrics_.setPressureState(pressureState_);
     metrics_.update(dt);
     pressureAnalysis_.update(timeSeconds_, dt, graph_, metrics_.snapshot());
     pruneOldRequests();
 }
-

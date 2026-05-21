@@ -44,6 +44,49 @@ struct FrontendMetrics {
     double sessionStalenessRisk = 0.0;
 };
 
+struct BackendMetrics {
+    double requestLoad = 0.0;
+    double queuePressure = 0.0;
+    double computeIntensity = 0.0;
+    double serviceFragmentation = 0.0;
+    double reliabilityRisk = 0.0;
+};
+
+struct NetworkMetrics {
+    double bandwidthPressure = 0.0;
+    double latencySensitivity = 0.0;
+    double trafficBurstiness = 0.0;
+    double deliveryPressure = 0.0;
+};
+
+struct FrontendState {
+    double assetWeight = 0.0;
+    double renderComplexity = 0.0;
+    double cacheEfficiency = 0.0;
+    double realtimeIntensity = 0.0;
+    double sessionPersistence = 0.0;
+    double mobileCompatibility = 0.0;
+};
+
+struct BackendState {
+    double requestLoad = 0.0;
+    double queuePressure = 0.0;
+    double computeIntensity = 0.0;
+    double serviceFragmentation = 0.0;
+};
+
+struct NetworkState {
+    double bandwidthPressure = 0.0;
+    double latencySensitivity = 0.0;
+    double trafficBurstiness = 0.0;
+};
+
+struct PressureState {
+    FrontendState frontend;
+    BackendState backend;
+    NetworkState network;
+};
+
 struct FlowMetrics {
     double inputRatePerSecond = 0.0;
     double processedPerSecond = 0.0;
@@ -95,6 +138,9 @@ struct MetricsSnapshot {
     ObservabilityMetrics observability;
     GlobalMetrics global;
     FrontendMetrics frontend;
+    BackendMetrics backend;
+    NetworkMetrics network;
+    PressureState pressureState;
     std::vector<MetricContribution> contributions;
 };
 
@@ -115,6 +161,7 @@ public:
     void setSimulationSpeed(double speed);
     void setRuntimeSystemCounts(int enabledSystemCount, int initializedSystemCount);
     void setComplexity(double current, double recommendedThreshold);
+    void setPressureState(const PressureState& state);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;

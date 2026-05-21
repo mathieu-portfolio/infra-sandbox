@@ -30,6 +30,12 @@ void Simulation::adjustClientRequestRates(double deltaPerSecond)
             node.baseRequestRatePerSecond = node.requestRatePerSecond;
         }
     }
+    if (deltaPerSecond > 0.0) {
+        PressureState delta;
+        delta.backend.requestLoad = deltaPerSecond * 0.015;
+        delta.network.trafficBurstiness = deltaPerSecond * 0.010;
+        nudgePressureState(delta);
+    }
 }
 
 void Simulation::scaleApiCapacity(double multiplier)
@@ -58,6 +64,11 @@ bool Simulation::scaleApiCapacity(int targetId, double multiplier, int maxScaleL
         applied = true;
     }
     if (applied) {
+        PressureState delta;
+        delta.backend.computeIntensity = -0.05;
+        delta.backend.queuePressure = -0.03;
+        delta.backend.serviceFragmentation = complexityCost * 0.025;
+        nudgePressureState(delta);
         addComplexity(complexityCost);
         refreshEffectiveCapacities();
     }
@@ -67,21 +78,41 @@ bool Simulation::scaleApiCapacity(int targetId, double multiplier, int maxScaleL
 void Simulation::toggleCache()
 {
     cacheEnabled_ = !cacheEnabled_;
+    PressureState delta;
+    delta.frontend.cacheEfficiency = cacheEnabled_ ? 0.14 : -0.14;
+    delta.frontend.sessionPersistence = cacheEnabled_ ? 0.04 : -0.04;
+    delta.backend.computeIntensity = cacheEnabled_ ? -0.03 : 0.03;
+    nudgePressureState(delta);
 }
 
 void Simulation::clearCache()
 {
     cacheEntries_.clear();
+    PressureState delta;
+    delta.frontend.cacheEfficiency = -0.08;
+    delta.frontend.sessionPersistence = -0.03;
+    nudgePressureState(delta);
 }
 
 void Simulation::toggleBurstMode()
 {
     burstModeEnabled_ = !burstModeEnabled_;
+    if (burstModeEnabled_) {
+        PressureState delta;
+        delta.backend.requestLoad = 0.08;
+        delta.frontend.realtimeIntensity = 0.05;
+        delta.network.trafficBurstiness = 0.18;
+        nudgePressureState(delta);
+    }
 }
 
 void Simulation::toggleRetries()
 {
     scenario_.retries.enabled = !scenario_.retries.enabled;
+    PressureState delta;
+    delta.frontend.realtimeIntensity = scenario_.retries.enabled ? 0.04 : -0.04;
+    delta.network.trafficBurstiness = scenario_.retries.enabled ? 0.04 : -0.04;
+    nudgePressureState(delta);
 }
 
 void Simulation::resetProcessingCapacity()
@@ -97,6 +128,8 @@ void Simulation::resetProcessingCapacity()
         }
     }
     complexityScore_ = 0.0;
+    pressureState_ = {};
+    metrics_.setPressureState(pressureState_);
     refreshRegionSlots();
     refreshEffectiveCapacities();
 }
@@ -111,11 +144,23 @@ void Simulation::setSimulationSpeed(double speed)
 void Simulation::setScenarioTrafficMultiplier(double multiplier)
 {
     scenarioTrafficMultiplier_ = std::max(0.0, multiplier);
+    if (scenarioTrafficMultiplier_ > 1.0) {
+        PressureState delta;
+        delta.backend.requestLoad = (scenarioTrafficMultiplier_ - 1.0) * 0.025;
+        delta.network.trafficBurstiness = (scenarioTrafficMultiplier_ - 1.0) * 0.020;
+        nudgePressureState(delta);
+    }
 }
 
 void Simulation::setScenarioBurst(const BurstScenario& burst)
 {
     scenarioBurstOverride_ = burst;
+    if (burst.enabled) {
+        PressureState delta;
+        delta.backend.requestLoad = std::max(0.0, burst.multiplier - 1.0) * 0.025;
+        delta.network.trafficBurstiness = std::max(0.0, burst.multiplier - 1.0) * 0.035;
+        nudgePressureState(delta);
+    }
 }
 
 void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
@@ -132,6 +177,11 @@ void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
 void Simulation::setScenarioLatencyMultiplier(double multiplier)
 {
     scenarioLatencyMultiplier_ = std::max(0.1, multiplier);
+    if (scenarioLatencyMultiplier_ > 1.0) {
+        PressureState delta;
+        delta.network.latencySensitivity = (scenarioLatencyMultiplier_ - 1.0) * 0.05;
+        nudgePressureState(delta);
+    }
 }
 
 void Simulation::setScenarioDatabaseHeavyShareOverride(std::optional<double> share)
@@ -146,6 +196,14 @@ void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
 
 void Simulation::setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers)
 {
+    for (const auto& modifier : modifiers) {
+        PressureState delta;
+        delta.backend.requestLoad = std::max(0.0, modifier.effect.trafficMultiplier - 1.0) * 0.030;
+        delta.backend.queuePressure = std::max(0.0, 1.0 - modifier.effect.databaseCapacityMultiplier) * 0.050;
+        delta.network.trafficBurstiness = std::max(0.0, modifier.effect.trafficMultiplier - 1.0) * 0.020;
+        delta.network.latencySensitivity = std::max(0.0, modifier.effect.retryDelayMultiplier - 1.0) * 0.020;
+        nudgePressureState(delta);
+    }
     localizedEventModifiers_ = std::move(modifiers);
     refreshEffectiveCapacities();
 }
@@ -156,10 +214,19 @@ bool Simulation::addRegionalDemandSource(const EventLocation& location, double r
         return false;
     }
 
+    auto nudgeRegionalDemand = [this, requestRatePerSecond]() {
+        PressureState delta;
+        delta.backend.requestLoad = requestRatePerSecond * 0.018;
+        delta.network.bandwidthPressure = requestRatePerSecond * 0.010;
+        delta.network.trafficBurstiness = requestRatePerSecond * 0.012;
+        nudgePressureState(delta);
+    };
+
     for (auto& node : graph_.nodes()) {
         if (node.type == NodeType::ClientCluster && node.hasGeoLocation && node.geoLocation.regionName == location.region) {
             node.requestRatePerSecond += requestRatePerSecond;
             node.baseRequestRatePerSecond = node.requestRatePerSecond;
+            nudgeRegionalDemand();
             return true;
         }
     }
@@ -186,6 +253,8 @@ bool Simulation::addRegionalDemandSource(const EventLocation& location, double r
     if (targetApi == nullptr) {
         return false;
     }
+
+    nudgeRegionalDemand();
 
     Node node;
     node.name = location.region + " users";

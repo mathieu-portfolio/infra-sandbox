@@ -79,9 +79,9 @@ std::array<SpecializationSummary, static_cast<std::size_t>(MetricsSpecialization
     }
     return {
         SpecializationSummary{MetricsSpecialization::Frontend, "Frontend", frontendHealth(metrics), frontendTrend, true},
-        SpecializationSummary{MetricsSpecialization::Backend, "Backend", 100.0 - std::min(100.0, metrics.apiUtilization * 65.0 + metrics.apiQueueDepth * 2.0), 0.0, false},
-        SpecializationSummary{MetricsSpecialization::Network, "Network", 100.0 - metrics.frontend.websocketPressure * 0.55, 0.0, false},
-        SpecializationSummary{MetricsSpecialization::Database, "Database", 100.0 - std::min(100.0, metrics.databaseUtilization * 65.0 + metrics.databaseQueueDepth * 2.0), 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Backend, "Backend", 100.0 - std::max({metrics.backend.requestLoad, metrics.backend.queuePressure, metrics.backend.computeIntensity}), 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Network, "Network", 100.0 - metrics.network.deliveryPressure, 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Database, "Database", 100.0 - std::min(100.0, metrics.databaseUtilization * 45.0 + metrics.databaseQueueDepth * 1.5 + metrics.backend.queuePressure * 0.25), 0.0, false},
         SpecializationSummary{MetricsSpecialization::Runtime, "Runtime", 100.0 - metrics.global.complexity * 0.25, 0.0, false},
     };
 }

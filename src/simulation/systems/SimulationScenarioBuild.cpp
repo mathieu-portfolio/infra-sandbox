@@ -15,6 +15,7 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     requests_.clear();
     cacheEntries_.clear();
     metrics_.reset();
+    pressureState_ = {};
     pressureAnalysis_.reset();
     pressureAnalysis_.setConfig(config_.pressureAnalysis);
     nextRequestId_ = 1;
@@ -82,4 +83,3 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
         graph_.addLink(std::move(link));
     }
 }
-
