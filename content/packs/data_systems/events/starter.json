@@ -280,5 +280,161 @@
       "recovery",
       "database_pressure"
     ]
+  },
+  {
+    "id": "data_object_storage_large_uploads",
+    "display_name": "Large Upload Wave",
+    "description": "Users upload heavier files, increasing blob storage and network pressure.",
+    "category": "storage",
+    "moment": "runtime",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "object_storage"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.12,
+        "max": 1.32
+      },
+      "latency_multiplier": {
+        "min": 1.12,
+        "max": 1.28
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "object_storage",
+      "uploads",
+      "network"
+    ]
+  },
+  {
+    "id": "data_timeseries_telemetry_surge",
+    "display_name": "Telemetry Surge",
+    "description": "More instrumentation increases metric writes into time-series storage.",
+    "category": "observability",
+    "moment": "runtime",
+    "weight": 0.6,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "timeseries_database"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.78,
+        "max": 0.92
+      },
+      "latency_multiplier": {
+        "min": 1.08,
+        "max": 1.2
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "observability",
+      "metrics",
+      "timeseries"
+    ]
+  },
+  {
+    "id": "data_etl_batch_window",
+    "display_name": "ETL Batch Window",
+    "description": "A scheduled analytics batch competes with interactive workloads for data resources.",
+    "category": "data",
+    "moment": "runtime",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "batch_processor"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.7,
+        "max": 0.86
+      },
+      "latency_multiplier": {
+        "min": 1.1,
+        "max": 1.28
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "etl",
+      "batch",
+      "analytics"
+    ]
+  },
+  {
+    "id": "data_warehouse_query_spike",
+    "display_name": "Analytics Query Spike",
+    "description": "A dashboard or report wave creates heavy read pressure in the analytics path.",
+    "category": "data",
+    "moment": "runtime",
+    "weight": 0.5,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "data_warehouse"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.76,
+        "max": 0.9
+      },
+      "latency_multiplier": {
+        "min": 1.08,
+        "max": 1.22
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "common",
+      "data_warehouse",
+      "analytics",
+      "olap"
+    ]
   }
 ]

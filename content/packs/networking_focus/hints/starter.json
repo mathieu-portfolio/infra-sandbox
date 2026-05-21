@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ddos_filtering",
+    "trigger": "ddos_mitigated",
+    "text": "Edge filtering reduced malicious traffic before it reached core services.",
+    "category": "Network"
+  },
+  {
+    "id": "regional_failover",
+    "trigger": "traffic_rerouted",
+    "text": "Traffic was rerouted to healthier regions to maintain availability.",
+    "category": "Infrastructure"
+  }
+]

@@ -1,0 +1,14 @@
+[
+  {
+    "id": "vector_search_latency",
+    "trigger": "vector_search_active",
+    "text": "Semantic retrieval improves relevance but adds retrieval latency and storage pressure.",
+    "category": "AI"
+  },
+  {
+    "id": "gpu_saturation",
+    "trigger": "ai_compute_pressure",
+    "text": "AI inference workloads are saturating compute resources and increasing queue times.",
+    "category": "AI"
+  }
+]

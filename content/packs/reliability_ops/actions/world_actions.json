@@ -3,8 +3,7 @@
     "id": "incident_command",
     "display_name": "Incident Command",
     "description": "Coordinate the response so mitigation choices are clearer during this turn.",
-    "categories": [
-    ],
+    "categories": [],
     "useful_when": "signals are noisy and several mitigations compete",
     "tradeoffs": "Coordination helps response quality but does not directly add capacity.",
     "icon_id": "alert.warning",
@@ -153,6 +152,264 @@
       "slos",
       "error_budget",
       "reliability"
+    ]
+  },
+  {
+    "id": "rate_limit_public_api",
+    "display_name": "Rate Limit Public API",
+    "description": "Limit excessive public traffic before it overwhelms backend services.",
+    "categories": [
+      "Reliability",
+      "Network"
+    ],
+    "useful_when": "traffic bursts or abusive clients are driving queue and retry pressure",
+    "tradeoffs": "Some requests are rejected or delayed to preserve stability.",
+    "icon_id": "action.generic",
+    "affected_pressures": [
+      "traffic",
+      "retry",
+      "latency"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "request_load": -0.12,
+        "queue_pressure": -0.06
+      },
+      "network": {
+        "traffic_burstiness": -0.08
+      }
+    },
+    "complexity_delta": {
+      "min": 0.04,
+      "max": 0.1
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.15
+    },
+    "tags": [
+      "rate_limiting",
+      "backpressure",
+      "api"
+    ]
+  },
+  {
+    "id": "add_request_timeout",
+    "display_name": "Add Request Timeout",
+    "description": "Stop slow requests from occupying resources indefinitely.",
+    "categories": [
+      "Reliability"
+    ],
+    "useful_when": "slow dependencies are filling queues and tying up workers",
+    "tradeoffs": "Failures become visible sooner instead of waiting silently.",
+    "icon_id": "alert.warning",
+    "affected_pressures": [
+      "queue",
+      "failure",
+      "latency"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "queue_pressure": -0.08,
+        "compute_intensity": -0.04
+      },
+      "network": {
+        "traffic_burstiness": 0.02
+      }
+    },
+    "event_intensity_multiplier": {
+      "min": 0.92,
+      "max": 1.0
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.15
+    },
+    "tags": [
+      "timeouts",
+      "failure_boundaries"
+    ]
+  },
+  {
+    "id": "add_circuit_breaker",
+    "display_name": "Add Circuit Breaker",
+    "description": "Stop calling unhealthy dependencies before failures spread.",
+    "categories": [
+      "Reliability"
+    ],
+    "useful_when": "retry storms or downstream failures are amplifying load",
+    "tradeoffs": "Some features are unavailable while the breaker is open.",
+    "icon_id": "layer.reliability",
+    "affected_pressures": [
+      "retry",
+      "failure",
+      "queue"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "queue_pressure": -0.07,
+        "service_fragmentation": 0.03
+      },
+      "network": {
+        "traffic_burstiness": -0.06
+      },
+      "frontend": {
+        "realtime_intensity": -0.04
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.04,
+      "max": 0.08
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.15
+    },
+    "tags": [
+      "circuit_breaker",
+      "dependency_isolation"
+    ]
+  },
+  {
+    "id": "enable_blue_green_deploy",
+    "display_name": "Enable Blue-Green Deploy",
+    "description": "Deploy new versions beside old versions before switching traffic.",
+    "categories": [
+      "Deployment",
+      "Reliability"
+    ],
+    "useful_when": "release events or risky changes are causing instability",
+    "tradeoffs": "Runs duplicate infrastructure and increases release coordination.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": [
+      "failure"
+    ],
+    "event_intensity_multiplier": {
+      "min": 0.72,
+      "max": 0.86
+    },
+    "pressure_effects": {
+      "backend": {
+        "service_fragmentation": 0.04
+      },
+      "runtime": {
+        "scheduling_pressure": 0.04
+      }
+    },
+    "complexity_delta": {
+      "min": 0.15,
+      "max": 0.28
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.1
+    },
+    "tags": [
+      "deployment",
+      "blue_green"
+    ]
+  },
+  {
+    "id": "canary_release",
+    "display_name": "Canary Release",
+    "description": "Expose a small group of users to a risky change before full rollout.",
+    "categories": [
+      "Deployment",
+      "Observability"
+    ],
+    "useful_when": "a release might fail but you need evidence before rolling back",
+    "tradeoffs": "Operational routing and analysis become more complex.",
+    "icon_id": "metric.objective",
+    "affected_pressures": [
+      "failure",
+      "latency"
+    ],
+    "event_intensity_multiplier": {
+      "min": 0.78,
+      "max": 0.9
+    },
+    "pressure_effects": {
+      "backend": {
+        "service_fragmentation": 0.03
+      },
+      "network": {
+        "latency_sensitivity": 0.02
+      }
+    },
+    "complexity_delta": {
+      "min": 0.08,
+      "max": 0.18
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.1
+    },
+    "tags": [
+      "canary",
+      "progressive_delivery"
+    ]
+  },
+  {
+    "id": "add_feature_flags",
+    "display_name": "Add Feature Flags",
+    "description": "Control features at runtime without redeploying the whole system.",
+    "categories": [
+      "Deployment",
+      "Platform"
+    ],
+    "useful_when": "release risk is high and you need a fast kill switch",
+    "tradeoffs": "Configuration paths become shared runtime dependencies.",
+    "icon_id": "action.generic",
+    "affected_pressures": [
+      "failure"
+    ],
+    "event_intensity_multiplier": {
+      "min": 0.82,
+      "max": 0.94
+    },
+    "pressure_effects": {
+      "backend": {
+        "service_fragmentation": 0.04
+      },
+      "runtime": {
+        "scheduling_pressure": 0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.1,
+      "max": 0.22
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.1
+    },
+    "tags": [
+      "feature_flags",
+      "rollout"
     ]
   }
 ]

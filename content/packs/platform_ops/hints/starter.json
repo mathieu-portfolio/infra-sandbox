@@ -1,0 +1,14 @@
+[
+  {
+    "id": "autoscaling_lag",
+    "trigger": "autoscaling_under_pressure",
+    "text": "Autoscaling reacts with delay, so sudden bursts can still overload the platform.",
+    "category": "Platform"
+  },
+  {
+    "id": "service_mesh_overhead",
+    "trigger": "mesh_latency_increase",
+    "text": "The service mesh improved observability and retries, but added network overhead.",
+    "category": "Platform"
+  }
+]

@@ -383,5 +383,118 @@
       "sandbox",
       "database"
     ]
+  },
+  {
+    "id": "ops_ci_cd_risky_release",
+    "display_name": "Risky Release Window",
+    "description": "A deployment happens while the system is already carrying user traffic.",
+    "category": "operations",
+    "moment": "runtime",
+    "weight": 0.5,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "ci_cd_pipeline"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.08,
+        "max": 1.22
+      },
+      "retry_delay_multiplier": {
+        "min": 0.72,
+        "max": 0.9
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "common",
+      "deployment",
+      "ci_cd",
+      "risk"
+    ]
+  },
+  {
+    "id": "ops_feature_flag_misconfiguration",
+    "display_name": "Feature Flag Misconfiguration",
+    "description": "A runtime configuration change sends too much traffic through a new path.",
+    "category": "operations",
+    "moment": "runtime",
+    "weight": 0.45,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "feature_flag_service"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.18,
+        "max": 1.45
+      },
+      "burst_multiplier": {
+        "min": 1.1,
+        "max": 1.3
+      }
+    },
+    "duration_turns": 1,
+    "tags": [
+      "common",
+      "feature_flags",
+      "config",
+      "deployment"
+    ]
+  },
+  {
+    "id": "ops_distributed_lock_contention",
+    "display_name": "Lock Contention",
+    "description": "Many operations need the same coordination point, serializing work that used to run in parallel.",
+    "category": "backend",
+    "moment": "runtime",
+    "weight": 0.5,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "distributed_lock_service"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "latency_multiplier": {
+        "min": 1.25,
+        "max": 1.55
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "coordination",
+      "locks",
+      "contention"
+    ]
   }
 ]

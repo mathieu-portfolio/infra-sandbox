@@ -1,0 +1,41 @@
+[
+  {
+    "id": "security_auth_login_surge",
+    "display_name": "Login Surge",
+    "description": "Many users authenticate at the same time, turning identity into a shared dependency.",
+    "category": "security",
+    "moment": "runtime",
+    "weight": 0.75,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "identity_provider"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 2
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "latency_multiplier": {
+        "min": 1.15,
+        "max": 1.35
+      },
+      "traffic_multiplier": {
+        "min": 1.15,
+        "max": 1.35
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "auth",
+      "identity",
+      "login"
+    ]
+  }
+]

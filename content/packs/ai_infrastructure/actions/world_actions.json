@@ -1,0 +1,96 @@
+[
+  {
+    "id": "add_ai_inference_gateway",
+    "display_name": "Add AI Inference Gateway",
+    "description": "Route AI requests through a slower, more expensive compute path.",
+    "categories": [
+      "AI",
+      "Platform"
+    ],
+    "useful_when": "AI features need isolation from normal application requests",
+    "tradeoffs": "Inference adds queue sensitivity, compute cost, and latency.",
+    "icon_id": "node.service",
+    "affected_pressures": [
+      "compute",
+      "queue",
+      "latency"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "request_load": 0.05,
+        "queue_pressure": 0.06
+      },
+      "runtime": {
+        "cpu_pressure": 0.14,
+        "memory_pressure": 0.08,
+        "scheduling_pressure": 0.05
+      },
+      "network": {
+        "latency_sensitivity": 0.04
+      }
+    },
+    "complexity_delta": {
+      "min": 0.16,
+      "max": 0.32
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "ai",
+      "inference"
+    ]
+  },
+  {
+    "id": "add_vector_search",
+    "display_name": "Add Vector Search",
+    "description": "Add semantic retrieval before AI responses or recommendations.",
+    "categories": [
+      "AI",
+      "Data"
+    ],
+    "useful_when": "semantic features need retrieval instead of simple keyword lookup",
+    "tradeoffs": "Retrieval adds persistence load, memory pressure, and latency.",
+    "icon_id": "node.database",
+    "affected_pressures": [
+      "persistence",
+      "latency",
+      "compute"
+    ],
+    "pressure_effects": {
+      "database": {
+        "read_pressure": 0.08,
+        "contention": 0.04
+      },
+      "runtime": {
+        "memory_pressure": 0.06,
+        "cpu_pressure": 0.04
+      },
+      "network": {
+        "latency_sensitivity": 0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.12,
+      "max": 0.26
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "ai",
+      "vector_database",
+      "rag"
+    ]
+  }
+]

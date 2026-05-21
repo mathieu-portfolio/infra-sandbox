@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cdn_cache_hit",
+    "trigger": "cdn_high_cache_usage",
+    "text": "The CDN reduced origin traffic by serving cached content closer to users.",
+    "category": "Performance"
+  },
+  {
+    "id": "graphql_fanout",
+    "trigger": "graphql_high_latency",
+    "text": "The GraphQL gateway is amplifying backend traffic through request fanout.",
+    "category": "Backend"
+  },
+  {
+    "id": "cache_miss_spike",
+    "trigger": "cache_low_hit_rate",
+    "text": "Low cache hit rates are forcing more requests to reach backend systems.",
+    "category": "Performance"
+  }
+]

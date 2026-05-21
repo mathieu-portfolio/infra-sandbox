@@ -1,0 +1,76 @@
+[
+  {
+    "id": "platform_service_mesh_retry_amplification",
+    "display_name": "Service Mesh Retry Amplification",
+    "description": "Retries intended to hide errors start multiplying load while a dependency is slow.",
+    "category": "reliability",
+    "moment": "runtime",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "service_mesh"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "modify_burst_intensity",
+      "traffic_multiplier": {
+        "min": 1.25,
+        "max": 1.55
+      },
+      "retry_delay_multiplier": {
+        "min": 0.5,
+        "max": 0.72
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "service_mesh",
+      "retries",
+      "reliability"
+    ]
+  },
+  {
+    "id": "platform_kubernetes_autoscaling_lag",
+    "display_name": "Autoscaling Lag",
+    "description": "Load rises faster than the cluster can schedule enough new capacity.",
+    "category": "platform",
+    "moment": "runtime",
+    "weight": 0.65,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "kubernetes_cluster"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "latency_multiplier": {
+        "min": 1.18,
+        "max": 1.4
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "kubernetes",
+      "autoscaling",
+      "capacity"
+    ]
+  }
+]

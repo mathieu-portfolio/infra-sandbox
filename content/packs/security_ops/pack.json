@@ -1,0 +1,15 @@
+{
+  "id": "security_ops",
+  "display_name": "Security Ops",
+  "description": "Security-oriented content about authentication, centralized identity, and security bottlenecks.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "depends_on": [
+    "common"
+  ],
+  "tags": [
+    "security",
+    "auth",
+    "identity"
+  ]
+}

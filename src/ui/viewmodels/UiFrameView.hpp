@@ -70,7 +70,6 @@ struct UiFrameView {
     const RuntimeSystems* runtimeSystemsValue = nullptr;
     MetricsSnapshot metricsValue{};
     PressureSnapshot pressureValue{};
-    UiPressureAnalysisView pressureAnalysisValue{};
     UiScenarioView scenario;
     double timeSecondsValue = 0.0;
     double simulationSpeedValue = 1.0;
@@ -85,7 +84,7 @@ struct UiFrameView {
     [[nodiscard]] const RuntimeSystems& runtimeSystems() const { return *runtimeSystemsValue; }
     [[nodiscard]] const MetricsSnapshot& metrics() const { return metricsValue; }
     [[nodiscard]] const PressureSnapshot& pressure() const { return pressureValue; }
-    [[nodiscard]] const UiPressureAnalysisView& pressureAnalysis() const { return pressureAnalysisValue; }
+    [[nodiscard]] UiPressureAnalysisView pressureAnalysis() const { return {.snapshot = &pressureValue}; }
     [[nodiscard]] double timeSeconds() const { return timeSecondsValue; }
     [[nodiscard]] double simulationSpeed() const { return simulationSpeedValue; }
     [[nodiscard]] bool isMechanicAllowed(MechanicType mechanic) const { return mechanicAllowed ? mechanicAllowed(mechanic) : false; }

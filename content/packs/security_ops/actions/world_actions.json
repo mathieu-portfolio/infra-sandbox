@@ -1,0 +1,52 @@
+[
+  {
+    "id": "centralize_auth",
+    "display_name": "Centralize Authentication",
+    "description": "Route protected requests through a shared identity provider.",
+    "categories": [
+      "Security",
+      "Platform"
+    ],
+    "useful_when": "security consistency matters more than keeping auth local to every service",
+    "tradeoffs": "Auth becomes a shared dependency and possible bottleneck.",
+    "icon_id": "node.generic",
+    "affected_pressures": [
+      "latency",
+      "failure",
+      "queue"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "service_fragmentation": 0.05,
+        "queue_pressure": 0.03
+      },
+      "network": {
+        "latency_sensitivity": 0.02
+      },
+      "runtime": {
+        "scheduling_pressure": 0.02
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.02,
+      "max": 0.05
+    },
+    "complexity_delta": {
+      "min": 0.1,
+      "max": 0.22
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.1
+    },
+    "tags": [
+      "auth",
+      "identity",
+      "security"
+    ]
+  }
+]

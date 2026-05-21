@@ -1,0 +1,21 @@
+[
+  {
+    "id": "protect_authentication_stack",
+    "display_name": "Protect Authentication Stack",
+    "description": "Prevent authentication systems from becoming a bottleneck.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Prevent authentication systems from becoming a bottleneck.",
+    "tags": [
+      "security",
+      "failure",
+      "latency",
+      "queue"
+    ],
+    "pressure": "latency",
+    "threshold": 0.5,
+    "duration_turns": [
+      "auth"
+    ]
+  }
+]

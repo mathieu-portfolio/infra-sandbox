@@ -1,0 +1,16 @@
+{
+  "id": "ai_infrastructure",
+  "display_name": "AI Infrastructure",
+  "description": "AI infrastructure content about inference pressure, GPU saturation, vector retrieval, and RAG-style systems.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "depends_on": [
+    "common"
+  ],
+  "tags": [
+    "ai",
+    "inference",
+    "vector_search",
+    "gpu"
+  ]
+}

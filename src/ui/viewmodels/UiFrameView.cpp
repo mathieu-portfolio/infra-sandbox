@@ -33,7 +33,6 @@ UiFrameView buildUiFrameView(const Simulation& simulation, const ScenarioManager
     view.runtimeSystemsValue = &simulation.runtimeSystems();
     view.metricsValue = simulation.metrics();
     view.pressureValue = simulation.pressure();
-    view.pressureAnalysisValue.snapshot = &view.pressureValue;
     view.timeSecondsValue = simulation.timeSeconds();
     view.simulationSpeedValue = simulation.simulationSpeed();
     view.mechanicAllowed = [&simulation](MechanicType mechanic) { return simulation.isMechanicAllowed(mechanic); };

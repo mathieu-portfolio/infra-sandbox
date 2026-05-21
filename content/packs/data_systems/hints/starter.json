@@ -1,0 +1,20 @@
+[
+  {
+    "id": "etl_delay",
+    "trigger": "etl_queue_growth",
+    "text": "The ETL pipeline is delaying analytical data updates under heavy ingestion load.",
+    "category": "Data"
+  },
+  {
+    "id": "warehouse_isolation",
+    "trigger": "warehouse_enabled",
+    "text": "The data warehouse isolated analytical workloads from production systems.",
+    "category": "Data"
+  },
+  {
+    "id": "telemetry_growth",
+    "trigger": "high_metrics_ingestion",
+    "text": "Observability systems generate massive write-heavy workloads at scale.",
+    "category": "Observability"
+  }
+]

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "auth_bottleneck",
+    "trigger": "auth_high_latency",
+    "text": "Centralized authentication simplifies security but creates a shared dependency bottleneck.",
+    "category": "Security"
+  }
+]

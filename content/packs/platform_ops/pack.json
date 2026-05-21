@@ -1,0 +1,16 @@
+{
+  "id": "platform_ops",
+  "display_name": "Platform Ops",
+  "description": "Platform engineering content about orchestration, autoscaling, service mesh overhead, and operational complexity.",
+  "version": "0.1.0",
+  "author": "Mathieu",
+  "depends_on": [
+    "common"
+  ],
+  "tags": [
+    "platform",
+    "kubernetes",
+    "autoscaling",
+    "service_mesh"
+  ]
+}

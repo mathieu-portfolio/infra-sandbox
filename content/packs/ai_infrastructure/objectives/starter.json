@@ -1,0 +1,21 @@
+[
+  {
+    "id": "scale_ai_inference",
+    "display_name": "Scale AI Inference",
+    "description": "Serve AI requests without saturating compute capacity.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Serve AI requests without saturating compute capacity.",
+    "tags": [
+      "ai",
+      "compute",
+      "queue",
+      "latency"
+    ],
+    "pressure": "compute",
+    "threshold": 0.55,
+    "duration_turns": [
+      "ai"
+    ]
+  }
+]

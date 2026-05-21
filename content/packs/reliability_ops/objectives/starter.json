@@ -191,5 +191,61 @@
       "dependencies",
       "cascading_failures"
     ]
+  },
+  {
+    "id": "reduce_retry_storms",
+    "display_name": "Reduce Retry Storms",
+    "description": "Prevent retries from amplifying backend instability.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Prevent retries from amplifying backend instability.",
+    "tags": [
+      "reliability",
+      "retry",
+      "failure"
+    ],
+    "pressure": "retry",
+    "threshold": 0.45,
+    "duration_turns": [
+      "operations"
+    ]
+  },
+  {
+    "id": "stabilize_global_platform",
+    "display_name": "Stabilize Global Platform",
+    "description": "Keep multiple regions healthy during heavy worldwide usage.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Keep multiple regions healthy during heavy worldwide usage.",
+    "tags": [
+      "infrastructure",
+      "latency",
+      "failure",
+      "traffic"
+    ],
+    "pressure": "failure",
+    "threshold": 0.45,
+    "duration_turns": [
+      "operations"
+    ]
+  },
+  {
+    "id": "prevent_cascading_failures",
+    "display_name": "Prevent Cascading Failures",
+    "description": "Stop one unhealthy service from destabilizing the platform.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Stop one unhealthy service from destabilizing the platform.",
+    "tags": [
+      "reliability",
+      "failure",
+      "retry",
+      "queue"
+    ],
+    "pressure": "failure",
+    "threshold": 0.45,
+    "duration_turns": [
+      "operations"
+    ]
   }
 ]

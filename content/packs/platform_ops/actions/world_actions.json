@@ -1,0 +1,155 @@
+[
+  {
+    "id": "add_service_mesh",
+    "display_name": "Add Service Mesh",
+    "description": "Add shared routing, retry, and observability between services.",
+    "categories": [
+      "Platform",
+      "Observability"
+    ],
+    "useful_when": "service-to-service failures are hard to trace or isolate",
+    "tradeoffs": "Sidecars add latency, resource use, and operational complexity.",
+    "icon_id": "node.service",
+    "affected_pressures": [
+      "latency",
+      "retry"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "service_fragmentation": 0.08,
+        "queue_pressure": -0.03
+      },
+      "network": {
+        "latency_sensitivity": 0.05,
+        "traffic_burstiness": -0.03
+      },
+      "runtime": {
+        "cpu_pressure": 0.04,
+        "memory_pressure": 0.04
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.03,
+      "max": 0.07
+    },
+    "complexity_delta": {
+      "min": 0.22,
+      "max": 0.38
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.8,
+      "max": 1.1
+    },
+    "unlocks_observability": [
+      "dependencies"
+    ],
+    "tags": [
+      "service_mesh",
+      "observability"
+    ]
+  },
+  {
+    "id": "introduce_kubernetes",
+    "display_name": "Introduce Kubernetes",
+    "description": "Move services onto an orchestrated compute pool.",
+    "categories": [
+      "Platform",
+      "Scaling"
+    ],
+    "useful_when": "manual service capacity management is becoming the bottleneck",
+    "tradeoffs": "Scheduling and operational complexity rise.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": [
+      "compute",
+      "queue"
+    ],
+    "capacity_bonus": {
+      "infrastructure": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "pressure_effects": {
+      "backend": {
+        "compute_intensity": -0.06,
+        "queue_pressure": -0.04,
+        "service_fragmentation": 0.08
+      },
+      "runtime": {
+        "scheduling_pressure": 0.08,
+        "memory_pressure": 0.03
+      }
+    },
+    "complexity_delta": {
+      "min": 0.28,
+      "max": 0.46
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 4
+    },
+    "intensity_range": {
+      "min": 0.8,
+      "max": 1.1
+    },
+    "tags": [
+      "kubernetes",
+      "orchestration"
+    ]
+  },
+  {
+    "id": "enable_autoscaling",
+    "display_name": "Enable Autoscaling",
+    "description": "Automatically add capacity when sustained load rises.",
+    "categories": [
+      "Platform",
+      "Scaling"
+    ],
+    "useful_when": "sustained load is high but short bursts still need buffering",
+    "tradeoffs": "Scaling reacts after load is observed and can chase bursty traffic.",
+    "icon_id": "action.scale_up",
+    "affected_pressures": [
+      "compute",
+      "queue",
+      "latency"
+    ],
+    "capacity_bonus": {
+      "infrastructure": {
+        "min": 1,
+        "max": 1
+      }
+    },
+    "pressure_effects": {
+      "backend": {
+        "compute_intensity": -0.08,
+        "queue_pressure": -0.06
+      },
+      "network": {
+        "traffic_burstiness": 0.03
+      },
+      "runtime": {
+        "scheduling_pressure": 0.04
+      }
+    },
+    "complexity_delta": {
+      "min": 0.12,
+      "max": 0.24
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "autoscaling",
+      "capacity"
+    ]
+  }
+]

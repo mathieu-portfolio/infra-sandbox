@@ -142,5 +142,23 @@
       "data_systems",
       "cascading_failures"
     ]
+  },
+  {
+    "id": "stabilize_data_pipeline",
+    "display_name": "Stabilize Data Pipeline",
+    "description": "Keep analytics and ETL systems operating under heavy ingestion.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Keep analytics and ETL systems operating under heavy ingestion.",
+    "tags": [
+      "data",
+      "queue",
+      "persistence"
+    ],
+    "pressure": "queue",
+    "threshold": 0.5,
+    "duration_turns": [
+      "data_pipeline"
+    ]
   }
 ]

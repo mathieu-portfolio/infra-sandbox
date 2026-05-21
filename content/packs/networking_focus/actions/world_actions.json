@@ -1,0 +1,88 @@
+[
+  {
+    "id": "add_ddos_protection",
+    "display_name": "Add DDoS Protection",
+    "description": "Filter malicious or excessive traffic at the edge.",
+    "categories": [
+      "Network",
+      "Security"
+    ],
+    "useful_when": "bursty or abusive traffic is saturating entry points",
+    "tradeoffs": "Adds routing rules and false-positive risk.",
+    "icon_id": "alert.warning",
+    "affected_pressures": [
+      "traffic",
+      "failure",
+      "latency"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "request_load": -0.08
+      },
+      "network": {
+        "traffic_burstiness": -0.14,
+        "bandwidth_pressure": -0.08,
+        "latency_sensitivity": 0.02
+      }
+    },
+    "complexity_delta": {
+      "min": 0.08,
+      "max": 0.18
+    },
+    "duration_turns": {
+      "min": 2,
+      "max": 3
+    },
+    "intensity_range": {
+      "min": 0.85,
+      "max": 1.15
+    },
+    "tags": [
+      "ddos",
+      "edge_filtering"
+    ]
+  },
+  {
+    "id": "tune_dns_failover",
+    "display_name": "Tune DNS Failover",
+    "description": "Redirect traffic away from unhealthy regions or services.",
+    "categories": [
+      "Network",
+      "Reliability"
+    ],
+    "useful_when": "regional instability is worse than added routing latency",
+    "tradeoffs": "Traffic may become imbalanced while records converge.",
+    "icon_id": "legend.link",
+    "affected_pressures": [
+      "failure",
+      "latency",
+      "traffic"
+    ],
+    "pressure_effects": {
+      "network": {
+        "latency_sensitivity": 0.04,
+        "traffic_burstiness": -0.04
+      },
+      "backend": {
+        "queue_pressure": -0.03
+      }
+    },
+    "pressure_resistance": {
+      "min": 0.03,
+      "max": 0.06
+    },
+    "duration_turns": {
+      "min": 1,
+      "max": 2
+    },
+    "intensity_range": {
+      "min": 0.9,
+      "max": 1.1
+    },
+    "tags": [
+      "dns",
+      "failover",
+      "regional"
+    ]
+  }
+]

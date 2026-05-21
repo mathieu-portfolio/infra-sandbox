@@ -1,0 +1,61 @@
+[
+  {
+    "id": "maintain_low_latency",
+    "display_name": "Maintain Low Latency",
+    "description": "Keep average request latency under control during growth.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Keep average request latency under control during growth.",
+    "tags": [
+      "reliability",
+      "latency"
+    ],
+    "pressure": "latency",
+    "threshold": 0.5
+  },
+  {
+    "id": "survive_traffic_spike",
+    "display_name": "Survive Traffic Spike",
+    "description": "Handle a sudden burst of traffic without major outages.",
+    "type": "survive_duration",
+    "condition": "survive_duration",
+    "summary": "Handle a sudden burst of traffic without major outages.",
+    "tags": [
+      "scalability",
+      "traffic",
+      "failure",
+      "traffic"
+    ],
+    "duration_turns": 4
+  },
+  {
+    "id": "control_infrastructure_costs",
+    "display_name": "Control Infrastructure Costs",
+    "description": "Scale carefully without excessive infrastructure expansion.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Scale carefully without excessive infrastructure expansion.",
+    "tags": [
+      "operations",
+      "compute",
+      "traffic"
+    ],
+    "pressure": "traffic",
+    "threshold": 0.5
+  },
+  {
+    "id": "improve_cache_efficiency",
+    "display_name": "Improve Cache Efficiency",
+    "description": "Reduce origin load by increasing cache effectiveness.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Reduce origin load by increasing cache effectiveness.",
+    "tags": [
+      "performance",
+      "latency",
+      "traffic"
+    ],
+    "pressure": "traffic",
+    "threshold": 0.5
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "retry_storm",
+    "trigger": "high_retry_pressure",
+    "text": "Retries are increasing total traffic and making failures spread faster.",
+    "category": "Reliability"
+  },
+  {
+    "id": "queue_backlog",
+    "trigger": "high_queue_pressure",
+    "text": "Requests are waiting longer in queues because downstream systems are overloaded.",
+    "category": "Scalability"
+  },
+  {
+    "id": "deployment_risk",
+    "trigger": "active_deployment",
+    "text": "Deployments temporarily increase instability because systems are changing live.",
+    "category": "Deployment"
+  },
+  {
+    "id": "canary_success",
+    "trigger": "canary_deployment",
+    "text": "The canary release limited the impact of unstable changes to a small user group.",
+    "category": "Deployment"
+  },
+  {
+    "id": "feature_flag_recovery",
+    "trigger": "feature_flag_disabled",
+    "text": "Feature flags allowed risky functionality to be disabled without a rollback.",
+    "category": "Deployment"
+  }
+]

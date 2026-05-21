@@ -1,0 +1,80 @@
+[
+  {
+    "id": "ai_feature_launch",
+    "display_name": "AI Feature Launch",
+    "description": "A new AI feature sends slower and more expensive requests through inference.",
+    "category": "ai",
+    "moment": "runtime",
+    "weight": 0.65,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "ai_inference_gateway"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 3
+      }
+    },
+    "effect": {
+      "type": "modify_traffic_rate",
+      "traffic_multiplier": {
+        "min": 1.25,
+        "max": 1.6
+      },
+      "latency_multiplier": {
+        "min": 1.2,
+        "max": 1.45
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "ai",
+      "inference",
+      "compute"
+    ]
+  },
+  {
+    "id": "ai_vector_search_reindex",
+    "display_name": "Vector Reindex",
+    "description": "Embedding updates make semantic retrieval slower while the index catches up.",
+    "category": "ai",
+    "moment": "runtime",
+    "weight": 0.45,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "vector_database"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "degrade_node_capacity",
+      "database_capacity_multiplier": {
+        "min": 0.74,
+        "max": 0.88
+      },
+      "latency_multiplier": {
+        "min": 1.16,
+        "max": 1.34
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "common",
+      "ai",
+      "vector_database",
+      "retrieval"
+    ]
+  }
+]
