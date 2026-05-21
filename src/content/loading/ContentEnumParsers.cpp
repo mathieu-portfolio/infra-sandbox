@@ -1,8 +1,80 @@
 #include "content/loading/ContentEnumParsers.hpp"
 
 #include <set>
+#include <unordered_map>
 
 namespace content::loading {
+namespace {
+const std::unordered_map<std::string, NodeType>& nodeTypeIds()
+{
+    static const std::unordered_map<std::string, NodeType> ids{
+        {"client_cluster", NodeType::ClientCluster},
+        {"external_service", NodeType::ExternalService},
+        {"bot_source", NodeType::BotSource},
+        {"api_service", NodeType::ApiService},
+        {"microservice", NodeType::Microservice},
+        {"worker", NodeType::Worker},
+        {"batch_processor", NodeType::BatchProcessor},
+        {"stream_processor", NodeType::StreamProcessor},
+        {"ai_inference_node", NodeType::AIInferenceNode},
+        {"ai_inference_gateway", NodeType::AIInferenceNode},
+        {"ai_training_cluster", NodeType::AITrainingCluster},
+        {"database", NodeType::Database},
+        {"cache", NodeType::Cache},
+        {"read_replica", NodeType::ReadReplica},
+        {"shard", NodeType::Shard},
+        {"object_storage", NodeType::ObjectStorage},
+        {"vector_database", NodeType::VectorDatabase},
+        {"search_index", NodeType::SearchIndex},
+        {"queue", NodeType::QueueBroker},
+        {"cdn_edge", NodeType::CDNEdge},
+        {"query_accelerator", NodeType::QueryAccelerator},
+        {"compression_node", NodeType::CompressionNode},
+        {"event_bus", NodeType::EventBus},
+        {"orchestrator", NodeType::Orchestrator},
+        {"kubernetes_cluster", NodeType::Orchestrator},
+        {"ci_cd_pipeline", NodeType::Orchestrator},
+        {"service_registry", NodeType::ServiceRegistry},
+        {"dns_resolver", NodeType::ServiceRegistry},
+        {"dns", NodeType::ServiceRegistry},
+        {"feature_flag_service", NodeType::ServiceRegistry},
+        {"consensus_node", NodeType::ConsensusNode},
+        {"distributed_lock_service", NodeType::ConsensusNode},
+        {"load_balancer", NodeType::LoadBalancer},
+        {"gateway", NodeType::Gateway},
+        {"graphql_gateway", NodeType::Gateway},
+        {"proxy", NodeType::Proxy},
+        {"service_mesh", NodeType::Proxy},
+        {"edge_router", NodeType::EdgeRouter},
+        {"firewall", NodeType::Firewall},
+        {"circuit_breaker", NodeType::CircuitBreaker},
+        {"failover_controller", NodeType::FailoverController},
+        {"health_monitor", NodeType::HealthMonitor},
+        {"rate_limiter", NodeType::RateLimiter},
+        {"retry_controller", NodeType::RetryController},
+        {"metrics_collector", NodeType::MetricsCollector},
+        {"timeseries_database", NodeType::MetricsCollector},
+        {"logging_node", NodeType::LoggingNode},
+        {"trace_collector", NodeType::TraceCollector},
+        {"alert_manager", NodeType::AlertManager},
+        {"analytics_dashboard", NodeType::AnalyticsDashboard},
+        {"compute_cluster", NodeType::ComputeCluster},
+        {"gpu_cluster", NodeType::GPUCluster},
+        {"storage_cluster", NodeType::StorageCluster},
+        {"data_warehouse", NodeType::StorageCluster},
+        {"datacenter", NodeType::Datacenter},
+        {"region", NodeType::Region},
+        {"edge_zone", NodeType::EdgeZone},
+        {"auth_service", NodeType::AuthService},
+        {"identity_provider", NodeType::AuthService},
+        {"waf", NodeType::WAF},
+        {"ddos_protection", NodeType::WAF},
+        {"secret_vault", NodeType::SecretVault},
+        {"encryption_service", NodeType::EncryptionService},
+    };
+    return ids;
+}
+}
 
 ProgressionTier progressionTierFromId(const std::string& id)
 {
@@ -104,77 +176,14 @@ bool knownMutationId(const std::string& id)
 
 NodeType nodeTypeFromId(const std::string& id)
 {
-    if (id == "client_cluster") return NodeType::ClientCluster;
-    if (id == "external_service") return NodeType::ExternalService;
-    if (id == "bot_source") return NodeType::BotSource;
-    if (id == "api_service") return NodeType::ApiService;
-    if (id == "microservice") return NodeType::Microservice;
-    if (id == "worker") return NodeType::Worker;
-    if (id == "batch_processor") return NodeType::BatchProcessor;
-    if (id == "stream_processor") return NodeType::StreamProcessor;
-    if (id == "ai_inference_node" || id == "ai_inference_gateway") return NodeType::AIInferenceNode;
-    if (id == "ai_training_cluster") return NodeType::AITrainingCluster;
-    if (id == "database") return NodeType::Database;
-    if (id == "cache") return NodeType::Cache;
-    if (id == "read_replica") return NodeType::ReadReplica;
-    if (id == "shard") return NodeType::Shard;
-    if (id == "object_storage") return NodeType::ObjectStorage;
-    if (id == "vector_database") return NodeType::VectorDatabase;
-    if (id == "search_index") return NodeType::SearchIndex;
-    if (id == "queue") return NodeType::QueueBroker;
-    if (id == "cdn_edge") return NodeType::CDNEdge;
-    if (id == "query_accelerator") return NodeType::QueryAccelerator;
-    if (id == "compression_node") return NodeType::CompressionNode;
-    if (id == "event_bus") return NodeType::EventBus;
-    if (id == "orchestrator" || id == "kubernetes_cluster" || id == "ci_cd_pipeline") return NodeType::Orchestrator;
-    if (id == "service_registry" || id == "dns_resolver" || id == "dns" || id == "feature_flag_service") return NodeType::ServiceRegistry;
-    if (id == "consensus_node" || id == "distributed_lock_service") return NodeType::ConsensusNode;
-    if (id == "load_balancer") return NodeType::LoadBalancer;
-    if (id == "gateway" || id == "graphql_gateway") return NodeType::Gateway;
-    if (id == "proxy" || id == "service_mesh") return NodeType::Proxy;
-    if (id == "edge_router") return NodeType::EdgeRouter;
-    if (id == "firewall") return NodeType::Firewall;
-    if (id == "circuit_breaker") return NodeType::CircuitBreaker;
-    if (id == "failover_controller") return NodeType::FailoverController;
-    if (id == "health_monitor") return NodeType::HealthMonitor;
-    if (id == "rate_limiter") return NodeType::RateLimiter;
-    if (id == "retry_controller") return NodeType::RetryController;
-    if (id == "metrics_collector" || id == "timeseries_database") return NodeType::MetricsCollector;
-    if (id == "logging_node") return NodeType::LoggingNode;
-    if (id == "trace_collector") return NodeType::TraceCollector;
-    if (id == "alert_manager") return NodeType::AlertManager;
-    if (id == "analytics_dashboard") return NodeType::AnalyticsDashboard;
-    if (id == "compute_cluster") return NodeType::ComputeCluster;
-    if (id == "gpu_cluster") return NodeType::GPUCluster;
-    if (id == "storage_cluster" || id == "data_warehouse") return NodeType::StorageCluster;
-    if (id == "datacenter") return NodeType::Datacenter;
-    if (id == "region") return NodeType::Region;
-    if (id == "edge_zone") return NodeType::EdgeZone;
-    if (id == "auth_service" || id == "identity_provider") return NodeType::AuthService;
-    if (id == "waf" || id == "ddos_protection") return NodeType::WAF;
-    if (id == "secret_vault") return NodeType::SecretVault;
-    if (id == "encryption_service") return NodeType::EncryptionService;
-    return NodeType::ApiService;
+    const auto& ids = nodeTypeIds();
+    const auto it = ids.find(id);
+    return it != ids.end() ? it->second : NodeType::ApiService;
 }
 
 bool knownNodeTypeId(const std::string& id)
 {
-    static const std::set<std::string> ids{
-        "client_cluster", "external_service", "bot_source", "api_service", "microservice", "worker",
-        "batch_processor", "stream_processor", "ai_inference_node", "ai_inference_gateway",
-        "ai_training_cluster", "database", "cache", "read_replica", "shard", "object_storage",
-        "vector_database", "search_index", "queue", "cdn_edge", "query_accelerator",
-        "compression_node", "event_bus", "orchestrator", "kubernetes_cluster", "ci_cd_pipeline",
-        "service_registry", "dns_resolver", "dns", "feature_flag_service", "consensus_node",
-        "distributed_lock_service", "load_balancer", "gateway", "graphql_gateway", "proxy",
-        "service_mesh", "edge_router", "firewall", "circuit_breaker", "failover_controller",
-        "health_monitor", "rate_limiter", "retry_controller", "metrics_collector",
-        "timeseries_database", "logging_node", "trace_collector", "alert_manager",
-        "analytics_dashboard", "compute_cluster", "gpu_cluster", "storage_cluster",
-        "data_warehouse", "datacenter", "region", "edge_zone", "auth_service",
-        "identity_provider", "waf", "ddos_protection", "secret_vault", "encryption_service",
-    };
-    return ids.contains(id);
+    return nodeTypeIds().contains(id);
 }
 
 EngineeringDomain engineeringDomainFromId(const std::string& id)
