@@ -465,7 +465,23 @@
       "burst_multiplier": {
         "min": 1.3,
         "max": 1.65
-      }
+      },
+      "pressure_effects": {
+        "backend": {
+          "request_load": 0.1
+        },
+        "network": {
+          "bandwidth_pressure": 0.06,
+          "traffic_burstiness": 0.1
+        }
+      },
+      "pressure_signals": [
+        {
+          "domain": "network",
+          "name": "Marketing Campaign Spike",
+          "summary": "Demand arrives in a burst, making delivery and backend capacity choices more valuable."
+        }
+      ]
     },
     "duration_turns": 1,
     "tags": [
@@ -555,7 +571,23 @@
       "latency_multiplier": {
         "min": 1.18,
         "max": 1.35
-      }
+      },
+      "pressure_effects": {
+        "backend": {
+          "queue_pressure": 0.1,
+          "compute_intensity": 0.05
+        },
+        "network": {
+          "latency_sensitivity": 0.04
+        }
+      },
+      "pressure_signals": [
+        {
+          "domain": "database",
+          "name": "Storage Constraint",
+          "summary": "Slow storage raises queue risk and makes cache or read-pressure choices more visible."
+        }
+      ]
     },
     "duration_turns": 2,
     "tags": [
@@ -587,7 +619,22 @@
       "retry_delay_multiplier": {
         "min": 0.5,
         "max": 0.7
-      }
+      },
+      "pressure_effects": {
+        "frontend": {
+          "realtime_intensity": 0.08
+        },
+        "network": {
+          "traffic_burstiness": 0.12
+        }
+      },
+      "pressure_signals": [
+        {
+          "domain": "network",
+          "name": "Reconnect Storm",
+          "summary": "Repeated reconnects amplify traffic bursts and make backoff decisions more important."
+        }
+      ]
     },
     "duration_turns": 2,
     "tags": [

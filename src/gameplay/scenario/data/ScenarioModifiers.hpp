@@ -4,6 +4,7 @@
 #include "core/scenario/ScenarioEnums.hpp"
 #include "gameplay/scenario/data/ScenarioTraffic.hpp"
 #include "core/simulation/Mechanics.hpp"
+#include "simulation/metrics/Metrics.hpp"
 
 #include <optional>
 #include <string>
@@ -24,4 +25,6 @@ struct ScenarioModifierDefinition {
     std::optional<NumericRange> databaseHeavyShareRange;
     std::optional<BurstScenario> burstOverride;
     std::vector<EventDefinition> events;
+    PressureState pressureContext;
+    std::vector<PressureContextSignal> pressureSignals;
 };

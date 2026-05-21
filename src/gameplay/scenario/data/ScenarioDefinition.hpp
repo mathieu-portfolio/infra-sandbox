@@ -52,6 +52,8 @@ struct ScenarioDefinition {
     std::vector<ScenarioPhase> phases;
     std::vector<EventDefinition> events;
     std::vector<EventDefinition> sandboxEvents;
+    PressureState pressureContext;
+    std::vector<PressureContextSignal> pressureSignals;
     GameplayDuration turnDuration;
     double requestTimeoutSeconds = 5.5;
     bool proceduralLocations = false;

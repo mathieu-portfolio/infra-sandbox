@@ -311,6 +311,11 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     std::snprintf(buffer, sizeof(buffer), "%.0f", selectedSummary.health);
     drawTextClipped(selectedSummary.label, {x + 14.0f, y + 94.0f, 112.0f, 12.0f}, 11, {230, 237, 243, 255});
     drawTextClipped(buffer, {x + width - 58.0f, y + 94.0f, 44.0f, 12.0f}, 11, scoreColor(selectedSummary.health, true));
+    if (!metrics.activePressureSignals.empty()) {
+        const auto& signal = metrics.activePressureSignals.front();
+        const std::string label = signal.temporary ? signal.name + " (event)" : signal.name;
+        drawTextClipped(label, {x + 92.0f, y + 94.0f, width - 164.0f, 12.0f}, 11, {245, 184, 76, 255});
+    }
     if (context.state->selectedMetricsSpecialization == MetricsSpecialization::Frontend) {
         drawFrontendDetails(metrics, specializations);
     } else {

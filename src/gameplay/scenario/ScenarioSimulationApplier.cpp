@@ -242,6 +242,7 @@ void ScenarioManager::applyPhaseToSimulation(Simulation& simulation) const
     simulation.setScenarioDatabaseHeavyShareOverride(eventModifiers.databaseHeavyShare);
     simulation.setScenarioRetryDelayMultiplier(eventModifiers.retryDelayMultiplier);
     simulation.setLocalizedEventModifiers(eventManager_.localizedModifiers());
+    simulation.setEventPressureContext(eventModifiers.pressureEffect, eventModifiers.pressureSignals);
 
     auto allowedMechanics = run_.unlockedInterventions;
     allowedMechanics.insert(
@@ -251,4 +252,3 @@ void ScenarioManager::applyPhaseToSimulation(Simulation& simulation) const
     simulation.setScenarioTrafficMultiplier(multiplier);
     simulation.setAllowedMechanics(allowedMechanics);
 }
-

@@ -144,23 +144,11 @@ void Simulation::setSimulationSpeed(double speed)
 void Simulation::setScenarioTrafficMultiplier(double multiplier)
 {
     scenarioTrafficMultiplier_ = std::max(0.0, multiplier);
-    if (scenarioTrafficMultiplier_ > 1.0) {
-        PressureState delta;
-        delta.backend.requestLoad = (scenarioTrafficMultiplier_ - 1.0) * 0.025;
-        delta.network.trafficBurstiness = (scenarioTrafficMultiplier_ - 1.0) * 0.020;
-        nudgePressureState(delta);
-    }
 }
 
 void Simulation::setScenarioBurst(const BurstScenario& burst)
 {
     scenarioBurstOverride_ = burst;
-    if (burst.enabled) {
-        PressureState delta;
-        delta.backend.requestLoad = std::max(0.0, burst.multiplier - 1.0) * 0.025;
-        delta.network.trafficBurstiness = std::max(0.0, burst.multiplier - 1.0) * 0.035;
-        nudgePressureState(delta);
-    }
 }
 
 void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
@@ -177,11 +165,6 @@ void Simulation::setScenarioDatabaseCapacityMultiplier(double multiplier)
 void Simulation::setScenarioLatencyMultiplier(double multiplier)
 {
     scenarioLatencyMultiplier_ = std::max(0.1, multiplier);
-    if (scenarioLatencyMultiplier_ > 1.0) {
-        PressureState delta;
-        delta.network.latencySensitivity = (scenarioLatencyMultiplier_ - 1.0) * 0.05;
-        nudgePressureState(delta);
-    }
 }
 
 void Simulation::setScenarioDatabaseHeavyShareOverride(std::optional<double> share)
@@ -196,14 +179,6 @@ void Simulation::setScenarioRetryDelayMultiplier(double multiplier)
 
 void Simulation::setLocalizedEventModifiers(std::vector<LocalizedEventModifier> modifiers)
 {
-    for (const auto& modifier : modifiers) {
-        PressureState delta;
-        delta.backend.requestLoad = std::max(0.0, modifier.effect.trafficMultiplier - 1.0) * 0.030;
-        delta.backend.queuePressure = std::max(0.0, 1.0 - modifier.effect.databaseCapacityMultiplier) * 0.050;
-        delta.network.trafficBurstiness = std::max(0.0, modifier.effect.trafficMultiplier - 1.0) * 0.020;
-        delta.network.latencySensitivity = std::max(0.0, modifier.effect.retryDelayMultiplier - 1.0) * 0.020;
-        nudgePressureState(delta);
-    }
     localizedEventModifiers_ = std::move(modifiers);
     refreshEffectiveCapacities();
 }

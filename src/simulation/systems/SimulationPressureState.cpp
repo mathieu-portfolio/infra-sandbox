@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace {
 double clamp01(double value)
@@ -12,6 +13,11 @@ double clamp01(double value)
 double approach(double current, double target, double smoothing)
 {
     return current + (target - current) * std::clamp(smoothing, 0.0, 1.0);
+}
+
+double contextValue(double scenario, double event)
+{
+    return std::clamp(scenario + event, -1.0, 1.0);
 }
 }
 
@@ -63,25 +69,46 @@ void Simulation::updatePressureState(double dt)
     const double averageLinkLoad = linkCount > 0 ? linkLoad / static_cast<double>(linkCount) : 0.0;
     const double averageLinkLatency = linkCount > 0 ? linkLatency / static_cast<double>(linkCount) : 0.0;
     const double burstMultiplier = burstModeEnabled_ ? 1.0 : 0.0;
+    const PressureState context{
+        .frontend = {
+            .assetWeight = contextValue(scenarioPressureContext_.frontend.assetWeight, eventPressureContext_.frontend.assetWeight),
+            .renderComplexity = contextValue(scenarioPressureContext_.frontend.renderComplexity, eventPressureContext_.frontend.renderComplexity),
+            .cacheEfficiency = contextValue(scenarioPressureContext_.frontend.cacheEfficiency, eventPressureContext_.frontend.cacheEfficiency),
+            .realtimeIntensity = contextValue(scenarioPressureContext_.frontend.realtimeIntensity, eventPressureContext_.frontend.realtimeIntensity),
+            .sessionPersistence = contextValue(scenarioPressureContext_.frontend.sessionPersistence, eventPressureContext_.frontend.sessionPersistence),
+            .mobileCompatibility = contextValue(scenarioPressureContext_.frontend.mobileCompatibility, eventPressureContext_.frontend.mobileCompatibility),
+        },
+        .backend = {
+            .requestLoad = contextValue(scenarioPressureContext_.backend.requestLoad, eventPressureContext_.backend.requestLoad),
+            .queuePressure = contextValue(scenarioPressureContext_.backend.queuePressure, eventPressureContext_.backend.queuePressure),
+            .computeIntensity = contextValue(scenarioPressureContext_.backend.computeIntensity, eventPressureContext_.backend.computeIntensity),
+            .serviceFragmentation = contextValue(scenarioPressureContext_.backend.serviceFragmentation, eventPressureContext_.backend.serviceFragmentation),
+        },
+        .network = {
+            .bandwidthPressure = contextValue(scenarioPressureContext_.network.bandwidthPressure, eventPressureContext_.network.bandwidthPressure),
+            .latencySensitivity = contextValue(scenarioPressureContext_.network.latencySensitivity, eventPressureContext_.network.latencySensitivity),
+            .trafficBurstiness = contextValue(scenarioPressureContext_.network.trafficBurstiness, eventPressureContext_.network.trafficBurstiness),
+        },
+    };
 
-    pressureState_.backend.requestLoad = approach(pressureState_.backend.requestLoad, std::clamp(loadRatio / 1.8, 0.0, 1.0), smoothing);
-    pressureState_.backend.queuePressure = approach(pressureState_.backend.queuePressure, queuePressure, smoothing);
-    pressureState_.backend.computeIntensity = approach(pressureState_.backend.computeIntensity, std::clamp(averageUtilization * 0.75 + loadRatio * 0.16, 0.0, 1.0), smoothing);
+    pressureState_.backend.requestLoad = approach(pressureState_.backend.requestLoad, std::clamp(loadRatio / 1.8 + context.backend.requestLoad, 0.0, 1.0), smoothing);
+    pressureState_.backend.queuePressure = approach(pressureState_.backend.queuePressure, std::clamp(queuePressure + context.backend.queuePressure, 0.0, 1.0), smoothing);
+    pressureState_.backend.computeIntensity = approach(pressureState_.backend.computeIntensity, std::clamp(averageUtilization * 0.75 + loadRatio * 0.16 + context.backend.computeIntensity, 0.0, 1.0), smoothing);
     pressureState_.backend.serviceFragmentation = approach(
         pressureState_.backend.serviceFragmentation,
-        std::clamp(0.10 + complexityScore_ / std::max(1.0, recommendedComplexityThreshold_) * 0.55 + static_cast<double>(processorCount) * 0.025, 0.0, 1.0),
+        std::clamp(0.10 + complexityScore_ / std::max(1.0, recommendedComplexityThreshold_) * 0.55 + static_cast<double>(processorCount) * 0.025 + context.backend.serviceFragmentation, 0.0, 1.0),
         smoothing * 0.35);
 
-    pressureState_.network.bandwidthPressure = approach(pressureState_.network.bandwidthPressure, std::clamp(averageLinkLoad * 0.72 + loadRatio * 0.12, 0.0, 1.0), smoothing);
-    pressureState_.network.latencySensitivity = approach(pressureState_.network.latencySensitivity, std::clamp(averageLinkLatency + scenarioLatencyMultiplier_ * 0.04, 0.0, 1.0), smoothing);
-    pressureState_.network.trafficBurstiness = approach(pressureState_.network.trafficBurstiness, std::clamp(linkBurst * 0.60 + burstMultiplier * 0.28 + queuePressure * 0.18, 0.0, 1.0), smoothing);
+    pressureState_.network.bandwidthPressure = approach(pressureState_.network.bandwidthPressure, std::clamp(averageLinkLoad * 0.72 + loadRatio * 0.12 + context.network.bandwidthPressure, 0.0, 1.0), smoothing);
+    pressureState_.network.latencySensitivity = approach(pressureState_.network.latencySensitivity, std::clamp(averageLinkLatency + scenarioLatencyMultiplier_ * 0.04 + context.network.latencySensitivity, 0.0, 1.0), smoothing);
+    pressureState_.network.trafficBurstiness = approach(pressureState_.network.trafficBurstiness, std::clamp(linkBurst * 0.60 + burstMultiplier * 0.28 + queuePressure * 0.18 + context.network.trafficBurstiness, 0.0, 1.0), smoothing);
 
-    pressureState_.frontend.assetWeight = approach(pressureState_.frontend.assetWeight, std::clamp(0.24 + pressureState_.network.bandwidthPressure * 0.18 + pressureState_.backend.serviceFragmentation * 0.06, 0.0, 1.0), smoothing * 0.45);
-    pressureState_.frontend.renderComplexity = approach(pressureState_.frontend.renderComplexity, std::clamp(0.28 + pressureState_.backend.serviceFragmentation * 0.16 + pressureState_.backend.queuePressure * 0.10, 0.0, 1.0), smoothing * 0.45);
-    pressureState_.frontend.cacheEfficiency = approach(pressureState_.frontend.cacheEfficiency, cacheEnabled_ ? 0.76 : 0.45, smoothing * 0.50);
-    pressureState_.frontend.realtimeIntensity = approach(pressureState_.frontend.realtimeIntensity, std::clamp(0.08 + pressureState_.network.trafficBurstiness * 0.32 + pressureState_.backend.queuePressure * 0.14, 0.0, 1.0), smoothing);
-    pressureState_.frontend.sessionPersistence = approach(pressureState_.frontend.sessionPersistence, std::clamp(0.58 + pressureState_.frontend.cacheEfficiency * 0.18 - pressureState_.backend.serviceFragmentation * 0.10, 0.0, 1.0), smoothing * 0.45);
-    pressureState_.frontend.mobileCompatibility = approach(pressureState_.frontend.mobileCompatibility, std::clamp(0.80 - pressureState_.frontend.assetWeight * 0.16 - pressureState_.frontend.renderComplexity * 0.10, 0.0, 1.0), smoothing * 0.35);
+    pressureState_.frontend.assetWeight = approach(pressureState_.frontend.assetWeight, std::clamp(0.24 + pressureState_.network.bandwidthPressure * 0.18 + pressureState_.backend.serviceFragmentation * 0.06 + context.frontend.assetWeight, 0.0, 1.0), smoothing * 0.45);
+    pressureState_.frontend.renderComplexity = approach(pressureState_.frontend.renderComplexity, std::clamp(0.28 + pressureState_.backend.serviceFragmentation * 0.16 + pressureState_.backend.queuePressure * 0.10 + context.frontend.renderComplexity, 0.0, 1.0), smoothing * 0.45);
+    pressureState_.frontend.cacheEfficiency = approach(pressureState_.frontend.cacheEfficiency, std::clamp((cacheEnabled_ ? 0.76 : 0.45) + context.frontend.cacheEfficiency, 0.0, 1.0), smoothing * 0.50);
+    pressureState_.frontend.realtimeIntensity = approach(pressureState_.frontend.realtimeIntensity, std::clamp(0.08 + pressureState_.network.trafficBurstiness * 0.32 + pressureState_.backend.queuePressure * 0.14 + context.frontend.realtimeIntensity, 0.0, 1.0), smoothing);
+    pressureState_.frontend.sessionPersistence = approach(pressureState_.frontend.sessionPersistence, std::clamp(0.58 + pressureState_.frontend.cacheEfficiency * 0.18 - pressureState_.backend.serviceFragmentation * 0.10 + context.frontend.sessionPersistence, 0.0, 1.0), smoothing * 0.45);
+    pressureState_.frontend.mobileCompatibility = approach(pressureState_.frontend.mobileCompatibility, std::clamp(0.80 - pressureState_.frontend.assetWeight * 0.16 - pressureState_.frontend.renderComplexity * 0.10 + context.frontend.mobileCompatibility, 0.0, 1.0), smoothing * 0.35);
 }
 
 void Simulation::nudgePressureState(const PressureState& delta)
@@ -105,4 +132,10 @@ void Simulation::nudgePressureState(const PressureState& delta)
 void Simulation::applyPressureEffect(const PressureState& effect)
 {
     nudgePressureState(effect);
+}
+
+void Simulation::setEventPressureContext(const PressureState& context, std::vector<PressureContextSignal> signals)
+{
+    eventPressureContext_ = context;
+    eventPressureSignals_ = std::move(signals);
 }

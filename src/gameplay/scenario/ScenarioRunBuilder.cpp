@@ -56,6 +56,41 @@ double scaledMultiplier(double multiplier, double intensity)
     return 1.0 + (multiplier - 1.0) * intensity;
 }
 
+PressureState scaledPressureState(PressureState state, double intensity)
+{
+    state.frontend.assetWeight *= intensity;
+    state.frontend.renderComplexity *= intensity;
+    state.frontend.cacheEfficiency *= intensity;
+    state.frontend.realtimeIntensity *= intensity;
+    state.frontend.sessionPersistence *= intensity;
+    state.frontend.mobileCompatibility *= intensity;
+    state.backend.requestLoad *= intensity;
+    state.backend.queuePressure *= intensity;
+    state.backend.computeIntensity *= intensity;
+    state.backend.serviceFragmentation *= intensity;
+    state.network.bandwidthPressure *= intensity;
+    state.network.latencySensitivity *= intensity;
+    state.network.trafficBurstiness *= intensity;
+    return state;
+}
+
+void addPressureState(PressureState& target, const PressureState& source)
+{
+    target.frontend.assetWeight += source.frontend.assetWeight;
+    target.frontend.renderComplexity += source.frontend.renderComplexity;
+    target.frontend.cacheEfficiency += source.frontend.cacheEfficiency;
+    target.frontend.realtimeIntensity += source.frontend.realtimeIntensity;
+    target.frontend.sessionPersistence += source.frontend.sessionPersistence;
+    target.frontend.mobileCompatibility += source.frontend.mobileCompatibility;
+    target.backend.requestLoad += source.backend.requestLoad;
+    target.backend.queuePressure += source.backend.queuePressure;
+    target.backend.computeIntensity += source.backend.computeIntensity;
+    target.backend.serviceFragmentation += source.backend.serviceFragmentation;
+    target.network.bandwidthPressure += source.network.bandwidthPressure;
+    target.network.latencySensitivity += source.network.latencySensitivity;
+    target.network.trafficBurstiness += source.network.trafficBurstiness;
+}
+
 BurstScenario instantiateBurst(BurstScenario burst, std::uint32_t seed, const std::string& key)
 {
     burst.multiplier = content::sampleRange(burst.multiplierRange, seed, key + ".multiplier");
@@ -87,6 +122,7 @@ EventDefinition instantiateEvent(EventDefinition event, std::uint32_t seed, cons
     event.effect.databaseCapacityMultiplier = scaledMultiplier(event.effect.databaseCapacityMultiplier, event.intensity);
     event.effect.latencyMultiplier = scaledMultiplier(event.effect.latencyMultiplier, event.intensity);
     event.effect.retryDelayMultiplier = scaledMultiplier(event.effect.retryDelayMultiplier, event.intensity);
+    event.effect.pressureEffect = scaledPressureState(event.effect.pressureEffect, event.intensity);
     return event;
 }
 
@@ -307,6 +343,7 @@ void ScenarioManager::applyModifier(ScenarioDefinition& definition, const Scenar
     if (modifier.burstOverride) {
         definition.bursts = *modifier.burstOverride;
     }
+    addPressureState(definition.pressureContext, modifier.pressureContext);
+    definition.pressureSignals.insert(definition.pressureSignals.end(), modifier.pressureSignals.begin(), modifier.pressureSignals.end());
     definition.events.insert(definition.events.end(), modifier.events.begin(), modifier.events.end());
 }
-

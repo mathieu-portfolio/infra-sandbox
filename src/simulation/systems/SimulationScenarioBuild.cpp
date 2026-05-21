@@ -15,7 +15,11 @@ void Simulation::buildFromScenario(const ScenarioDefinition& scenario)
     requests_.clear();
     cacheEntries_.clear();
     metrics_.reset();
-    pressureState_ = {};
+    scenarioPressureContext_ = scenario.pressureContext;
+    eventPressureContext_ = {};
+    pressureState_ = scenarioPressureContext_;
+    scenarioPressureSignals_ = scenario.pressureSignals;
+    eventPressureSignals_.clear();
     pressureAnalysis_.reset();
     pressureAnalysis_.setConfig(config_.pressureAnalysis);
     nextRequestId_ = 1;

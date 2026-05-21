@@ -476,6 +476,65 @@ TEST(SimulationTests, HiddenPressureStateEvolvesUnderBurstLoad)
     EXPECT_GT(metrics.network.trafficBurstiness, 0.0);
 }
 
+TEST(SimulationTests, ScenarioPressureContextFeedsSpecializedAndGlobalMetrics)
+{
+    auto scenario = ScenarioRegistry::singleServiceOverload();
+    scenario.pressureContext.frontend.assetWeight = 0.35;
+    scenario.pressureContext.frontend.renderComplexity = 0.25;
+    scenario.pressureContext.network.bandwidthPressure = 0.2;
+    scenario.pressureSignals.push_back({
+        .domain = MetricContributionDomain::Frontend,
+        .name = "Mobile Audience Surge",
+        .summary = "Mobile users amplify asset and rendering pressure.",
+    });
+
+    Simulation simulation(scenario);
+    runFor(simulation, 1.0);
+
+    const auto& metrics = simulation.metrics();
+    EXPECT_GT(metrics.pressureState.frontend.assetWeight, 0.0);
+    EXPECT_GT(metrics.frontend.assetBandwidth, 0.0);
+    EXPECT_LT(metrics.global.userExperience, 100.0);
+    ASSERT_FALSE(metrics.activePressureSignals.empty());
+    EXPECT_EQ(metrics.activePressureSignals.front().name, "Mobile Audience Surge");
+}
+
+TEST(SimulationTests, EventPressureContextTemporarilyAmplifiesMetrics)
+{
+    Simulation simulation(ScenarioRegistry::singleServiceOverload());
+    EventManager events;
+    EventDefinition event;
+    event.id = "network_instability_test";
+    event.displayName = "Network Instability";
+    event.trigger.timeSeconds = 0.0;
+    event.durationSeconds = 0.1;
+    event.durationTurns = 0;
+    event.effect.pressureEffect.network.latencySensitivity = 0.35;
+    event.effect.pressureEffect.network.trafficBurstiness = 0.25;
+    event.effect.pressureSignals.push_back({
+        .domain = MetricContributionDomain::Runtime,
+        .name = "Network Instability",
+        .summary = "Latency-sensitive traffic makes connection choices more visible.",
+        .temporary = true,
+    });
+    events.reset({event});
+
+    events.update(0.01, 0.01, 1, 1.0, -1, simulation);
+    simulation.setEventPressureContext(events.modifiers().pressureEffect, events.modifiers().pressureSignals);
+    runFor(simulation, 1.0);
+
+    const auto& activeMetrics = simulation.metrics();
+    EXPECT_GT(activeMetrics.network.latencySensitivity, 0.0);
+    ASSERT_FALSE(activeMetrics.activePressureSignals.empty());
+    EXPECT_TRUE(activeMetrics.activePressureSignals.front().temporary);
+
+    events.update(0.2, 0.21, 1, 1.0, -1, simulation);
+    simulation.setEventPressureContext(events.modifiers().pressureEffect, events.modifiers().pressureSignals);
+    simulation.update(1.0 / 60.0);
+
+    EXPECT_TRUE(simulation.metrics().activePressureSignals.empty());
+}
+
 TEST(SimulationTests, QueueBuildsWhenDemandExceedsCapacity)
 {
     Simulation simulation(saturatedScenario());

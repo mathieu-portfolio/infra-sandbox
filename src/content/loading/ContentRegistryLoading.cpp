@@ -538,14 +538,20 @@ EngineeringCapacity parseCapacityBonus(const Json& object)
     return bonus;
 }
 
-PressureState parsePressureEffect(const Json& object)
+MetricContributionDomain pressureDomainFromId(const std::string& id)
+{
+    if (id == "backend" || id == "network" || id == "runtime") return MetricContributionDomain::Runtime;
+    if (id == "database" || id == "persistence") return MetricContributionDomain::Persistence;
+    return MetricContributionDomain::Frontend;
+}
+
+PressureState parsePressureStateObject(const Json& effects)
 {
     PressureState effect;
-    const Json* effects = object.find("pressure_effects");
-    if (effects == nullptr || !effects->isObject()) {
+    if (!effects.isObject()) {
         return effect;
     }
-    if (const Json* frontend = effects->find("frontend"); frontend != nullptr && frontend->isObject()) {
+    if (const Json* frontend = effects.find("frontend"); frontend != nullptr && frontend->isObject()) {
         effect.frontend.assetWeight = numberAt(*frontend, "asset_weight");
         effect.frontend.renderComplexity = numberAt(*frontend, "render_complexity");
         effect.frontend.cacheEfficiency = numberAt(*frontend, "cache_efficiency");
@@ -553,18 +559,50 @@ PressureState parsePressureEffect(const Json& object)
         effect.frontend.sessionPersistence = numberAt(*frontend, "session_persistence");
         effect.frontend.mobileCompatibility = numberAt(*frontend, "mobile_compatibility");
     }
-    if (const Json* backend = effects->find("backend"); backend != nullptr && backend->isObject()) {
+    if (const Json* backend = effects.find("backend"); backend != nullptr && backend->isObject()) {
         effect.backend.requestLoad = numberAt(*backend, "request_load");
         effect.backend.queuePressure = numberAt(*backend, "queue_pressure");
         effect.backend.computeIntensity = numberAt(*backend, "compute_intensity");
         effect.backend.serviceFragmentation = numberAt(*backend, "service_fragmentation");
     }
-    if (const Json* network = effects->find("network"); network != nullptr && network->isObject()) {
+    if (const Json* network = effects.find("network"); network != nullptr && network->isObject()) {
         effect.network.bandwidthPressure = numberAt(*network, "bandwidth_pressure");
         effect.network.latencySensitivity = numberAt(*network, "latency_sensitivity");
         effect.network.trafficBurstiness = numberAt(*network, "traffic_burstiness");
     }
     return effect;
+}
+
+PressureState parsePressureStateAt(const Json& object, const std::string& key)
+{
+    const Json* effects = object.find(key);
+    return effects != nullptr ? parsePressureStateObject(*effects) : PressureState{};
+}
+
+PressureState parsePressureEffect(const Json& object)
+{
+    return parsePressureStateAt(object, "pressure_effects");
+}
+
+std::vector<PressureContextSignal> parsePressureSignals(const Json& object)
+{
+    std::vector<PressureContextSignal> signals;
+    const Json* array = object.find("pressure_signals");
+    if (array == nullptr || !array->isArray()) {
+        return signals;
+    }
+    for (const auto& entry : array->asArray()) {
+        if (!entry.isObject()) {
+            continue;
+        }
+        signals.push_back({
+            .domain = pressureDomainFromId(stringAt(entry, "domain")),
+            .name = stringAt(entry, "name", stringAt(entry, "display_name")),
+            .summary = stringAt(entry, "summary"),
+            .temporary = boolAt(entry, "temporary"),
+        });
+    }
+    return signals;
 }
 
 void parseCapacityBonusRanges(const Json& object, WorldActionDefinition& action)
@@ -630,6 +668,11 @@ EventDefinition parseEvent(const Json& object)
             event.effect.databaseHeavyShare = event.effect.databaseHeavyShareRange->min;
         }
         event.effect.unlockMechanics = mappedStringsAny<MechanicType>(*effect, "unlock_actions", "unlock_interventions", mechanicFromId);
+        event.effect.pressureEffect = parsePressureEffect(*effect);
+        event.effect.pressureSignals = parsePressureSignals(*effect);
+        for (auto& signal : event.effect.pressureSignals) {
+            signal.temporary = true;
+        }
     }
     event.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", event.durationSeconds);
     event.durationSeconds = event.durationSecondsRange.min;
@@ -750,6 +793,8 @@ ScenarioModifierDefinition parseModifier(const Json& object, const std::unordere
     if (const Json* burst = object.find("burst_override"); burst != nullptr && burst->isObject()) {
         modifier.burstOverride = parseBurst(*burst);
     }
+    modifier.pressureContext = parsePressureStateAt(object, "pressure_context");
+    modifier.pressureSignals = parsePressureSignals(object);
     for (const auto& eventId : stringsAt(object, "events")) {
         if (const auto it = events.find(eventId); it != events.end()) {
             modifier.events.push_back(it->second);
@@ -863,6 +908,8 @@ void applyScenarioOverrides(ScenarioDefinition& scenario, const Json& object)
     if (const Json* bursts = object.find("bursts"); bursts != nullptr && bursts->isObject()) {
         scenario.bursts = parseBurst(*bursts);
     }
+    scenario.pressureContext = parsePressureStateAt(object, "pressure_context");
+    scenario.pressureSignals = parsePressureSignals(object);
     scenario.requestTimeoutSeconds = numberAt(object, "request_timeout_seconds", scenario.requestTimeoutSeconds);
 }
 

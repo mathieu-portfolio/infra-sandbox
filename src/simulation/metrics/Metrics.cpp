@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace {
 double clampPercent(double value)
@@ -231,6 +232,11 @@ void Metrics::setPressureState(const PressureState& state)
     snapshot_.pressureState.network.latencySensitivity = clamp01(snapshot_.pressureState.network.latencySensitivity);
     snapshot_.pressureState.network.trafficBurstiness = clamp01(snapshot_.pressureState.network.trafficBurstiness);
     MetricsAggregator::update(snapshot_);
+}
+
+void Metrics::setActivePressureSignals(std::vector<PressureContextSignal> signals)
+{
+    snapshot_.activePressureSignals = std::move(signals);
 }
 
 void Metrics::update(double dt)

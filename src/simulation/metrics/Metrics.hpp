@@ -25,6 +25,13 @@ struct MetricContribution {
     double amount = 0.0;
 };
 
+struct PressureContextSignal {
+    MetricContributionDomain domain = MetricContributionDomain::Frontend;
+    std::string name;
+    std::string summary;
+    bool temporary = false;
+};
+
 struct GlobalMetrics {
     double userExperience = 100.0;
     double infrastructurePressure = 0.0;
@@ -141,6 +148,7 @@ struct MetricsSnapshot {
     BackendMetrics backend;
     NetworkMetrics network;
     PressureState pressureState;
+    std::vector<PressureContextSignal> activePressureSignals;
     std::vector<MetricContribution> contributions;
 };
 
@@ -162,6 +170,7 @@ public:
     void setRuntimeSystemCounts(int enabledSystemCount, int initializedSystemCount);
     void setComplexity(double current, double recommendedThreshold);
     void setPressureState(const PressureState& state);
+    void setActivePressureSignals(std::vector<PressureContextSignal> signals);
     void update(double dt);
 
     [[nodiscard]] const MetricsSnapshot& snapshot() const;

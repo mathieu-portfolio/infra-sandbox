@@ -45,6 +45,7 @@ public:
     void setPaused(bool paused);
     bool applyTopologyMutation(const struct TopologyMutation& mutation);
     void applyPressureEffect(const PressureState& effect);
+    void setEventPressureContext(const PressureState& context, std::vector<PressureContextSignal> signals);
     void addComplexity(double amount);
     bool canScaleNode(int nodeId, int maxScaleLevel) const;
     int scaleLevelForNode(int nodeId) const;
@@ -123,6 +124,10 @@ private:
     SimulationTimeSystem timeSystem_;
     Metrics metrics_;
     PressureState pressureState_;
+    PressureState scenarioPressureContext_;
+    PressureState eventPressureContext_;
+    std::vector<PressureContextSignal> scenarioPressureSignals_;
+    std::vector<PressureContextSignal> eventPressureSignals_;
     PressureAnalysisSystem pressureAnalysis_;
     std::unordered_map<std::uint64_t, Request> requests_;
     std::deque<CacheEntry> cacheEntries_;

@@ -3,6 +3,7 @@
 #include "core/validation/ValueSpec.hpp"
 #include "core/simulation/Mechanics.hpp"
 #include "core/topology/NodeDefinition.hpp"
+#include "simulation/metrics/Metrics.hpp"
 #include "simulation/metrics/PressureAnalysis.hpp"
 
 #include <cstdint>
@@ -102,6 +103,8 @@ struct EventEffect {
     double regionalDemandRatePerSecond = 0.0;
     NumericRange regionalDemandRatePerSecondRange{0.0, 0.0};
     std::vector<MechanicType> unlockMechanics;
+    PressureState pressureEffect;
+    std::vector<PressureContextSignal> pressureSignals;
 };
 
 struct EventDefinition {
@@ -139,6 +142,8 @@ struct EventModifiers {
     double retryDelayMultiplier = 1.0;
     std::optional<double> databaseHeavyShare;
     std::vector<MechanicType> unlockedMechanics;
+    PressureState pressureEffect;
+    std::vector<PressureContextSignal> pressureSignals;
 };
 
 struct LocalizedEventModifier {

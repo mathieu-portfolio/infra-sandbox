@@ -8,6 +8,25 @@
 #include <set>
 #include <utility>
 
+namespace {
+void addPressureState(PressureState& target, const PressureState& source)
+{
+    target.frontend.assetWeight += source.frontend.assetWeight;
+    target.frontend.renderComplexity += source.frontend.renderComplexity;
+    target.frontend.cacheEfficiency += source.frontend.cacheEfficiency;
+    target.frontend.realtimeIntensity += source.frontend.realtimeIntensity;
+    target.frontend.sessionPersistence += source.frontend.sessionPersistence;
+    target.frontend.mobileCompatibility += source.frontend.mobileCompatibility;
+    target.backend.requestLoad += source.backend.requestLoad;
+    target.backend.queuePressure += source.backend.queuePressure;
+    target.backend.computeIntensity += source.backend.computeIntensity;
+    target.backend.serviceFragmentation += source.backend.serviceFragmentation;
+    target.network.bandwidthPressure += source.network.bandwidthPressure;
+    target.network.latencySensitivity += source.network.latencySensitivity;
+    target.network.trafficBurstiness += source.network.trafficBurstiness;
+}
+}
+
 void EventManager::reset(std::vector<EventDefinition> definitions, std::uint32_t seed)
 {
     definitions_ = std::move(definitions);
@@ -152,6 +171,11 @@ EventModifiers EventManager::modifiers() const
             modifiers.unlockedMechanics.end(),
             effect.unlockMechanics.begin(),
             effect.unlockMechanics.end());
+        addPressureState(modifiers.pressureEffect, effect.pressureEffect);
+        modifiers.pressureSignals.insert(
+            modifiers.pressureSignals.end(),
+            effect.pressureSignals.begin(),
+            effect.pressureSignals.end());
     }
     return modifiers;
 }
