@@ -185,10 +185,10 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
     rootStyle.gap = UiTheme::gap;
     root->style(rootStyle);
     auto overview = std::make_unique<ui::PanelNode>("overview");
-    overview->style(ui::fixedHeight(226.0f));
+    overview->style(ui::fixedHeight(250.0f));
     root->add(std::move(overview));
     auto alerts = std::make_unique<ui::PanelNode>("alerts");
-    alerts->style(ui::fixedHeight(166.0f));
+    alerts->style(ui::fixedHeight(142.0f));
     root->add(std::move(alerts));
     if (sandboxMode) {
         auto sandbox = std::make_unique<ui::PanelNode>("sandbox");

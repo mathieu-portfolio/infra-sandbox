@@ -196,6 +196,35 @@ TEST(ProgressionRegistryTests, ProvidesTierFilters)
     EXPECT_NE(std::find(tier.allowedPressures.begin(), tier.allowedPressures.end(), PressureCategory::PersistencePressure), tier.allowedPressures.end());
 }
 
+TEST(MetricsAggregatorTests, ComputesGlobalMetricsFromFrontendSignals)
+{
+    MetricsSnapshot snapshot;
+    snapshot.averageLatencySeconds = 1.5;
+    snapshot.inputRatePerSecond = 24.0;
+    snapshot.processedPerSecond = 12.0;
+    snapshot.retryRatePerSecond = 2.0;
+    snapshot.timeoutRatePerSecond = 1.0;
+    snapshot.apiQueueDepth = 4;
+    snapshot.databaseQueueDepth = 6;
+    snapshot.apiUtilization = 0.8;
+    snapshot.databaseUtilization = 0.6;
+    snapshot.cacheHitRate = 0.25;
+    snapshot.totalCacheLookups = 10;
+    snapshot.observability.enabledSystemCount = 7;
+    snapshot.complexity.current = 2.0;
+    snapshot.complexity.recommendedThreshold = 10.0;
+
+    MetricsAggregator::update(snapshot);
+
+    EXPECT_GT(snapshot.frontend.perceivedLatency, snapshot.averageLatencySeconds);
+    EXPECT_GT(snapshot.frontend.framePressure, 0.0);
+    EXPECT_LT(snapshot.global.userExperience, 100.0);
+    EXPECT_GT(snapshot.global.infrastructurePressure, 0.0);
+    EXPECT_LT(snapshot.global.reliability, 100.0);
+    EXPECT_GT(snapshot.global.complexity, 20.0);
+    EXPECT_FALSE(snapshot.contributions.empty());
+}
+
 TEST(EngineeringCapacityTests, SpecialtyIncreasesAreCappedAtTotalBudget)
 {
     const EngineeringCapacity fullCapacity{

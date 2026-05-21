@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdio>
 
 namespace {
@@ -16,6 +17,29 @@ void metricRow(const char* icon, const char* label, const char* value, float x, 
     IconRegistry::instance().drawIcon(icon, {x, y + 1.0f, 16.0f, 16.0f}, valueColor);
     drawTextClipped(label, {x + 24.0f, y, 112.0f, 18.0f}, 14, {139, 148, 158, 255});
     drawTextClipped(value, {x + 150.0f, y, 82.0f, 18.0f}, 14, valueColor);
+}
+
+Color scoreColor(double score, bool higherIsBetter)
+{
+    const double normalized = higherIsBetter ? score : 100.0 - score;
+    if (normalized >= 75.0) {
+        return {86, 210, 151, 255};
+    }
+    if (normalized >= 45.0) {
+        return {245, 184, 76, 255};
+    }
+    return {235, 86, 100, 255};
+}
+
+const MetricContribution* strongestContribution(const MetricsSnapshot& metrics)
+{
+    const MetricContribution* strongest = nullptr;
+    for (const auto& contribution : metrics.contributions) {
+        if (strongest == nullptr || std::abs(contribution.amount) > std::abs(strongest->amount)) {
+            strongest = &contribution;
+        }
+    }
+    return strongest;
 }
 
 Rectangle sandboxButton(float x, float y, float width, int index)
@@ -117,18 +141,29 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     y = overview.y;
     drawPanelFrame(overview, "System Overview");
     char buffer[80];
-    std::snprintf(buffer, sizeof(buffer), "%.1f req/s", metrics.inputRatePerSecond);
-    metricRow("metric.total_traffic", "Total Traffic", buffer, x + 14.0f, y + 42.0f, {89, 196, 255, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.averageLatencySeconds * 1000.0);
-    metricRow("metric.latency_average", "Avg Latency", buffer, x + 14.0f, y + 72.0f, metrics.averageLatencySeconds > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.1f/s", metrics.timeoutRatePerSecond);
-    metricRow("metric.error_rate", "Error Rate", buffer, x + 14.0f, y + 102.0f, metrics.timeoutRatePerSecond > 0.5 ? Color{235, 86, 100, 255} : Color{86, 210, 151, 255});
-    std::snprintf(buffer, sizeof(buffer), "%d / %d", metrics.apiQueueDepth, metrics.databaseQueueDepth);
-    metricRow("metric.queue_depth", "API / DB Queue", buffer, x + 14.0f, y + 132.0f, {245, 184, 76, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.0f%%", metrics.cacheHitRate * 100.0);
-    metricRow("metric.cache_hit_rate", "Cache Hit Rate", buffer, x + 14.0f, y + 162.0f, {151, 111, 255, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.1f / %.0f", metrics.complexity.current, metrics.complexity.recommendedThreshold);
-    metricRow("metric.complexity", "Complexity", buffer, x + 14.0f, y + 192.0f, metrics.complexity.current > metrics.complexity.recommendedThreshold ? Color{245, 184, 76, 255} : Color{210, 168, 255, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.userExperience);
+    metricRow("metric.latency_average", "User Experience", buffer, x + 14.0f, y + 40.0f, scoreColor(metrics.global.userExperience, true));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.infrastructurePressure);
+    metricRow("metric.queue_depth", "Infra Pressure", buffer, x + 14.0f, y + 62.0f, scoreColor(metrics.global.infrastructurePressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.reliability);
+    metricRow("metric.error_rate", "Reliability", buffer, x + 14.0f, y + 84.0f, scoreColor(metrics.global.reliability, true));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.complexity);
+    metricRow("metric.complexity", "Complexity", buffer, x + 14.0f, y + 106.0f, scoreColor(metrics.global.complexity, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.scalability);
+    metricRow("metric.total_traffic", "Scalability", buffer, x + 14.0f, y + 128.0f, scoreColor(metrics.global.scalability, true));
+
+    drawTextClipped("Frontend", {x + 14.0f, y + 158.0f, width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.perceivedLatency * 1000.0);
+    metricRow("metric.latency_average", "Perceived Lat.", buffer, x + 14.0f, y + 176.0f, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.framePressure);
+    metricRow("metric.queue_depth", "Frame Pressure", buffer, x + 14.0f, y + 198.0f, scoreColor(metrics.frontend.framePressure, false));
+    if (const MetricContribution* contribution = strongestContribution(metrics); contribution != nullptr) {
+        std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
+        metricRow("alert.explanation", contribution->label, buffer, x + 14.0f, y + 220.0f, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
+    } else {
+        std::snprintf(buffer, sizeof(buffer), "%.0f%%", metrics.frontend.sessionWarmth);
+        metricRow("metric.cache_hit_rate", "Session Warmth", buffer, x + 14.0f, y + 220.0f, {151, 111, 255, 255});
+    }
 
     Rectangle alerts = left.alerts;
     y = alerts.y;

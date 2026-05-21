@@ -1,6 +1,48 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <vector>
+
+enum class GlobalMetricId {
+    UserExperience,
+    InfrastructurePressure,
+    Reliability,
+    Complexity,
+    Scalability,
+};
+
+enum class MetricContributionDomain {
+    Frontend,
+    Persistence,
+    Runtime,
+};
+
+struct MetricContribution {
+    GlobalMetricId target = GlobalMetricId::UserExperience;
+    MetricContributionDomain domain = MetricContributionDomain::Frontend;
+    const char* label = "";
+    double amount = 0.0;
+};
+
+struct GlobalMetrics {
+    double userExperience = 100.0;
+    double infrastructurePressure = 0.0;
+    double reliability = 100.0;
+    double complexity = 0.0;
+    double scalability = 100.0;
+};
+
+struct FrontendMetrics {
+    double renderLatency = 0.0;
+    double framePressure = 0.0;
+    double assetBandwidth = 0.0;
+    double interactionDelay = 0.0;
+    double perceivedLatency = 0.0;
+    double websocketPressure = 0.0;
+    double sessionWarmth = 0.0;
+    double sessionStalenessRisk = 0.0;
+};
 
 struct FlowMetrics {
     double inputRatePerSecond = 0.0;
@@ -51,6 +93,14 @@ struct MetricsSnapshot {
     ReliabilityMetrics reliability;
     ComplexityMetrics complexity;
     ObservabilityMetrics observability;
+    GlobalMetrics global;
+    FrontendMetrics frontend;
+    std::vector<MetricContribution> contributions;
+};
+
+class MetricsAggregator {
+public:
+    static void update(MetricsSnapshot& snapshot);
 };
 
 class Metrics {
