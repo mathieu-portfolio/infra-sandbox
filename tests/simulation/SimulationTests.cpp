@@ -250,6 +250,20 @@ TEST(MetricsAggregatorTests, HiddenPressureStateDerivesSpecializedMetrics)
     EXPECT_GT(snapshot.global.infrastructurePressure, 20.0);
 }
 
+TEST(ActionEffectTests, ActionPressureEffectCanModifyHiddenPressureState)
+{
+    Simulation simulation(ScenarioRegistry::databaseBottleneck());
+    PressureState actionEffect;
+    actionEffect.frontend.cacheEfficiency = 0.12;
+    actionEffect.backend.serviceFragmentation = 0.08;
+
+    simulation.applyPressureEffect(actionEffect);
+
+    EXPECT_GT(simulation.metrics().pressureState.frontend.cacheEfficiency, 0.0);
+    EXPECT_GT(simulation.metrics().frontend.sessionWarmth, 0.0);
+    EXPECT_GT(simulation.metrics().global.complexity, 0.0);
+}
+
 TEST(EngineeringCapacityTests, SpecialtyIncreasesAreCappedAtTotalBudget)
 {
     const EngineeringCapacity fullCapacity{

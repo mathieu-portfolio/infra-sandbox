@@ -41,6 +41,10 @@
     "pressure_shifts": [
       "Persistence pressure can shift into cache memory pressure"
     ],
+    "pressure_effects": {
+      "frontend": {"cache_efficiency": 0.10, "session_persistence": 0.04},
+      "backend": {"compute_intensity": -0.04, "service_fragmentation": 0.03}
+    },
     "complexity_cost": 0.5,
     "engineering_costs": {
       "backend": 1,
@@ -96,6 +100,10 @@
     "pressure_shifts": [
       "Traffic pressure shifts toward user-facing latency"
     ],
+    "pressure_effects": {
+      "backend": {"request_load": -0.10, "queue_pressure": -0.06},
+      "network": {"traffic_burstiness": -0.06}
+    },
     "complexity_cost": 0.25,
     "engineering_costs": {},
     "availability": {
@@ -146,6 +154,9 @@
     "pressure_shifts": [
       "Compute relief can shift bottlenecks toward persistence"
     ],
+    "pressure_effects": {
+      "backend": {"compute_intensity": -0.08, "queue_pressure": -0.05, "service_fragmentation": 0.03}
+    },
     "complexity_cost": 1.0,
     "engineering_costs": {
       "infrastructure": 1
@@ -441,6 +452,10 @@
     "pressure_shifts": [
       "Reliability pressure shifts between retries and visible errors"
     ],
+    "pressure_effects": {
+      "frontend": {"realtime_intensity": -0.04},
+      "network": {"traffic_burstiness": -0.04}
+    },
     "complexity_cost": 0.25,
     "engineering_costs": {},
     "availability": {
@@ -490,6 +505,10 @@
     "pressure_shifts": [
       "Read pressure shifts from cache back to persistence"
     ],
+    "pressure_effects": {
+      "frontend": {"cache_efficiency": -0.12, "session_persistence": -0.04},
+      "backend": {"request_load": 0.06}
+    },
     "complexity_cost": 0.0,
     "engineering_costs": {},
     "availability": {
@@ -542,6 +561,10 @@
     "pressure_shifts": [
       "Cache pressure shifts into persistence pressure"
     ],
+    "pressure_effects": {
+      "frontend": {"cache_efficiency": -0.18},
+      "backend": {"request_load": 0.10, "queue_pressure": 0.05}
+    },
     "complexity_cost": 0.35,
     "engineering_costs": {
       "backend": 1

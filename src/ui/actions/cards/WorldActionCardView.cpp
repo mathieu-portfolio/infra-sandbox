@@ -95,6 +95,9 @@ std::string usefulWhenText(const WorldActionDraft& action)
     if (!action.showUsageDetails) {
         return {};
     }
+    if (!action.pressurePreview.empty()) {
+        return action.pressurePreview;
+    }
     return action.usefulWhen.empty() ? "the current pressure pattern matches this strategic focus" : action.usefulWhen;
 }
 

@@ -13,6 +13,23 @@ const content::InterventionDefinition* interventionFor(MechanicType mechanic)
     }
     return nullptr;
 }
+
+bool hasPressureEffect(const PressureState& effect)
+{
+    return effect.frontend.assetWeight != 0.0
+        || effect.frontend.renderComplexity != 0.0
+        || effect.frontend.cacheEfficiency != 0.0
+        || effect.frontend.realtimeIntensity != 0.0
+        || effect.frontend.sessionPersistence != 0.0
+        || effect.frontend.mobileCompatibility != 0.0
+        || effect.backend.requestLoad != 0.0
+        || effect.backend.queuePressure != 0.0
+        || effect.backend.computeIntensity != 0.0
+        || effect.backend.serviceFragmentation != 0.0
+        || effect.network.bandwidthPressure != 0.0
+        || effect.network.latencySensitivity != 0.0
+        || effect.network.trafficBurstiness != 0.0;
+}
 }
 
 void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& command) const
@@ -20,10 +37,14 @@ void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& co
     if (!simulation.isMechanicAllowed(command.type)) {
         return;
     }
+    const auto* intervention = interventionFor(command.type);
+    if (intervention != nullptr && hasPressureEffect(intervention->pressureEffect)) {
+        simulation.applyPressureEffect(intervention->pressureEffect);
+    }
 
     switch (command.type) {
     case MechanicType::ScaleUp:
-        if (const auto* intervention = interventionFor(command.type)) {
+        if (intervention != nullptr) {
             (void)simulation.scaleApiCapacity(command.targetId, command.amount > 0.0 ? command.amount : 1.5, intervention->maxScaleLevel, intervention->diminishingReturn, intervention->complexityCost);
         } else {
             simulation.scaleApiCapacity(command.amount > 0.0 ? command.amount : 1.5);
@@ -31,7 +52,9 @@ void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& co
         break;
     case MechanicType::EnableCache:
         simulation.toggleCache();
-        if (const auto* intervention = interventionFor(command.type)) {
+        if (intervention != nullptr) {
+            // TODO: Keep legacy complexity costs until all action trade-offs are
+            // expressed as typed hidden pressure effects.
             simulation.addComplexity(intervention->complexityCost);
         }
         break;
@@ -40,13 +63,17 @@ void MechanicExecutor::execute(Simulation& simulation, const MechanicCommand& co
         break;
     case MechanicType::ToggleRetries:
         simulation.toggleRetries();
-        if (const auto* intervention = interventionFor(command.type)) {
+        if (intervention != nullptr) {
+            // TODO: Keep legacy complexity costs until all action trade-offs are
+            // expressed as typed hidden pressure effects.
             simulation.addComplexity(intervention->complexityCost);
         }
         break;
     case MechanicType::ThrottleTraffic:
         simulation.adjustClientRequestRates(command.amount);
-        if (const auto* intervention = interventionFor(command.type)) {
+        if (intervention != nullptr) {
+            // TODO: Keep legacy complexity costs until all action trade-offs are
+            // expressed as typed hidden pressure effects.
             simulation.addComplexity(intervention->complexityCost);
         }
         break;

@@ -4,6 +4,7 @@
 #include "gameplay/Scenario.hpp"
 #include "core/simulation/Mechanics.hpp"
 #include "simulation/core/SimulationConfig.hpp"
+#include "simulation/metrics/Metrics.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 
 #include <filesystem>
@@ -55,6 +56,7 @@ struct InterventionDefinition {
     double diminishingReturn = 0.72;
     int regionSlotUsage = 0;
     int useLimit = 2;
+    PressureState pressureEffect;
 };
 
 struct WorldActionDefinition {
@@ -85,6 +87,7 @@ struct WorldActionDefinition {
     std::vector<std::string> unlocksObservability;
     double minIntensity = 0.85;
     double maxIntensity = 1.25;
+    PressureState pressureEffect;
 };
 
 struct ContentLoadResult {

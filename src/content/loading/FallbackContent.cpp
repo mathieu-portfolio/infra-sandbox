@@ -47,6 +47,7 @@ void ContentRegistry::loadFallbackContent()
             .complexityCost = 1.0,
             .maxScaleLevel = 3,
             .diminishingReturn = 0.72,
+            .pressureEffect = {.backend = {.queuePressure = -0.04, .computeIntensity = -0.06, .serviceFragmentation = 0.02}},
         },
     };
     worldActions_ = {
@@ -60,6 +61,7 @@ void ContentRegistry::loadFallbackContent()
             .iconId = "action.generic",
             .capacityBonus = {.backend = 1},
             .backendCapacityBonusRange = {1.0, 1.0},
+            .pressureEffect = {.backend = {.serviceFragmentation = -0.04}},
         },
     };
 }

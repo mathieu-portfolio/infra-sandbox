@@ -177,6 +177,8 @@ struct WorldActionDraft {
     double eventIntensityMultiplier = 1.0;
     double complexityDelta = 0.0;
     double durationSeconds = 0.0;
+    PressureState pressureEffect;
+    std::string pressurePreview;
     std::vector<std::string> unlocksObservability;
 };
 

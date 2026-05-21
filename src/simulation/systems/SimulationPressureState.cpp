@@ -101,3 +101,8 @@ void Simulation::nudgePressureState(const PressureState& delta)
     pressureState_.network.trafficBurstiness = clamp01(pressureState_.network.trafficBurstiness + delta.network.trafficBurstiness);
     metrics_.setPressureState(pressureState_);
 }
+
+void Simulation::applyPressureEffect(const PressureState& effect)
+{
+    nudgePressureState(effect);
+}

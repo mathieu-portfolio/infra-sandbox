@@ -44,6 +44,7 @@ public:
     void setAllowedMechanics(const std::vector<MechanicType>& mechanics);
     void setPaused(bool paused);
     bool applyTopologyMutation(const struct TopologyMutation& mutation);
+    void applyPressureEffect(const PressureState& effect);
     void addComplexity(double amount);
     bool canScaleNode(int nodeId, int maxScaleLevel) const;
     int scaleLevelForNode(int nodeId) const;

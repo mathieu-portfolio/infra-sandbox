@@ -538,6 +538,35 @@ EngineeringCapacity parseCapacityBonus(const Json& object)
     return bonus;
 }
 
+PressureState parsePressureEffect(const Json& object)
+{
+    PressureState effect;
+    const Json* effects = object.find("pressure_effects");
+    if (effects == nullptr || !effects->isObject()) {
+        return effect;
+    }
+    if (const Json* frontend = effects->find("frontend"); frontend != nullptr && frontend->isObject()) {
+        effect.frontend.assetWeight = numberAt(*frontend, "asset_weight");
+        effect.frontend.renderComplexity = numberAt(*frontend, "render_complexity");
+        effect.frontend.cacheEfficiency = numberAt(*frontend, "cache_efficiency");
+        effect.frontend.realtimeIntensity = numberAt(*frontend, "realtime_intensity");
+        effect.frontend.sessionPersistence = numberAt(*frontend, "session_persistence");
+        effect.frontend.mobileCompatibility = numberAt(*frontend, "mobile_compatibility");
+    }
+    if (const Json* backend = effects->find("backend"); backend != nullptr && backend->isObject()) {
+        effect.backend.requestLoad = numberAt(*backend, "request_load");
+        effect.backend.queuePressure = numberAt(*backend, "queue_pressure");
+        effect.backend.computeIntensity = numberAt(*backend, "compute_intensity");
+        effect.backend.serviceFragmentation = numberAt(*backend, "service_fragmentation");
+    }
+    if (const Json* network = effects->find("network"); network != nullptr && network->isObject()) {
+        effect.network.bandwidthPressure = numberAt(*network, "bandwidth_pressure");
+        effect.network.latencySensitivity = numberAt(*network, "latency_sensitivity");
+        effect.network.trafficBurstiness = numberAt(*network, "traffic_burstiness");
+    }
+    return effect;
+}
+
 void parseCapacityBonusRanges(const Json& object, WorldActionDefinition& action)
 {
     if (const Json* value = object.find("capacity_bonus"); value != nullptr && value->isObject()) {
@@ -894,6 +923,7 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.diminishingReturn = numberAt(object, "diminishing_return", intervention.diminishingReturn);
     intervention.regionSlotUsage = static_cast<int>(numberAt(object, "region_slot_usage", intervention.kind == InterventionKind::TopologyMutation ? 1.0 : 0.0));
     intervention.useLimit = static_cast<int>(numberAt(object, "use_limit", intervention.useLimit));
+    intervention.pressureEffect = parsePressureEffect(object);
     return intervention;
 }
 
@@ -921,6 +951,7 @@ WorldActionDefinition parseWorldAction(const Json& object)
     action.durationSecondsRange = rangeAtAny(object, "duration_turns", "duration_seconds", action.durationSeconds);
     action.durationSeconds = action.durationSecondsRange.min;
     action.unlocksObservability = stringsAtAny(object, "unlocks_observability", "observability_unlocks");
+    action.pressureEffect = parsePressureEffect(object);
     if (const Json* intensity = object.find("intensity_range"); intensity != nullptr && intensity->isObject()) {
         action.minIntensity = numberAt(*intensity, "min", action.minIntensity);
         action.maxIntensity = numberAt(*intensity, "max", action.maxIntensity);

@@ -250,6 +250,180 @@
     ]
   },
   {
+    "id": "compress_assets",
+    "display_name": "Compress Assets",
+    "description": "Reduce transferred asset weight so pages feel lighter before backend work changes.",
+    "categories": ["Frontend"],
+    "useful_when": "asset delivery and perceived latency are hurting user experience",
+    "tradeoffs": "Build and release complexity rises slightly.",
+    "icon_id": "engineering.frontend",
+    "affected_pressures": ["latency", "traffic"],
+    "pressure_effects": {
+      "frontend": {"asset_weight": -0.14},
+      "network": {"bandwidth_pressure": -0.06}
+    },
+    "complexity_delta": {"min": 0.05, "max": 0.12},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["frontend", "assets"]
+  },
+  {
+    "id": "add_cdn",
+    "display_name": "Add CDN",
+    "description": "Move static delivery closer to users so bandwidth and latency pressure stop competing with core services.",
+    "categories": ["Frontend", "Network"],
+    "useful_when": "global traffic or heavy assets are stressing delivery paths",
+    "tradeoffs": "Adds cache invalidation and edge-routing complexity.",
+    "icon_id": "action.add_cache",
+    "affected_pressures": ["latency", "traffic"],
+    "pressure_effects": {
+      "frontend": {"cache_efficiency": 0.10},
+      "network": {"bandwidth_pressure": -0.12, "latency_sensitivity": -0.08}
+    },
+    "complexity_delta": {"min": 0.18, "max": 0.35},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["frontend", "cdn", "network"]
+  },
+  {
+    "id": "lazy_load_media",
+    "display_name": "Lazy Load Media",
+    "description": "Defer non-critical media so the first visible interaction is not blocked by every asset.",
+    "categories": ["Frontend"],
+    "useful_when": "perceived latency is high but core request throughput is acceptable",
+    "tradeoffs": "More frontend states and loading edges to test.",
+    "icon_id": "engineering.frontend",
+    "affected_pressures": ["latency"],
+    "pressure_effects": {
+      "frontend": {"asset_weight": -0.08, "render_complexity": -0.05}
+    },
+    "complexity_delta": {"min": 0.04, "max": 0.10},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["frontend", "latency"]
+  },
+  {
+    "id": "optimize_rendering",
+    "display_name": "Optimize Rendering",
+    "description": "Reduce expensive UI work so frame pressure falls without changing backend capacity.",
+    "categories": ["Frontend"],
+    "useful_when": "frontend frame pressure is degrading user experience",
+    "tradeoffs": "Optimization work can distract from infrastructure bottlenecks.",
+    "icon_id": "engineering.frontend",
+    "affected_pressures": ["latency"],
+    "pressure_effects": {
+      "frontend": {"render_complexity": -0.16, "mobile_compatibility": 0.06}
+    },
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.1},
+    "tags": ["frontend", "rendering"]
+  },
+  {
+    "id": "add_session_persistence",
+    "display_name": "Add Session Persistence",
+    "description": "Make sessions warmer across reconnects so repeated visits recover faster.",
+    "categories": ["Frontend", "Reliability"],
+    "useful_when": "users are repeatedly reconnecting or refreshing during instability",
+    "tradeoffs": "State freshness and invalidation rules become more important.",
+    "icon_id": "engineering.frontend",
+    "affected_pressures": ["failure", "latency"],
+    "pressure_effects": {
+      "frontend": {"session_persistence": 0.16, "cache_efficiency": 0.04},
+      "backend": {"service_fragmentation": 0.04}
+    },
+    "complexity_delta": {"min": 0.10, "max": 0.22},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.15},
+    "tags": ["frontend", "session"]
+  },
+  {
+    "id": "add_reconnect_backoff",
+    "display_name": "Add Reconnect Backoff",
+    "description": "Slow reconnect loops during incidents so realtime clients stop amplifying recovery load.",
+    "categories": ["Frontend", "Reliability"],
+    "useful_when": "websocket or retry pressure is climbing during failures",
+    "tradeoffs": "Some users wait longer before live state catches up.",
+    "icon_id": "action.queue",
+    "affected_pressures": ["retry", "failure"],
+    "pressure_effects": {
+      "frontend": {"realtime_intensity": -0.12},
+      "network": {"traffic_burstiness": -0.10}
+    },
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["frontend", "realtime", "reliability"]
+  },
+  {
+    "id": "ship_huge_bundle",
+    "display_name": "Ship Huge Bundle",
+    "description": "Release a feature-heavy client bundle without splitting it, increasing user-facing delivery pressure.",
+    "categories": ["Risky", "Frontend"],
+    "useful_when": "rarely useful; demonstrates how frontend delivery can dominate perceived latency",
+    "tradeoffs": "Asset weight and render pressure rise immediately.",
+    "icon_id": "engineering.frontend",
+    "affected_pressures": ["latency", "traffic"],
+    "pressure_effects": {
+      "frontend": {"asset_weight": 0.18, "render_complexity": 0.08, "mobile_compatibility": -0.08},
+      "network": {"bandwidth_pressure": 0.08}
+    },
+    "duration_turns": {"min": 1, "max": 1},
+    "intensity_range": {"min": 0.95, "max": 1.1},
+    "tags": ["frontend", "tradeoff", "risky"]
+  },
+  {
+    "id": "aggressive_live_dashboard",
+    "display_name": "Aggressive Live Dashboard",
+    "description": "Push more realtime updates to improve freshness, at the cost of more websocket and network pressure.",
+    "categories": ["Risky", "Realtime"],
+    "useful_when": "freshness matters more than infrastructure pressure",
+    "tradeoffs": "Realtime intensity, bandwidth, and complexity all increase.",
+    "icon_id": "action.generic",
+    "affected_pressures": ["traffic", "retry"],
+    "pressure_effects": {
+      "frontend": {"realtime_intensity": 0.18, "session_persistence": 0.04},
+      "network": {"bandwidth_pressure": 0.08, "traffic_burstiness": 0.10}
+    },
+    "complexity_delta": {"min": 0.08, "max": 0.18},
+    "duration_turns": {"min": 1, "max": 2},
+    "intensity_range": {"min": 0.9, "max": 1.15},
+    "tags": ["frontend", "realtime", "risky"]
+  },
+  {
+    "id": "invalidate_cache_every_deploy",
+    "display_name": "Invalidate Cache Every Deploy",
+    "description": "Force fresh reads after every release, making downstream systems absorb repeated warm-up traffic.",
+    "categories": ["Risky", "Operations"],
+    "useful_when": "only when stale client state is the actual incident source",
+    "tradeoffs": "Cache efficiency drops and backend load can spike.",
+    "icon_id": "action.add_cache",
+    "affected_pressures": ["persistence", "latency"],
+    "pressure_effects": {
+      "frontend": {"cache_efficiency": -0.18, "session_persistence": -0.08},
+      "backend": {"request_load": 0.08}
+    },
+    "duration_turns": {"min": 1, "max": 1},
+    "intensity_range": {"min": 0.9, "max": 1.1},
+    "tags": ["cache", "tradeoff", "risky"]
+  },
+  {
+    "id": "split_into_too_many_services",
+    "display_name": "Split Into Too Many Services",
+    "description": "Break work into extra services before boundaries are clear, increasing coordination and reliability risk.",
+    "categories": ["Risky", "Architecture"],
+    "useful_when": "use as a teaching contrast for fragmentation and distributed complexity",
+    "tradeoffs": "Service fragmentation and latency sensitivity rise.",
+    "icon_id": "node.service",
+    "affected_pressures": ["latency", "failure"],
+    "pressure_effects": {
+      "backend": {"service_fragmentation": 0.20, "queue_pressure": 0.04},
+      "network": {"latency_sensitivity": 0.08}
+    },
+    "complexity_delta": {"min": 0.25, "max": 0.45},
+    "duration_turns": {"min": 2, "max": 3},
+    "intensity_range": {"min": 0.85, "max": 1.1},
+    "tags": ["architecture", "tradeoff", "risky"]
+  },
+  {
     "id": "traffic_analysis",
     "display_name": "Traffic Analysis",
     "description": "Map request movement through the platform so incoming, outgoing, retry, and regional traffic are easier to reason about.",
