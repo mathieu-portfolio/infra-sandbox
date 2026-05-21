@@ -45,7 +45,7 @@ Rectangle nodeBounds(const ui::UiNode& root, const std::string& id)
 float eventRowHeight(const EventLogEntry& event, float rowWidth, bool planning)
 {
     const std::string detail = event.description.empty()
-        ? (event.locationLabel.empty() ? "World state changed during simulation." : "Location: " + event.locationLabel)
+        ? (event.locationLabel.empty() ? "World state changed during view." : "Location: " + event.locationLabel)
         : event.description;
     const float detailWidth = std::max(1.0f, rowWidth - 50.0f);
     const int maxLines = planning ? 4 : 3;
@@ -62,7 +62,7 @@ void drawEventRow(Rectangle row, const EventLogEntry& event, bool planning)
     drawTextClipped(event.name, {row.x + 34.0f, row.y + 10.0f, row.width - 188.0f, 18.0f}, 14, {241, 245, 249, 255});
     drawTextClipped(eventCategoryName(event.category), {row.x + row.width - 140.0f, row.y + 10.0f, 124.0f, 16.0f}, 12, accent);
     const std::string detail = event.description.empty()
-        ? (event.locationLabel.empty() ? "World state changed during simulation." : "Location: " + event.locationLabel)
+        ? (event.locationLabel.empty() ? "World state changed during view." : "Location: " + event.locationLabel)
         : event.description;
     actions_ui::drawWrappedTextClipped(detail, {row.x + 34.0f, row.y + 34.0f, row.width - 50.0f, row.height - 42.0f}, 12, {166, 176, 192, 255}, planning ? 4.0f : 3.0f);
 }
@@ -180,9 +180,9 @@ Rectangle EventOverlay::acknowledgeButtonBounds(int screenWidth, int screenHeigh
     return buildEventOverlayLayout(screenWidth, screenHeight, mode, events).button;
 }
 
-void EventOverlay::draw(const UiContext& context, const ScenarioManager& scenarioManager) const
+void EventOverlay::draw(const UiContext& context, const UiScenarioView& scenarioView) const
 {
-    (void)scenarioManager;
+    (void)scenarioView;
     if (context.state == nullptr || context.state->eventPopupMode == EventPopupMode::None) {
         return;
     }

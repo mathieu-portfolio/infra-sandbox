@@ -28,7 +28,7 @@ Rectangle sandboxButton(float x, float y, float width, int index)
 }
 }
 
-void MetricsPanel::update(UiContext& context, const Simulation&)
+void MetricsPanel::update(UiContext& context, const UiFrameView&)
 {
     if (context.state == nullptr || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
@@ -110,7 +110,7 @@ void MetricsPanel::update(UiContext& context, const Simulation&)
     }
 }
 
-void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) const
+void MetricsPanel::draw(const UiContext& context, const UiFrameView& view) const
 {
-    MetricsPanelRenderer{}.draw(context, simulation);
+    MetricsPanelRenderer{}.draw(context, view);
 }

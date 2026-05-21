@@ -203,25 +203,25 @@ bool rowMatches(const ActivityRow& row, const UiState& state)
     return true;
 }
 
-std::vector<ActivityRow> buildActivityRows(const UiState& state, const Simulation& simulation, const ScenarioManager& scenarioManager)
+std::vector<ActivityRow> buildActivityRows(const UiState& state, const UiFrameView& view, const UiScenarioView& scenarioView)
 {
     std::vector<ActivityRow> rows;
-    rows.push_back({0.0, TimelineCategory::System, "Scenario started", scenarioManager.staticDefinition().name, true});
+    rows.push_back({0.0, TimelineCategory::System, "Scenario started", scenarioView.staticDefinition().name, true});
 
-    const auto& run = scenarioManager.run();
+    const auto& run = scenarioView.run();
     for (const auto& id : run.activeObjectiveIds) {
-        const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
-        if (it != scenarioManager.definition().objectives.end()) {
+        const auto it = std::find_if(scenarioView.definition().objectives.begin(), scenarioView.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+        if (it != scenarioView.definition().objectives.end()) {
             rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Objective active", it->summary, true});
         }
     }
     for (const auto& id : run.completedObjectiveIds) {
-        const auto it = std::find_if(scenarioManager.definition().objectives.begin(), scenarioManager.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
-        if (it != scenarioManager.definition().objectives.end()) {
+        const auto it = std::find_if(scenarioView.definition().objectives.begin(), scenarioView.definition().objectives.end(), [&id](const ScenarioObjective& objective) { return objective.id == id; });
+        if (it != scenarioView.definition().objectives.end()) {
             rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Objective completed", it->summary, false});
         }
     }
-    for (const auto& failure : scenarioManager.definition().failureConditions) {
+    for (const auto& failure : scenarioView.definition().failureConditions) {
         rows.push_back({run.elapsedSeconds, TimelineCategory::Objectives, "Failure limit monitored", failure.summary, true});
     }
 
@@ -229,20 +229,20 @@ std::vector<ActivityRow> buildActivityRows(const UiState& state, const Simulatio
         rows.push_back({entry.timeSeconds, TimelineCategory::Change, entry.actionName, entry.message.empty() ? entry.target : entry.message, entry.observationPending});
     }
     for (const auto& planned : state.plannedInterventions) {
-        rows.push_back({simulation.timeSeconds(), TimelineCategory::Change, "Planned action", planned.actionName + " -> " + planned.target, true});
+        rows.push_back({view.timeSeconds(), TimelineCategory::Change, "Planned action", planned.actionName + " -> " + planned.target, true});
     }
     for (const auto& summary : state.resolutionSummaries) {
-        rows.push_back({simulation.timeSeconds(), TimelineCategory::System, "Resolution", summary, true});
+        rows.push_back({view.timeSeconds(), TimelineCategory::System, "Resolution", summary, true});
     }
 
-    for (const auto& pressureEvent : simulation.pressure().recentEvents) {
+    for (const auto& pressureEvent : view.pressure().recentEvents) {
         rows.push_back({pressureEvent.timeSeconds, TimelineCategory::System, "Pressure observed", pressureEvent.summary, true});
     }
-    for (const auto& pattern : simulation.pressure().suspiciousPatterns) {
-        rows.push_back({simulation.timeSeconds(), TimelineCategory::System, "Suspicious pattern", pattern, true});
+    for (const auto& pattern : view.pressure().suspiciousPatterns) {
+        rows.push_back({view.timeSeconds(), TimelineCategory::System, "Suspicious pattern", pattern, true});
     }
 
-    for (const auto& event : scenarioManager.eventManager().recentEvents()) {
+    for (const auto& event : scenarioView.recentEvents()) {
         const std::string detail = event.locationLabel.empty()
             ? eventCategoryName(event.category)
             : std::string(eventCategoryName(event.category)) + " • " + event.locationLabel;
@@ -287,7 +287,7 @@ void drawTimelineMenu(Rectangle field, const std::vector<const char*>& labels)
 }
 }
 
-void TimelinePanel::update(UiContext& context, const Simulation&, const ScenarioManager&)
+void TimelinePanel::update(UiContext& context, const UiFrameView&, const UiScenarioView&)
 {
     if (context.state == nullptr || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
@@ -350,7 +350,7 @@ void TimelinePanel::update(UiContext& context, const Simulation&, const Scenario
     }
 }
 
-void TimelinePanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager) const
+void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, const UiScenarioView& scenarioView) const
 {
     if (context.state == nullptr) {
         return;
@@ -368,7 +368,7 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
     drawDroplist(categoryField, timelineCategoryName(context.state->timelineCategory), context.state->timelineCategoryDroplistOpen);
     drawDroplist(filterField, timelineFilterName(context.state->timelineFilter), context.state->timelineFilterDroplistOpen);
 
-    (void)simulation;
+    (void)view;
     const float chartW = (bottom.charts.width - 52.0f) / 5.0f;
     drawChart({bottom.charts.x, bottom.charts.y, chartW, bottom.charts.height}, "Traffic (req/s)", {89, 196, 255, 255}, context.state->metricsHistory, 0);
     drawChart({bottom.charts.x + 13.0f + chartW, bottom.charts.y, chartW, bottom.charts.height}, "Latency (ms)", {245, 184, 76, 255}, context.state->metricsHistory, 1);
@@ -379,14 +379,14 @@ void TimelinePanel::draw(const UiContext& context, const Simulation& simulation,
     int row = 0;
     const int timelineY = static_cast<int>(bottom.rows.y);
     const int maxRows = std::max(4, static_cast<int>(bottom.rows.height / 22.0f));
-    const auto rows = buildActivityRows(*context.state, simulation, scenarioManager);
+    const auto rows = buildActivityRows(*context.state, view, scenarioView);
     for (const auto& activity : rows) {
         if (row >= maxRows || !rowMatches(activity, *context.state)) {
             continue;
         }
         const float y = static_cast<float>(timelineY + row * 22);
         const Color color = categoryColor(activity.category);
-        const std::string timeLabel = scenarioManager.visibleCalendarLabel(simulation);
+        const std::string timeLabel = scenarioView.visibleCalendarLabel();
         IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
         drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
         drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});

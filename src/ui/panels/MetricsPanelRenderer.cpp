@@ -189,7 +189,7 @@ void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 }
 
 
-void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simulation) const
+void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& view) const
 {
     if (context.state == nullptr || !context.state->showMetrics) {
         return;
@@ -200,7 +200,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simu
     const float x = layout.leftSidebar.x;
     float y = layout.leftSidebar.y;
     const float width = layout.leftSidebar.width;
-    const auto& metrics = simulation.metrics();
+    const auto& metrics = view.metrics();
 
     Rectangle overview = left.overview;
     y = overview.y;
@@ -262,7 +262,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simu
     drawPanelFrame(alerts, "Alerts");
     BeginScissorMode(static_cast<int>(alerts.x), static_cast<int>(alerts.y), static_cast<int>(alerts.width), static_cast<int>(alerts.height));
     int row = 0;
-    for (const auto& hint : simulation.pressure().hints) {
+    for (const auto& hint : view.pressure().hints) {
         if (row >= 3) {
             break;
         }
@@ -270,7 +270,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simu
         drawTextClipped(hint, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
-    for (const auto& pattern : simulation.pressure().suspiciousPatterns) {
+    for (const auto& pattern : view.pressure().suspiciousPatterns) {
         if (row >= 3) {
             break;
         }
@@ -278,7 +278,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simu
         drawTextClipped(pattern, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
     }
-    for (const auto& explanation : simulation.pressure().explanations) {
+    for (const auto& explanation : view.pressure().explanations) {
         if (row >= 3) {
             break;
         }
@@ -299,7 +299,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const Simulation& simu
         char labBuffer[80];
         std::snprintf(labBuffer, sizeof(labBuffer), "Traffic %.2fx  Latency %.2fx", context.state->sandboxTrafficMultiplier, context.state->sandboxLatencyMultiplier);
         drawTextClipped(labBuffer, {x + 14.0f, y + 22.0f, width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
-        std::snprintf(labBuffer, sizeof(labBuffer), "Pressure %s  Node %d", pressureCategoryName(simulation.pressure().dominantPressure), simulation.pressure().topOverloadedNodeId);
+        std::snprintf(labBuffer, sizeof(labBuffer), "Pressure %s  Node %d", pressureCategoryName(view.pressure().dominantPressure), view.pressure().topOverloadedNodeId);
         drawTextClipped(labBuffer, {x + 14.0f, y + 256.0f, width - 28.0f, 14.0f}, 12, {245, 184, 76, 255});
         const char* labels[] = {
             "Traffic Spike", "Retry Storm", "DB Slowdown", "Regional Spike", "Recovery", context.state->sandboxQueueBuildup ? "Queue On" : "Queue Off",

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/simulation/Mechanics.hpp"
-#include "simulation/core/Simulation.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 
 #include "raylib.h"

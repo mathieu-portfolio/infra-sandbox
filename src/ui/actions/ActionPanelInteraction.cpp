@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cstddef>
 
-void ActionPanelInteraction::update(UiContext& context, const Simulation& simulation) const
+void ActionPanelInteraction::update(UiContext& context, const UiFrameView& view) const
 {
     if (context.state == nullptr) {
         return;
@@ -20,7 +20,7 @@ void ActionPanelInteraction::update(UiContext& context, const Simulation& simula
     context.state->hoveredActionIndex = -1;
     context.state->hoveredActionEngineeringCosts.clear();
     const ActionPanelModel model;
-    const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
+    const auto cards = model.buildCards(view, *context.state, context.screenWidth, context.screenHeight);
     const ActionSectionsLayout actionsLayout = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
     if (CheckCollisionPointRec(mouse, actionsLayout.actionList)) {

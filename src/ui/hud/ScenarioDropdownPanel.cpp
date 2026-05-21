@@ -231,7 +231,7 @@ Rectangle ScenarioDropdownPanel::menuBounds(const UiContext& context) const
     return {field.x, field.y + field.height + 8.0f, 390.0f, 132.0f + static_cast<float>(scenarios.size()) * 34.0f};
 }
 
-bool ScenarioDropdownPanel::update(UiContext& context, const ScenarioManager& scenarioManager, Vector2 mouse)
+bool ScenarioDropdownPanel::update(UiContext& context, const UiScenarioView& scenarioView, Vector2 mouse)
 {
     if (context.state == nullptr) {
         return false;
@@ -252,12 +252,12 @@ bool ScenarioDropdownPanel::update(UiContext& context, const ScenarioManager& sc
 
     const Rectangle menu = menuBounds(context);
     const auto scenarios = ScenarioRegistry::createAll();
-    const int currentIndex = scenarioIndexForId(scenarioManager.staticDefinition().id);
+    const int currentIndex = scenarioIndexForId(scenarioView.staticDefinition().id);
     for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
         if (!CheckCollisionPointRec(mouse, scenarioRowBounds(menu, i))) {
             continue;
         }
-        if (i != currentIndex && scenarioManager.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)])) {
+        if (i != currentIndex && scenarioView.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)])) {
             context.state->requestedScenarioId = scenarios[static_cast<std::size_t>(i)].id;
         }
         context.state->scenarioDroplistOpen = false;
@@ -270,22 +270,22 @@ bool ScenarioDropdownPanel::update(UiContext& context, const ScenarioManager& sc
     return false;
 }
 
-void ScenarioDropdownPanel::drawField(const UiContext& context, const ScenarioManager& scenarioManager) const
+void ScenarioDropdownPanel::drawField(const UiContext& context, const UiScenarioView& scenarioView) const
 {
     if (context.state == nullptr) {
         return;
     }
-    drawHudDroplistField(hudScenarioDroplistBounds(context.screenWidth), "Scenario", scenarioManager.definition().name, context.state->scenarioDroplistOpen);
+    drawHudDroplistField(hudScenarioDroplistBounds(context.screenWidth), "Scenario", scenarioView.definition().name, context.state->scenarioDroplistOpen);
 }
 
-void ScenarioDropdownPanel::drawMenu(const UiContext& context, const ScenarioManager& scenarioManager) const
+void ScenarioDropdownPanel::drawMenu(const UiContext& context, const UiScenarioView& scenarioView) const
 {
     if (context.state == nullptr || !context.state->scenarioDroplistOpen) {
         return;
     }
 
     const auto scenarios = ScenarioRegistry::createAll();
-    const int currentIndex = scenarioIndexForId(scenarioManager.staticDefinition().id);
+    const int currentIndex = scenarioIndexForId(scenarioView.staticDefinition().id);
     const Rectangle menu = menuBounds(context);
     const Vector2 mouse = GetMousePosition();
 
@@ -302,15 +302,15 @@ void ScenarioDropdownPanel::drawMenu(const UiContext& context, const ScenarioMan
 
     drawHudMenuShell(menu);
     drawTextClipped(preview.description, {menu.x + 14.0f, menu.y + 12.0f, menu.width - 28.0f, 18.0f}, 14, {230, 237, 243, 255});
-    drawHudDetailRow("Archetype", previewIsCurrent ? scenarioManager.archetypeSummary() : previewArchetype(preview, "Not specified"), menu.x + 14.0f, menu.y + 42.0f, menu.width - 28.0f);
+    drawHudDetailRow("Archetype", previewIsCurrent ? scenarioView.archetypeSummary() : previewArchetype(preview, "Not specified"), menu.x + 14.0f, menu.y + 42.0f, menu.width - 28.0f);
     drawHudDetailRow("Tier", progressionTierName(preview.minimumTier), menu.x + 14.0f, menu.y + 64.0f, menu.width - 28.0f);
-    drawHudDetailRow("Focus", previewIsCurrent ? scenarioManager.focusSummary() : previewFocus(preview, "Not specified"), menu.x + 14.0f, menu.y + 86.0f, menu.width - 28.0f);
-    drawHudDetailRow("Modifiers", previewIsCurrent ? scenarioManager.activeModifiersSummary() : previewModifiers(preview, "None"), menu.x + 14.0f, menu.y + 108.0f, menu.width - 28.0f);
+    drawHudDetailRow("Focus", previewIsCurrent ? scenarioView.focusSummary() : previewFocus(preview, "Not specified"), menu.x + 14.0f, menu.y + 86.0f, menu.width - 28.0f);
+    drawHudDetailRow("Modifiers", previewIsCurrent ? scenarioView.activeModifiersSummary() : previewModifiers(preview, "None"), menu.x + 14.0f, menu.y + 108.0f, menu.width - 28.0f);
     for (int i = 0; i < static_cast<int>(scenarios.size()); ++i) {
         const Rectangle row = scenarioRowBounds(menu, i);
         const bool current = i == currentIndex;
         const bool previewed = i == previewIndex;
-        const bool unlocked = scenarioManager.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)]);
+        const bool unlocked = scenarioView.isScenarioUnlocked(scenarios[static_cast<std::size_t>(i)]);
         DrawRectangleRounded(row, 0.12f, 6, current ? Color{37, 120, 255, 170} : previewed ? Color{38, 45, 56, 210} : Color{22, 27, 34, 150});
         DrawRectangleRoundedLines(row, 0.12f, 6, current || previewed ? Color{89, 196, 255, 190} : Color{70, 86, 104, 95});
         drawTextClipped(scenarios[static_cast<std::size_t>(i)].name, {row.x + 10.0f, row.y + 7.0f, row.width - 126.0f, 16.0f}, 13, unlocked ? Color{230, 237, 243, 255} : Color{90, 107, 126, 255});

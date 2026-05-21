@@ -1,6 +1,6 @@
 #pragma once
 
-#include "simulation/core/Simulation.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 #include "ui/core/UiTypes.hpp"
 #include "ui/actions/EngineeringCapacityPanel.hpp"
 #include "ui/actions/EventOverlay.hpp"
@@ -8,9 +8,9 @@
 
 class ActionPanel {
 public:
-    void update(UiContext& context, const Simulation& simulation);
-    void draw(const UiContext& context, const Simulation& simulation) const;
-    void drawPlanningOverlays(const UiContext& context, const ScenarioManager& scenarioManager) const;
+    void update(UiContext& context, const UiFrameView& view);
+    void draw(const UiContext& context, const UiFrameView& view) const;
+    void drawPlanningOverlays(const UiContext& context, const UiScenarioView& scenarioView) const;
 
 private:
     EngineeringCapacityPanel engineeringCapacityPanel_{};

@@ -154,7 +154,7 @@ bool handlePhaseButton(UiContext& context, Vector2 mouse)
 }
 }
 
-void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager)
+void HudPanel::update(UiContext& context, const UiFrameView&, const UiScenarioView& scenarioView, const content::ContentPackManager& packManager)
 {
     if (context.state == nullptr || !context.state->showHud) {
         return;
@@ -191,10 +191,10 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     if (packDropdown_.update(context, packManager, mouse)) {
         return;
     }
-    if (scenarioDropdown_.update(context, scenarioManager, mouse)) {
+    if (scenarioDropdown_.update(context, scenarioView, mouse)) {
         return;
     }
-    if (objectivesDropdown_.update(context, scenarioManager, mouse)) {
+    if (objectivesDropdown_.update(context, scenarioView, mouse)) {
         return;
     }
     if (CheckCollisionPointRec(mouse, hudResetButtonBounds(context.screenWidth))) {
@@ -208,7 +208,7 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     handlePhaseButton(context, mouse);
 }
 
-void HudPanel::draw(const UiContext& context, const Simulation& simulation, const ScenarioManager& scenarioManager, const content::ContentPackManager& packManager) const
+void HudPanel::draw(const UiContext& context, const UiFrameView& view, const UiScenarioView& scenarioView, const content::ContentPackManager& packManager) const
 {
     if (context.state == nullptr || !context.state->showHud) {
         return;
@@ -224,17 +224,17 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     DrawText("INFRA SANDBOX", static_cast<int>(top.brand.x + 38.0f), static_cast<int>(top.brand.y + 8.0f), 18, {230, 237, 243, 255});
 
     packDropdown_.drawField(context, packManager);
-    scenarioDropdown_.drawField(context, scenarioManager);
+    scenarioDropdown_.drawField(context, scenarioView);
 
     char buffer[160];
-    std::snprintf(buffer, sizeof(buffer), "%s", scenarioManager.visibleCalendarLabel(simulation).c_str());
+    std::snprintf(buffer, sizeof(buffer), "%s", scenarioView.visibleCalendarLabel().c_str());
     DrawText(buffer, static_cast<int>(top.time.x), static_cast<int>(top.time.y + 10.0f), 15, {230, 237, 243, 255});
 
     drawHudTopButton(hudPhaseButtonBounds(context.screenWidth), phaseActionLabel(context.state->gameplayPhase), context.state->gameplayPhase == GameplayPhase::Planning);
     drawHudTopButton(hudResetButtonBounds(context.screenWidth), "Reset", false);
     DrawText(phaseName(context.state->gameplayPhase), static_cast<int>(top.phaseLabel.x), static_cast<int>(top.phaseLabel.y + 10.0f), 14, {139, 148, 158, 255});
 
-    objectivesDropdown_.drawField(context, scenarioManager);
+    objectivesDropdown_.drawField(context, scenarioView);
 
     const Rectangle feedback = hudFeedbackBounds(context.screenWidth);
     icons.drawIcon("hud.feedback", {feedback.x, feedback.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
@@ -249,7 +249,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     drawViewModeBar(context);
 
     packDropdown_.drawMenu(context, packManager);
-    scenarioDropdown_.drawMenu(context, scenarioManager);
-    objectivesDropdown_.drawMenu(context, scenarioManager);
+    scenarioDropdown_.drawMenu(context, scenarioView);
+    objectivesDropdown_.drawMenu(context, scenarioView);
     optionsMenu_.drawMenu(context);
 }

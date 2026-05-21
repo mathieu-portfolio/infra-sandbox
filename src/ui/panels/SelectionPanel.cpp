@@ -16,7 +16,7 @@ constexpr int kSummaryFontSize = 13;
 constexpr int kSummaryMaxLines = 4;
 }
 
-void SelectionPanel::update(UiContext&, const Simulation&)
+void SelectionPanel::update(UiContext&, const UiFrameView&)
 {
 }
 
@@ -28,13 +28,13 @@ void metricLine(const char* label, const char* value, float x, float y, Color co
 }
 }
 
-void SelectionPanel::draw(const UiContext& context, const Simulation& simulation) const
+void SelectionPanel::draw(const UiContext& context, const UiFrameView& view) const
 {
     if (context.state == nullptr || context.state->selection.nodeId < 0) {
         return;
     }
 
-    const Node* node = simulation.graph().node(context.state->selection.nodeId);
+    const Node* node = view.graph().node(context.state->selection.nodeId);
     if (node == nullptr) {
         return;
     }
@@ -45,7 +45,7 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
     int downstreamCount = 0;
     int dependencyCount = 0;
     double dependencyPressure = 0.0;
-    for (const auto& link : simulation.graph().links()) {
+    for (const auto& link : view.graph().links()) {
         if (!link.enabled) {
             continue;
         }
@@ -55,9 +55,9 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
         }
         if (link.sourceNodeId == node->id) {
             outgoingTraffic += static_cast<int>(link.inFlightRequests.size());
-            if (const Node* downstream = simulation.graph().node(link.targetNodeId)) {
+            if (const Node* downstream = view.graph().node(link.targetNodeId)) {
                 downstreamWait += downstream->averageQueueWaitSeconds;
-                if (const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(downstream->id)) {
+                if (const NodePressure* pressure = view.pressureAnalysis().pressureForNode(downstream->id)) {
                     dependencyPressure = std::max(dependencyPressure, pressure->instability);
                 }
                 ++downstreamCount;
@@ -67,14 +67,14 @@ void SelectionPanel::draw(const UiContext& context, const Simulation& simulation
     }
 
     int localRetries = 0;
-    for (const auto& [id, request] : simulation.requests()) {
+    for (const auto& [id, request] : view.requests()) {
         (void)id;
         if ((request.currentNodeId == node->id || request.sourceNodeId == node->id) && request.retryCount > 0) {
             ++localRetries;
         }
     }
 
-    const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(node->id);
+    const NodePressure* pressure = view.pressureAnalysis().pressureForNode(node->id);
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const float panelWidth = 364.0f;
     const float contentWidth = panelWidth - kPanelPadding * 2.0f;

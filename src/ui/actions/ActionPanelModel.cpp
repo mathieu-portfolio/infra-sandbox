@@ -82,9 +82,9 @@ bool exceedsEngineeringCapacity(const UiState& state, const std::vector<Engineer
     return false;
 }
 
-bool targetsSelectedNode(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+bool targetsSelectedNode(const UiFrameView& view, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const Node* node = simulation.graph().node(state.selection.nodeId);
+    const Node* node = view.graph().node(state.selection.nodeId);
     if (node == nullptr) {
         return false;
     }
@@ -94,43 +94,43 @@ bool targetsSelectedNode(const Simulation& simulation, const UiState& state, con
     return std::find(definition.targetNodeTypes.begin(), definition.targetNodeTypes.end(), node->type) != definition.targetNodeTypes.end();
 }
 
-bool pressureMatches(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+bool pressureMatches(const UiFrameView& view, const UiState& state, const content::InterventionDefinition& definition)
 {
-    const NodePressure* pressure = simulation.pressureAnalysis().pressureForNode(state.selection.nodeId);
+    const NodePressure* pressure = view.pressureAnalysis().pressureForNode(state.selection.nodeId);
     if (pressure == nullptr || pressure->dominant == PressureCategory::None) {
         return false;
     }
     return std::find(definition.affectedPressures.begin(), definition.affectedPressures.end(), pressure->dominant) != definition.affectedPressures.end();
 }
 
-std::string selectedTarget(const Simulation& simulation, const UiState& state)
+std::string selectedTarget(const UiFrameView& view, const UiState& state)
 {
-    if (const Node* node = simulation.graph().node(state.selection.nodeId)) {
+    if (const Node* node = view.graph().node(state.selection.nodeId)) {
         return node->name;
     }
     return "Global";
 }
 
-ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+ActionCardModel mechanicCard(const UiFrameView& view, const UiState& state, const content::InterventionDefinition& definition)
 {
-    bool available = simulation.isMechanicAllowed(definition.mechanic);
+    bool available = view.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
-    const bool recommended = pressureMatches(simulation, state, definition);
+    const bool recommended = pressureMatches(view, state, definition);
     std::string stateLabel = available ? (recommended ? "Suggested" : "Available") : "Locked";
     int currentScaleLevel = 0;
     int maxScaleLevel = 0;
     if (definition.mechanic == MechanicType::ScaleUp) {
-        maxScaleLevel = simulation.maxScaleLevelForNode(state.selection.nodeId, definition.maxScaleLevel);
-        currentScaleLevel = simulation.scaleLevelForNode(state.selection.nodeId);
+        maxScaleLevel = view.maxScaleLevelForNode(state.selection.nodeId, definition.maxScaleLevel);
+        currentScaleLevel = view.scaleLevelForNode(state.selection.nodeId);
         if (state.selection.nodeId >= 0) {
-            const Node* node = simulation.graph().node(state.selection.nodeId);
+            const Node* node = view.graph().node(state.selection.nodeId);
             if (node == nullptr || node->type != NodeType::ApiService) {
                 available = false;
                 unavailableReason = "Invalid target: select an API service.";
                 stateLabel = "Invalid target";
             }
         }
-        if (available && !simulation.canScaleNode(state.selection.nodeId, definition.maxScaleLevel)) {
+        if (available && !view.canScaleNode(state.selection.nodeId, definition.maxScaleLevel)) {
             available = false;
             unavailableReason = "Max scale level reached.";
             stateLabel = "Maxed";
@@ -154,7 +154,7 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
         .actionId = definition.id,
         .name = definition.displayName,
         .description = definition.description,
-        .target = selectedTarget(simulation, state),
+        .target = selectedTarget(view, state),
         .helps = definition.expectedBenefits,
         .tradeOff = definition.tradeoffs,
         .positiveEffects = definition.positiveEffects,
@@ -181,13 +181,13 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
     };
 }
 
-ActionCardModel topologyCard(const Simulation& simulation, const UiState& state, const content::InterventionDefinition& definition)
+ActionCardModel topologyCard(const UiFrameView& view, const UiState& state, const content::InterventionDefinition& definition)
 {
-    bool available = simulation.isMechanicAllowed(definition.mechanic);
+    bool available = view.isMechanicAllowed(definition.mechanic);
     std::string unavailableReason = available ? "" : "Locked by scenario progression.";
-    const bool recommended = pressureMatches(simulation, state, definition);
+    const bool recommended = pressureMatches(view, state, definition);
     std::string stateLabel = available ? (recommended ? "Suggested" : "Available") : "Locked";
-    if (available && !simulation.hasAnyRegionCapacity(definition.regionSlotUsage)) {
+    if (available && !view.hasAnyRegionCapacity(definition.regionSlotUsage)) {
         available = false;
         unavailableReason = "Insufficient regional deployment capacity.";
         stateLabel = "No capacity";
@@ -211,7 +211,7 @@ ActionCardModel topologyCard(const Simulation& simulation, const UiState& state,
         .mutation = definition.mutation,
         .name = definition.displayName,
         .description = definition.description,
-        .target = selectedTarget(simulation, state),
+        .target = selectedTarget(view, state),
         .helps = definition.expectedBenefits,
         .tradeOff = definition.tradeoffs,
         .positiveEffects = definition.positiveEffects,
@@ -302,7 +302,7 @@ ActionSectionsLayout ActionPanelModel::actionSectionsLayout(const UiState& state
     return result;
 }
 
-std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const
+std::vector<ActionCardModel> ActionPanelModel::buildCards(const UiFrameView& view, const UiState& state, int screenWidth, int screenHeight) const
 {
     std::vector<ActionCardModel> cards;
     if (state.placementActive) {
@@ -310,7 +310,7 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
             .kind = ActionCardKind::ConfirmPreview,
             .name = "Click map to place",
             .description = "Hover a continent to preview, then click the map to queue placement.",
-            .target = selectedTarget(simulation, state),
+            .target = selectedTarget(view, state),
             .helps = "Places the selected node directly on the hovered region.",
             .tradeOff = "Consequences resolve during the turn.",
             .showUsageDetails = false,
@@ -328,13 +328,13 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
         });
     } else {
         for (const auto& definition : content::ContentRegistry::instance().interventions()) {
-            if (!targetsSelectedNode(simulation, state, definition)) {
+            if (!targetsSelectedNode(view, state, definition)) {
                 continue;
             }
             if (definition.kind == content::InterventionKind::TopologyMutation) {
-                cards.push_back(topologyCard(simulation, state, definition));
+                cards.push_back(topologyCard(view, state, definition));
             } else {
-                cards.push_back(mechanicCard(simulation, state, definition));
+                cards.push_back(mechanicCard(view, state, definition));
             }
         }
         std::stable_sort(cards.begin(), cards.end(), [](const ActionCardModel& lhs, const ActionCardModel& rhs) {

@@ -1,6 +1,7 @@
 #include "ui/UiManager.hpp"
 
 #include "ui/widgets/IconRegistry.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 
 #include "raylib.h"
 
@@ -55,12 +56,13 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
     state_.engineeringCapacityPreviewVisible = hasActiveCapacityPreview(state_);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
-    hudPanel_.update(context, simulation, scenarioManager, packManager);
-    metricsPanel_.update(context, simulation);
-    selectionPanel_.update(context, simulation);
-    actionPanel_.update(context, simulation);
-    timelinePanel_.update(context, simulation, scenarioManager);
-    debugPanel_.update(context, simulation);
+    const UiFrameView view = buildUiFrameView(simulation, scenarioManager);
+    hudPanel_.update(context, view, view.scenario, packManager);
+    metricsPanel_.update(context, view);
+    selectionPanel_.update(context, view);
+    actionPanel_.update(context, view);
+    timelinePanel_.update(context, view, view.scenario);
+    debugPanel_.update(context, view);
 }
 
 void UiManager::updateActionObservations(const Simulation& simulation)
@@ -125,13 +127,14 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
 {
     UiState* mutableState = const_cast<UiState*>(&state_);
     UiContext context{mutableState, GetScreenWidth(), GetScreenHeight(), paused};
-    metricsPanel_.draw(context, simulation);
-    actionPanel_.draw(context, simulation);
-    timelinePanel_.draw(context, simulation, scenarioManager);
-    selectionPanel_.draw(context, simulation);
-    debugPanel_.draw(context, simulation);
-    hudPanel_.draw(context, simulation, scenarioManager, packManager);
-    actionPanel_.drawPlanningOverlays(context, scenarioManager);
+    const UiFrameView view = buildUiFrameView(simulation, scenarioManager);
+    metricsPanel_.draw(context, view);
+    actionPanel_.draw(context, view);
+    timelinePanel_.draw(context, view, view.scenario);
+    selectionPanel_.draw(context, view);
+    debugPanel_.draw(context, view);
+    hudPanel_.draw(context, view, view.scenario, packManager);
+    actionPanel_.drawPlanningOverlays(context, view.scenario);
 }
 
 const UiState& UiManager::state() const

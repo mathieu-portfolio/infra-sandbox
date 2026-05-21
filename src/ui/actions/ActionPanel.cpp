@@ -109,13 +109,13 @@ std::vector<PressureRow> primaryPressureRows(const NodePressure* pressure)
 
 }
 
-void ActionPanel::update(UiContext& context, const Simulation& simulation)
+void ActionPanel::update(UiContext& context, const UiFrameView& view)
 {
-    ActionPanelInteraction{}.update(context, simulation);
+    ActionPanelInteraction{}.update(context, view);
 }
 
 
-void ActionPanel::draw(const UiContext& context, const Simulation& simulation) const
+void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
 {
     if (context.state == nullptr) {
         return;
@@ -127,8 +127,8 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     DrawRectangleRounded(sidebar, 0.018f, 8, {9, 16, 27, 242});
     DrawRectangleRoundedLines(sidebar, 0.018f, 8, {62, 82, 112, 130});
 
-    const Node* selected = simulation.graph().node(context.state->selection.nodeId);
-    const NodePressure* selectedPressure = selected != nullptr ? simulation.pressureAnalysis().pressureForNode(selected->id) : nullptr;
+    const Node* selected = view.graph().node(context.state->selection.nodeId);
+    const NodePressure* selectedPressure = selected != nullptr ? view.pressureAnalysis().pressureForNode(selected->id) : nullptr;
     const Rectangle header = panel.header;
     if (selected != nullptr) {
         DrawRectangleRounded({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {37, 50, 82, 255});
@@ -235,7 +235,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
         } else {
             int incomingTraffic = 0;
             int outgoingTraffic = 0;
-            for (const auto& link : simulation.graph().links()) {
+            for (const auto& link : view.graph().links()) {
                 if (link.targetNodeId == selected->id) incomingTraffic += static_cast<int>(link.inFlightRequests.size());
                 if (link.sourceNodeId == selected->id) outgoingTraffic += static_cast<int>(link.inFlightRequests.size());
             }
@@ -253,7 +253,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
         } else {
             int upstream = 0;
             int downstream = 0;
-            for (const auto& link : simulation.graph().links()) {
+            for (const auto& link : view.graph().links()) {
                 if (link.targetNodeId == selected->id) ++upstream;
                 if (link.sourceNodeId == selected->id) ++downstream;
             }
@@ -288,7 +288,7 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     }
 
     const ActionPanelModel model;
-    const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
+    const auto cards = model.buildCards(view, *context.state, context.screenWidth, context.screenHeight);
     const ActionSectionsLayout actions = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.title.x), static_cast<int>(actions.title.y), 14, {230, 237, 243, 255});
     engineeringCapacityPanel_.draw(actions.capacity, *context.state);
@@ -351,8 +351,8 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     }
 }
 
-void ActionPanel::drawPlanningOverlays(const UiContext& context, const ScenarioManager& scenarioManager) const
+void ActionPanel::drawPlanningOverlays(const UiContext& context, const UiScenarioView& scenarioView) const
 {
-    eventOverlay_.draw(context, scenarioManager);
+    eventOverlay_.draw(context, scenarioView);
     worldActionOverlay_.draw(context);
 }

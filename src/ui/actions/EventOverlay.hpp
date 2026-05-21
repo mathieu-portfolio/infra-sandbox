@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gameplay/scenario/ScenarioManager.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 #include "ui/core/UiTypes.hpp"
 
 #include "raylib.h"
@@ -13,5 +13,5 @@ public:
     [[nodiscard]] static Rectangle acknowledgeButtonBounds(int screenWidth, int screenHeight, EventPopupMode mode, const std::vector<EventLogEntry>& events);
     [[nodiscard]] static Rectangle overlayBounds(int screenWidth, int screenHeight);
 
-    void draw(const UiContext& context, const ScenarioManager& scenarioManager) const;
+    void draw(const UiContext& context, const UiScenarioView& scenarioView) const;
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "simulation/core/Simulation.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 #include "ui/core/UiTypes.hpp"
 #include "ui/actions/cards/ActionCardModel.hpp"
 
@@ -17,7 +17,7 @@ struct ActionSectionsLayout {
 
 class ActionPanelModel {
 public:
-    [[nodiscard]] std::vector<ActionCardModel> buildCards(const Simulation& simulation, const UiState& state, int screenWidth, int screenHeight) const;
+    [[nodiscard]] std::vector<ActionCardModel> buildCards(const UiFrameView& view, const UiState& state, int screenWidth, int screenHeight) const;
     [[nodiscard]] Rectangle panelBounds(int screenWidth, int screenHeight) const;
     [[nodiscard]] ActionSectionsLayout actionSectionsLayout(const UiState& state, int screenWidth, int screenHeight) const;
 };

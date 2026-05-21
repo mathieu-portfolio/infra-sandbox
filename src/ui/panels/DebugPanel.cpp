@@ -6,11 +6,11 @@
 
 #include <cstdio>
 
-void DebugPanel::update(UiContext&, const Simulation&)
+void DebugPanel::update(UiContext&, const UiFrameView&)
 {
 }
 
-void DebugPanel::draw(const UiContext& context, const Simulation& simulation) const
+void DebugPanel::draw(const UiContext& context, const UiFrameView& view) const
 {
     if (context.state == nullptr || !context.state->showDebug) {
         return;
@@ -22,18 +22,18 @@ void DebugPanel::draw(const UiContext& context, const Simulation& simulation) co
     DrawRectangleRounded({static_cast<float>(x), static_cast<float>(y), static_cast<float>(panelWidth), 292.0f}, 0.04f, 8, {22, 27, 34, 235});
 
     char buffer[128];
-    const auto& metrics = simulation.metrics();
+    const auto& metrics = view.metrics();
     std::snprintf(
         buffer,
         sizeof(buffer),
         "Systems %d/%d  |  %.0fx",
         metrics.observability.enabledSystemCount,
         metrics.observability.initializedSystemCount,
-        simulation.simulationSpeed());
+        view.simulationSpeed());
     DrawText(buffer, x + 10, y + 10, 18, {230, 237, 243, 255});
 
     int row = 0;
-    for (const auto& state : simulation.runtimeSystems().states()) {
+    for (const auto& state : view.runtimeSystems().states()) {
         if (!state.enabled) {
             continue;
         }
@@ -58,7 +58,7 @@ void DebugPanel::draw(const UiContext& context, const Simulation& simulation) co
 
     int hintY = y + 186;
     int hintCount = 0;
-    for (const auto& hint : simulation.pressure().hints) {
+    for (const auto& hint : view.pressure().hints) {
         if (hintCount >= 2) {
             break;
         }
