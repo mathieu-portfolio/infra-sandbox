@@ -4,6 +4,7 @@
 
 #include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiPrimitives.hpp"
+#include "ui/actions/ActionText.hpp"
 
 #include "raylib.h"
 
@@ -27,45 +28,70 @@ constexpr float kFooterBottomPad = 8.0f;
 constexpr float kMinHeight = 198.0f;
 
 
-int estimatedWrappedLines(const std::string& text, float width, int fontSize, int maxLines)
+float lineHeight(int fontSize)
 {
-    if (text.empty() || maxLines <= 0) {
-        return 0;
+    return static_cast<float>(fontSize) + 4.0f;
+}
+
+float measureWrappedTextHeight(const std::string& text, float width, int fontSize)
+{
+    if (text.empty() || width <= 0.0f) {
+        return lineHeight(fontSize);
     }
 
-    // Lightweight estimate only. drawTextClipped handles the actual clipping.
-    // We keep this intentionally conservative so card height usually has enough room.
-    const float avgCharWidth = static_cast<float>(fontSize) * 0.56f;
-    const int charsPerLine = std::max(12, static_cast<int>(width / avgCharWidth));
     int lines = 1;
-    int current = 0;
-    for (char c : text) {
-        if (c == '\n') {
-            ++lines;
-            current = 0;
-            continue;
+    float currentLineWidth = 0.0f;
+    std::string word;
+
+    const auto flushWord = [&]() {
+        if (word.empty()) {
+            return;
         }
-        ++current;
-        if (current >= charsPerLine && c == ' ') {
+
+        const float wordWidth = static_cast<float>(MeasureText(word.c_str(), fontSize));
+        const float spaceWidth = static_cast<float>(MeasureText(" ", fontSize));
+        const float nextWidth = currentLineWidth <= 0.0f ? wordWidth : currentLineWidth + spaceWidth + wordWidth;
+        if (nextWidth > width && currentLineWidth > 0.0f) {
             ++lines;
-            current = 0;
+            currentLineWidth = wordWidth;
+        } else {
+            currentLineWidth = nextWidth;
+        }
+        word.clear();
+    };
+
+    for (const char c : text) {
+        if (c == '\n') {
+            flushWord();
+            ++lines;
+            currentLineWidth = 0.0f;
+        } else if (c == ' ' || c == '\t') {
+            flushWord();
+        } else {
+            word.push_back(c);
         }
     }
-    return std::clamp(lines, 1, maxLines);
+    flushWord();
+
+    return static_cast<float>(lines) * lineHeight(fontSize);
 }
 
 float descriptionHeight(const ActionCardModel& card, float contentWidth)
 {
-    const int lines = estimatedWrappedLines(card.description, contentWidth, 12, 3);
-    return std::max(kDescriptionLineHeight, static_cast<float>(lines) * kDescriptionLineHeight);
+    return std::max(kDescriptionLineHeight, measureWrappedTextHeight(card.description, contentWidth, 12));
 }
 
-float sectionHeight(const std::vector<std::string>& points)
+float sectionHeight(const std::vector<std::string>& points, float contentWidth)
 {
     if (points.empty()) {
         return 0.0f;
     }
-    return kSectionTitleHeight + kSectionTitleGap + static_cast<float>(points.size()) * kBulletLineHeight;
+
+    float height = kSectionTitleHeight + kSectionTitleGap;
+    for (const auto& point : points) {
+        height += std::max(kBulletLineHeight, measureWrappedTextHeight("- " + point, contentWidth, 11));
+    }
+    return height;
 }
 
 float drawPointSection(
@@ -79,8 +105,9 @@ float drawPointSection(
 
     float y = bounds.y + kSectionTitleHeight + kSectionTitleGap;
     for (const auto& point : points) {
-        drawTextClipped("- " + point, {bounds.x, y, bounds.width, kBulletLineHeight}, 11, textColor);
-        y += kBulletLineHeight;
+        const float pointHeight = std::max(kBulletLineHeight, measureWrappedTextHeight("- " + point, bounds.width, 11));
+        actions_ui::drawWrappedTextClipped("- " + point, {bounds.x, y, bounds.width, pointHeight}, 11, textColor, 4.0f);
+        y += pointHeight;
     }
 
     return y - bounds.y;
@@ -128,9 +155,9 @@ float NodeActionCardView::measureHeight(const ActionCardModel& card, float width
     const float bodyHeight =
         descriptionHeight(card, contentWidth) +
         kDescriptionBottomGap +
-        sectionHeight(useful) +
+        sectionHeight(useful, contentWidth) +
         (useful.empty() || worsen.empty() ? 0.0f : kSectionGap) +
-        sectionHeight(worsen);
+        sectionHeight(worsen, contentWidth);
 
     const float total =
         kContentTop +
@@ -162,11 +189,12 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
 
     float y = card.bounds.y + kContentTop;
     const float descHeight = descriptionHeight(card, contentWidth);
-    drawTextClipped(
+    actions_ui::drawWrappedTextClipped(
         card.description,
         {card.bounds.x + kPad, y, contentWidth, descHeight},
         12,
-        {166, 176, 192, 255});
+        {166, 176, 192, 255},
+        4.0f);
     y += descHeight + kDescriptionBottomGap;
 
     const auto useful = actions_ui::cards::usefulPoints(card);
@@ -176,7 +204,7 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
         y += drawPointSection(
             "USEFUL WHEN",
             useful,
-            {card.bounds.x + kPad, y, contentWidth, sectionHeight(useful)},
+            {card.bounds.x + kPad, y, contentWidth, sectionHeight(useful, contentWidth)},
             {189, 135, 255, 255},
             {205, 213, 224, 255});
         if (!worsen.empty()) {
@@ -188,7 +216,7 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
         drawPointSection(
             "MAY WORSEN",
             worsen,
-            {card.bounds.x + kPad, y, contentWidth - 76.0f, std::max(0.0f, footerY - y - kSectionGap)},
+            {card.bounds.x + kPad, y, contentWidth, sectionHeight(worsen, contentWidth)},
             {235, 86, 100, 255},
             {205, 213, 224, 255});
     }

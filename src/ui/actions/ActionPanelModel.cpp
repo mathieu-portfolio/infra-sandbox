@@ -346,30 +346,39 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const UiFrameView& vie
     const Rectangle list = layout.actionList;
     const auto labels = actions_ui::categoryFilterLabels(cards);
     const int activeCategory = std::clamp(state.activeActionCategoryIndex, 0, static_cast<int>(labels.size()) - 1);
-    const float columns = list.width >= 524.0f ? 2.0f : 1.0f;
+    const int columns = list.width >= 524.0f ? 2 : 1;
     const float cardGap = 16.0f;
-    const float cardWidth = columns > 1.0f ? (list.width - cardGap) * 0.5f : list.width;
-    float x = list.x;
+    const float cardWidth = columns > 1 ? (list.width - cardGap) * 0.5f : list.width;
     float y = list.y - std::max(0.0f, state.nodeActionScrollOffset);
-    float rowHeight = 0.0f;
     const NodeActionCardView cardView;
-    for (auto& card : cards) {
-        if (!card.available || !actions_ui::actionMatchesCategory(card, labels, activeCategory)) {
-            card.bounds = {};
+
+    for (std::size_t i = 0; i < cards.size();) {
+        std::vector<std::size_t> row;
+        row.reserve(static_cast<std::size_t>(columns));
+        while (i < cards.size() && static_cast<int>(row.size()) < columns) {
+            auto& card = cards[i];
+            if (!card.available || !actions_ui::actionMatchesCategory(card, labels, activeCategory)) {
+                card.bounds = {};
+            } else {
+                row.push_back(i);
+            }
+            ++i;
+        }
+
+        if (row.empty()) {
             continue;
         }
 
-        const float cardHeight = cardView.measureHeight(card, cardWidth);
-        card.bounds = {x, y, cardWidth, cardHeight};
-        rowHeight = std::max(rowHeight, cardHeight);
-
-        if (columns > 1.0f && x < layout.actionList.x + cardWidth) {
-            x += cardWidth + cardGap;
-        } else {
-            x = list.x;
-            y += rowHeight + cardGap;
-            rowHeight = 0.0f;
+        float rowHeight = 0.0f;
+        for (const std::size_t cardIndex : row) {
+            rowHeight = std::max(rowHeight, cardView.measureHeight(cards[cardIndex], cardWidth));
         }
+
+        for (std::size_t column = 0; column < row.size(); ++column) {
+            const float x = list.x + static_cast<float>(column) * (cardWidth + cardGap);
+            cards[row[column]].bounds = {x, y, cardWidth, rowHeight};
+        }
+        y += rowHeight + cardGap;
     }
     return cards;
 }

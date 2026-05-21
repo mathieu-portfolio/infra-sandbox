@@ -64,7 +64,7 @@ void ActionPanelInteraction::update(UiContext& context, const UiFrameView& view)
         return;
     }
     if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->worldActionDraftVisible) {
-        const Rectangle overlay = WorldActionOverlay::overlayBounds(context.screenWidth, context.screenHeight);
+        const Rectangle overlay = WorldActionOverlay::overlayBounds(context.screenWidth, context.screenHeight, context.state->worldActionDraft);
         const int count = static_cast<int>(context.state->worldActionDraft.size());
         for (int i = 0; i < static_cast<int>(context.state->worldActionDraft.size()); ++i) {
             if (CheckCollisionPointRec(mouse, WorldActionOverlay::draftCardBounds(overlay, i, count))) {

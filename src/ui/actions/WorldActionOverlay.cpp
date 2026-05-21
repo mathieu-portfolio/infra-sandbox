@@ -66,7 +66,33 @@ Rectangle WorldActionOverlay::toggleBounds(int screenWidth)
 Rectangle WorldActionOverlay::overlayBounds(int screenWidth, int screenHeight)
 {
     const float width = std::min(840.0f, static_cast<float>(screenWidth) - 96.0f);
-    const float height = std::min(360.0f, static_cast<float>(screenHeight) - 160.0f);
+    const float height = std::min(520.0f, static_cast<float>(screenHeight) - 120.0f);
+    return {static_cast<float>(screenWidth) * 0.5f - width * 0.5f, static_cast<float>(screenHeight) * 0.5f - height * 0.5f, width, height};
+}
+
+Rectangle WorldActionOverlay::overlayBounds(int screenWidth, int screenHeight, const std::vector<WorldActionDraft>& drafts)
+{
+    const float width = std::min(840.0f, static_cast<float>(screenWidth) - 96.0f);
+    Rectangle base{static_cast<float>(screenWidth) * 0.5f - width * 0.5f, 0.0f, width, 360.0f};
+    const Rectangle cardsArea = draftCardsArea(base);
+    const int count = std::max(1, static_cast<int>(drafts.size()));
+    const float gap = 14.0f;
+    const float cardWidth = (cardsArea.width - gap * static_cast<float>(count - 1)) / static_cast<float>(count);
+
+    WorldActionCardView cardView;
+    float cardHeight = 0.0f;
+    for (const auto& draft : drafts) {
+        cardHeight = std::max(cardHeight, cardView.preferredDraftHeight(cardWidth, draft));
+    }
+    if (cardHeight <= 0.0f) {
+        cardHeight = cardsArea.height;
+    }
+
+    constexpr float kOverlayPadding = 20.0f;
+    constexpr float kHeaderHeight = 66.0f;
+    constexpr float kBottomPadding = 30.0f;
+    const float wantedHeight = kHeaderHeight + kOverlayPadding + cardHeight + kBottomPadding;
+    const float height = std::clamp(wantedHeight, 360.0f, std::max(360.0f, static_cast<float>(screenHeight) - 120.0f));
     return {static_cast<float>(screenWidth) * 0.5f - width * 0.5f, static_cast<float>(screenHeight) * 0.5f - height * 0.5f, width, height};
 }
 
@@ -103,7 +129,7 @@ void WorldActionOverlay::draw(const UiContext& context) const
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     DrawRectangleRec(layout.worldView, {0, 0, 0, 128});
 
-    const Rectangle overlay = overlayBounds(context.screenWidth, context.screenHeight);
+    const Rectangle overlay = overlayBounds(context.screenWidth, context.screenHeight, context.state->worldActionDraft);
     DrawRectangleRounded(overlay, 0.025f, 8, {9, 16, 27, 248});
     DrawRectangleRoundedLines(overlay, 0.025f, 8, {89, 196, 255, 120});
     DrawText("WORLD ACTION DRAFT", static_cast<int>(overlay.x + 22.0f), static_cast<int>(overlay.y + 20.0f), 14, {139, 148, 158, 255});
