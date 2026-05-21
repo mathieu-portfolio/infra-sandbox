@@ -4,40 +4,11 @@
 #include <cmath>
 
 namespace metrics_panel {
-    const char* label = "";
-    double health = 100.0;
-    double trend = 0.0;
-    bool implemented = false;
-};
-
-void metricRow(const char* icon, const char* label, const char* value, float x, float y, Color valueColor)
-{
-    IconRegistry::instance().drawIcon(icon, {x, y + 1.0f, 16.0f, 16.0f}, valueColor);
-    drawTextClipped(label, {x + 24.0f, y, 112.0f, 18.0f}, 14, {139, 148, 158, 255});
-    drawTextClipped(value, {x + 150.0f, y, 82.0f, 18.0f}, 14, valueColor);
-}
-
-void compactMetricRow(const char* label, const char* value, float x, float y, float width, Color valueColor)
-{
-    drawTextClipped(label, {x, y, width - 56.0f, 12.0f}, 11, {139, 148, 158, 255});
-    drawTextClipped(value, {x + width - 54.0f, y, 54.0f, 12.0f}, 11, valueColor);
-}
+namespace {
 
 double clampScore(double value)
 {
     return std::clamp(value, 0.0, 100.0);
-}
-
-Color scoreColor(double score, bool higherIsBetter)
-{
-    const double normalized = higherIsBetter ? score : 100.0 - score;
-    if (normalized >= 75.0) {
-        return {86, 210, 151, 255};
-    }
-    if (normalized >= 45.0) {
-        return {245, 184, 76, 255};
-    }
-    return {235, 86, 100, 255};
 }
 
 double frontendHealth(const MetricsSnapshot& metrics)
@@ -76,6 +47,20 @@ const MetricsSnapshot* comparisonSnapshot(const UiState& state)
         return nullptr;
     }
     return &state.metricsHistory.front();
+}
+
+}
+
+Color scoreColor(double score, bool higherIsBetter)
+{
+    const double normalized = higherIsBetter ? score : 100.0 - score;
+    if (normalized >= 75.0) {
+        return {86, 210, 151, 255};
+    }
+    if (normalized >= 45.0) {
+        return {245, 184, 76, 255};
+    }
+    return {235, 86, 100, 255};
 }
 
 std::array<SpecializationSummary, static_cast<std::size_t>(MetricsSpecialization::Count)> specializationSummaries(
@@ -123,6 +108,5 @@ const MetricContribution* strongestContribution(const MetricsSnapshot& metrics, 
     }
     return strongest;
 }
-
 
 }

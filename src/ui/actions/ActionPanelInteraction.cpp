@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cstddef>
 
-void ActionPanelInteraction::update(UiContext& context, const Simulation& simulation)
+void ActionPanelInteraction::update(UiContext& context, const Simulation& simulation) const
 {
     if (context.state == nullptr) {
         return;

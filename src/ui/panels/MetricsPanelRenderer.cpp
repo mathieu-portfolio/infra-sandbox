@@ -41,6 +41,19 @@ void drawButton(Rectangle bounds, const char* label)
     drawTextClipped(label, {bounds.x + 8.0f, bounds.y + 5.0f, bounds.width - 16.0f, 14.0f}, 12, {230, 237, 243, 255});
 }
 
+void metricRow(const char* icon, const char* label, const char* value, float x, float y, Color valueColor)
+{
+    IconRegistry::instance().drawIcon(icon, {x, y + 1.0f, 16.0f, 16.0f}, valueColor);
+    drawTextClipped(label, {x + 24.0f, y, 112.0f, 18.0f}, 14, {139, 148, 158, 255});
+    drawTextClipped(value, {x + 150.0f, y, 82.0f, 18.0f}, 14, valueColor);
+}
+
+void compactMetricRow(const char* label, const char* value, float x, float y, float width, Color valueColor)
+{
+    drawTextClipped(label, {x, y, width - 56.0f, 12.0f}, 11, {139, 148, 158, 255});
+    drawTextClipped(value, {x + width - 54.0f, y, 54.0f, 12.0f}, 11, valueColor);
+}
+
 void drawSpecializationButton(Rectangle bounds, const metrics_panel::SpecializationSummary& summary, bool selected)
 {
     const Color healthColor = metrics_panel::scoreColor(summary.health, true);
