@@ -31,6 +31,8 @@ void Simulation::updatePressureState(double dt)
     int processorCount = 0;
     int apiQueueDepth = 0;
     int databaseQueueDepth = 0;
+    double databaseUtilization = 0.0;
+    int databaseCount = 0;
     double linkLoad = 0.0;
     double linkLatency = 0.0;
     double linkBurst = 0.0;
@@ -48,6 +50,8 @@ void Simulation::updatePressureState(double dt)
                 apiQueueDepth += static_cast<int>(node.queue.size());
             } else if (node.type == NodeType::Database || node.type == NodeType::ReadReplica) {
                 databaseQueueDepth += static_cast<int>(node.queue.size());
+                databaseUtilization += node.currentUtilization;
+                ++databaseCount;
             }
         }
     }
@@ -68,6 +72,9 @@ void Simulation::updatePressureState(double dt)
     const double queuePressure = std::clamp(static_cast<double>(apiQueueDepth + databaseQueueDepth) / std::max(1.0, totalDemand * 2.0), 0.0, 1.0);
     const double averageLinkLoad = linkCount > 0 ? linkLoad / static_cast<double>(linkCount) : 0.0;
     const double averageLinkLatency = linkCount > 0 ? linkLatency / static_cast<double>(linkCount) : 0.0;
+    const double averageDatabaseUtilization = databaseCount > 0 ? databaseUtilization / static_cast<double>(databaseCount) : 0.0;
+    const double databasePressure = std::clamp(static_cast<double>(databaseQueueDepth) / std::max(1.0, totalDemand), 0.0, 1.0);
+    const double cacheMissRatio = cacheEnabled_ ? 1.0 - metrics_.snapshot().cacheHitRate : 1.0;
     const double burstMultiplier = burstModeEnabled_ ? 1.0 : 0.0;
     const PressureState context{
         .frontend = {
@@ -89,6 +96,18 @@ void Simulation::updatePressureState(double dt)
             .latencySensitivity = contextValue(scenarioPressureContext_.network.latencySensitivity, eventPressureContext_.network.latencySensitivity),
             .trafficBurstiness = contextValue(scenarioPressureContext_.network.trafficBurstiness, eventPressureContext_.network.trafficBurstiness),
         },
+        .database = {
+            .readPressure = contextValue(scenarioPressureContext_.database.readPressure, eventPressureContext_.database.readPressure),
+            .writePressure = contextValue(scenarioPressureContext_.database.writePressure, eventPressureContext_.database.writePressure),
+            .contention = contextValue(scenarioPressureContext_.database.contention, eventPressureContext_.database.contention),
+            .replicationLag = contextValue(scenarioPressureContext_.database.replicationLag, eventPressureContext_.database.replicationLag),
+        },
+        .runtime = {
+            .cpuPressure = contextValue(scenarioPressureContext_.runtime.cpuPressure, eventPressureContext_.runtime.cpuPressure),
+            .memoryPressure = contextValue(scenarioPressureContext_.runtime.memoryPressure, eventPressureContext_.runtime.memoryPressure),
+            .allocationOrGcPressure = contextValue(scenarioPressureContext_.runtime.allocationOrGcPressure, eventPressureContext_.runtime.allocationOrGcPressure),
+            .schedulingPressure = contextValue(scenarioPressureContext_.runtime.schedulingPressure, eventPressureContext_.runtime.schedulingPressure),
+        },
     };
 
     pressureState_.backend.requestLoad = approach(pressureState_.backend.requestLoad, std::clamp(loadRatio / 1.8 + context.backend.requestLoad, 0.0, 1.0), smoothing);
@@ -102,6 +121,16 @@ void Simulation::updatePressureState(double dt)
     pressureState_.network.bandwidthPressure = approach(pressureState_.network.bandwidthPressure, std::clamp(averageLinkLoad * 0.72 + loadRatio * 0.12 + context.network.bandwidthPressure, 0.0, 1.0), smoothing);
     pressureState_.network.latencySensitivity = approach(pressureState_.network.latencySensitivity, std::clamp(averageLinkLatency + scenarioLatencyMultiplier_ * 0.04 + context.network.latencySensitivity, 0.0, 1.0), smoothing);
     pressureState_.network.trafficBurstiness = approach(pressureState_.network.trafficBurstiness, std::clamp(linkBurst * 0.60 + burstMultiplier * 0.28 + queuePressure * 0.18 + context.network.trafficBurstiness, 0.0, 1.0), smoothing);
+
+    pressureState_.database.readPressure = approach(pressureState_.database.readPressure, std::clamp(averageDatabaseUtilization * 0.46 + databasePressure * 0.24 + cacheMissRatio * 0.12 + context.database.readPressure, 0.0, 1.0), smoothing);
+    pressureState_.database.writePressure = approach(pressureState_.database.writePressure, std::clamp(totalDemand / std::max(1.0, processorCapacity) * 0.10 + pressureState_.backend.serviceFragmentation * 0.08 + context.database.writePressure, 0.0, 1.0), smoothing * 0.65);
+    pressureState_.database.contention = approach(pressureState_.database.contention, std::clamp(averageDatabaseUtilization * 0.50 + databasePressure * 0.35 + pressureState_.network.trafficBurstiness * 0.08 + context.database.contention, 0.0, 1.0), smoothing);
+    pressureState_.database.replicationLag = approach(pressureState_.database.replicationLag, std::clamp(pressureState_.database.writePressure * 0.35 + pressureState_.backend.serviceFragmentation * 0.22 + pressureState_.network.latencySensitivity * 0.12 + context.database.replicationLag, 0.0, 1.0), smoothing * 0.45);
+
+    pressureState_.runtime.cpuPressure = approach(pressureState_.runtime.cpuPressure, std::clamp(averageUtilization * 0.68 + loadRatio * 0.18 + context.runtime.cpuPressure, 0.0, 1.0), smoothing);
+    pressureState_.runtime.memoryPressure = approach(pressureState_.runtime.memoryPressure, std::clamp(queuePressure * 0.36 + pressureState_.frontend.sessionPersistence * 0.12 + pressureState_.database.contention * 0.12 + context.runtime.memoryPressure, 0.0, 1.0), smoothing * 0.65);
+    pressureState_.runtime.allocationOrGcPressure = approach(pressureState_.runtime.allocationOrGcPressure, std::clamp(pressureState_.frontend.realtimeIntensity * 0.24 + pressureState_.network.trafficBurstiness * 0.18 + pressureState_.runtime.memoryPressure * 0.20 + context.runtime.allocationOrGcPressure, 0.0, 1.0), smoothing * 0.60);
+    pressureState_.runtime.schedulingPressure = approach(pressureState_.runtime.schedulingPressure, std::clamp(queuePressure * 0.28 + pressureState_.backend.serviceFragmentation * 0.24 + pressureState_.runtime.cpuPressure * 0.18 + context.runtime.schedulingPressure, 0.0, 1.0), smoothing * 0.70);
 
     pressureState_.frontend.assetWeight = approach(pressureState_.frontend.assetWeight, std::clamp(0.24 + pressureState_.network.bandwidthPressure * 0.18 + pressureState_.backend.serviceFragmentation * 0.06 + context.frontend.assetWeight, 0.0, 1.0), smoothing * 0.45);
     pressureState_.frontend.renderComplexity = approach(pressureState_.frontend.renderComplexity, std::clamp(0.28 + pressureState_.backend.serviceFragmentation * 0.16 + pressureState_.backend.queuePressure * 0.10 + context.frontend.renderComplexity, 0.0, 1.0), smoothing * 0.45);
@@ -126,6 +155,14 @@ void Simulation::nudgePressureState(const PressureState& delta)
     pressureState_.network.bandwidthPressure = clamp01(pressureState_.network.bandwidthPressure + delta.network.bandwidthPressure);
     pressureState_.network.latencySensitivity = clamp01(pressureState_.network.latencySensitivity + delta.network.latencySensitivity);
     pressureState_.network.trafficBurstiness = clamp01(pressureState_.network.trafficBurstiness + delta.network.trafficBurstiness);
+    pressureState_.database.readPressure = clamp01(pressureState_.database.readPressure + delta.database.readPressure);
+    pressureState_.database.writePressure = clamp01(pressureState_.database.writePressure + delta.database.writePressure);
+    pressureState_.database.contention = clamp01(pressureState_.database.contention + delta.database.contention);
+    pressureState_.database.replicationLag = clamp01(pressureState_.database.replicationLag + delta.database.replicationLag);
+    pressureState_.runtime.cpuPressure = clamp01(pressureState_.runtime.cpuPressure + delta.runtime.cpuPressure);
+    pressureState_.runtime.memoryPressure = clamp01(pressureState_.runtime.memoryPressure + delta.runtime.memoryPressure);
+    pressureState_.runtime.allocationOrGcPressure = clamp01(pressureState_.runtime.allocationOrGcPressure + delta.runtime.allocationOrGcPressure);
+    pressureState_.runtime.schedulingPressure = clamp01(pressureState_.runtime.schedulingPressure + delta.runtime.schedulingPressure);
     metrics_.setPressureState(pressureState_);
 }
 

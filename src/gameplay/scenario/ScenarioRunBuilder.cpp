@@ -71,6 +71,14 @@ PressureState scaledPressureState(PressureState state, double intensity)
     state.network.bandwidthPressure *= intensity;
     state.network.latencySensitivity *= intensity;
     state.network.trafficBurstiness *= intensity;
+    state.database.readPressure *= intensity;
+    state.database.writePressure *= intensity;
+    state.database.contention *= intensity;
+    state.database.replicationLag *= intensity;
+    state.runtime.cpuPressure *= intensity;
+    state.runtime.memoryPressure *= intensity;
+    state.runtime.allocationOrGcPressure *= intensity;
+    state.runtime.schedulingPressure *= intensity;
     return state;
 }
 
@@ -89,6 +97,14 @@ void addPressureState(PressureState& target, const PressureState& source)
     target.network.bandwidthPressure += source.network.bandwidthPressure;
     target.network.latencySensitivity += source.network.latencySensitivity;
     target.network.trafficBurstiness += source.network.trafficBurstiness;
+    target.database.readPressure += source.database.readPressure;
+    target.database.writePressure += source.database.writePressure;
+    target.database.contention += source.database.contention;
+    target.database.replicationLag += source.database.replicationLag;
+    target.runtime.cpuPressure += source.runtime.cpuPressure;
+    target.runtime.memoryPressure += source.runtime.memoryPressure;
+    target.runtime.allocationOrGcPressure += source.runtime.allocationOrGcPressure;
+    target.runtime.schedulingPressure += source.runtime.schedulingPressure;
 }
 
 BurstScenario instantiateBurst(BurstScenario burst, std::uint32_t seed, const std::string& key)

@@ -239,6 +239,12 @@ TEST(MetricsAggregatorTests, HiddenPressureStateDerivesSpecializedMetrics)
     snapshot.pressureState.backend.serviceFragmentation = 0.6;
     snapshot.pressureState.network.bandwidthPressure = 0.7;
     snapshot.pressureState.network.trafficBurstiness = 0.8;
+    snapshot.pressureState.database.readPressure = 0.7;
+    snapshot.pressureState.database.contention = 0.8;
+    snapshot.pressureState.database.replicationLag = 0.5;
+    snapshot.pressureState.runtime.cpuPressure = 0.7;
+    snapshot.pressureState.runtime.memoryPressure = 0.6;
+    snapshot.pressureState.runtime.schedulingPressure = 0.5;
 
     MetricsAggregator::update(snapshot);
 
@@ -247,7 +253,15 @@ TEST(MetricsAggregatorTests, HiddenPressureStateDerivesSpecializedMetrics)
     EXPECT_GT(snapshot.frontend.sessionStalenessRisk, 20.0);
     EXPECT_GT(snapshot.backend.serviceFragmentation, 50.0);
     EXPECT_GT(snapshot.network.deliveryPressure, 40.0);
+    EXPECT_GT(snapshot.database.persistenceRisk, 40.0);
+    EXPECT_GT(snapshot.runtime.executionRisk, 40.0);
     EXPECT_GT(snapshot.global.infrastructurePressure, 20.0);
+    EXPECT_TRUE(std::any_of(snapshot.contributions.begin(), snapshot.contributions.end(), [](const MetricContribution& contribution) {
+        return contribution.domain == MetricContributionDomain::Database;
+    }));
+    EXPECT_TRUE(std::any_of(snapshot.contributions.begin(), snapshot.contributions.end(), [](const MetricContribution& contribution) {
+        return contribution.domain == MetricContributionDomain::Runtime;
+    }));
 }
 
 TEST(ActionEffectTests, ActionPressureEffectCanModifyHiddenPressureState)
@@ -256,11 +270,15 @@ TEST(ActionEffectTests, ActionPressureEffectCanModifyHiddenPressureState)
     PressureState actionEffect;
     actionEffect.frontend.cacheEfficiency = 0.12;
     actionEffect.backend.serviceFragmentation = 0.08;
+    actionEffect.database.readPressure = 0.10;
+    actionEffect.runtime.cpuPressure = 0.09;
 
     simulation.applyPressureEffect(actionEffect);
 
     EXPECT_GT(simulation.metrics().pressureState.frontend.cacheEfficiency, 0.0);
     EXPECT_GT(simulation.metrics().frontend.sessionWarmth, 0.0);
+    EXPECT_GT(simulation.metrics().database.readPressure, 0.0);
+    EXPECT_GT(simulation.metrics().runtime.cpuPressure, 0.0);
     EXPECT_GT(simulation.metrics().global.complexity, 0.0);
 }
 

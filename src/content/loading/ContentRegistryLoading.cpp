@@ -540,8 +540,10 @@ EngineeringCapacity parseCapacityBonus(const Json& object)
 
 MetricContributionDomain pressureDomainFromId(const std::string& id)
 {
-    if (id == "backend" || id == "network" || id == "runtime") return MetricContributionDomain::Runtime;
-    if (id == "database" || id == "persistence") return MetricContributionDomain::Persistence;
+    if (id == "backend") return MetricContributionDomain::Backend;
+    if (id == "network") return MetricContributionDomain::Network;
+    if (id == "database" || id == "persistence") return MetricContributionDomain::Database;
+    if (id == "runtime") return MetricContributionDomain::Runtime;
     return MetricContributionDomain::Frontend;
 }
 
@@ -569,6 +571,18 @@ PressureState parsePressureStateObject(const Json& effects)
         effect.network.bandwidthPressure = numberAt(*network, "bandwidth_pressure");
         effect.network.latencySensitivity = numberAt(*network, "latency_sensitivity");
         effect.network.trafficBurstiness = numberAt(*network, "traffic_burstiness");
+    }
+    if (const Json* database = effects.find("database"); database != nullptr && database->isObject()) {
+        effect.database.readPressure = numberAt(*database, "read_pressure");
+        effect.database.writePressure = numberAt(*database, "write_pressure");
+        effect.database.contention = numberAt(*database, "contention");
+        effect.database.replicationLag = numberAt(*database, "replication_lag");
+    }
+    if (const Json* runtime = effects.find("runtime"); runtime != nullptr && runtime->isObject()) {
+        effect.runtime.cpuPressure = numberAt(*runtime, "cpu_pressure");
+        effect.runtime.memoryPressure = numberAt(*runtime, "memory_pressure");
+        effect.runtime.allocationOrGcPressure = numberAt(*runtime, "allocation_or_gc_pressure");
+        effect.runtime.schedulingPressure = numberAt(*runtime, "scheduling_pressure");
     }
     return effect;
 }

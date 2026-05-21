@@ -577,6 +577,10 @@
           "queue_pressure": 0.1,
           "compute_intensity": 0.05
         },
+        "database": {
+          "contention": 0.14,
+          "replication_lag": 0.05
+        },
         "network": {
           "latency_sensitivity": 0.04
         }
@@ -626,6 +630,10 @@
         },
         "network": {
           "traffic_burstiness": 0.12
+        },
+        "runtime": {
+          "scheduling_pressure": 0.06,
+          "allocation_or_gc_pressure": 0.04
         }
       },
       "pressure_signals": [

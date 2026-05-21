@@ -91,17 +91,55 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
     network.deliveryPressure = clampPercent(state.network.bandwidthPressure * 42.0 + state.network.latencySensitivity * 30.0 + state.network.trafficBurstiness * 28.0);
     snapshot.network = network;
 
+    DatabaseMetrics database;
+    database.readPressure = clampPercent(state.database.readPressure * 100.0);
+    database.writePressure = clampPercent(state.database.writePressure * 100.0);
+    database.contention = clampPercent(state.database.contention * 100.0);
+    database.replicationLag = clampPercent(state.database.replicationLag * 100.0);
+    database.persistenceRisk = clampPercent(
+        database.readPressure * 0.22
+        + database.writePressure * 0.18
+        + database.contention * 0.36
+        + database.replicationLag * 0.24);
+    snapshot.database = database;
+
+    RuntimeMetrics runtime;
+    runtime.cpuPressure = clampPercent(state.runtime.cpuPressure * 100.0);
+    runtime.memoryPressure = clampPercent(state.runtime.memoryPressure * 100.0);
+    runtime.allocationOrGcPressure = clampPercent(state.runtime.allocationOrGcPressure * 100.0);
+    runtime.schedulingPressure = clampPercent(state.runtime.schedulingPressure * 100.0);
+    runtime.executionRisk = clampPercent(
+        runtime.cpuPressure * 0.30
+        + runtime.memoryPressure * 0.24
+        + runtime.allocationOrGcPressure * 0.20
+        + runtime.schedulingPressure * 0.26);
+    snapshot.runtime = runtime;
+
     const double latencyPenalty = clampPercent(frontend.perceivedLatency * 26.0);
     const double framePenalty = frontend.framePressure * 0.18;
     const double warmthBonus = frontend.sessionWarmth * 0.08;
     const double assetPressure = frontend.assetBandwidth * 0.22;
     const double websocketPressure = frontend.websocketPressure * 0.35;
-    const double reliabilityPenalty = clampPercent(frontend.sessionStalenessRisk * 0.55 + backend.reliabilityRisk * 0.35 + snapshot.timeoutRatePerSecond * 6.0);
+    const double backendPressure = backend.requestLoad * 0.16 + backend.queuePressure * 0.12 + backend.computeIntensity * 0.08;
+    const double networkPressure = network.deliveryPressure * 0.20;
+    const double databasePressure = database.persistenceRisk * 0.18;
+    const double runtimePressure = runtime.executionRisk * 0.15;
+    const double frontendReliabilityRisk = frontend.sessionStalenessRisk * 0.42;
+    const double backendReliabilityRisk = backend.reliabilityRisk * 0.30;
+    const double databaseReliabilityRisk = database.persistenceRisk * 0.28 + database.replicationLag * 0.20;
+    const double runtimeReliabilityRisk = runtime.executionRisk * 0.18;
+    const double reliabilityPenalty = clampPercent(
+        frontendReliabilityRisk
+        + backendReliabilityRisk
+        + databaseReliabilityRisk
+        + runtimeReliabilityRisk
+        + snapshot.timeoutRatePerSecond * 6.0);
     const double persistenceComplexity = snapshot.totalCacheLookups > 0 ? 2.0 : 0.0;
     const double runtimeComplexity = snapshot.observability.enabledSystemCount > 0
-        ? static_cast<double>(snapshot.observability.enabledSystemCount) * 0.25
+        ? static_cast<double>(snapshot.observability.enabledSystemCount) * 0.25 + runtime.allocationOrGcPressure * 0.03
         : 0.0;
     const double serviceComplexity = backend.serviceFragmentation * 0.18;
+    const double databaseComplexity = database.replicationLag * 0.05 + database.contention * 0.03;
     const double complexityPressure = snapshot.complexity.recommendedThreshold > 0.0
         ? (snapshot.complexity.current / snapshot.complexity.recommendedThreshold) * 100.0
         : snapshot.complexity.current * 10.0;
@@ -113,11 +151,13 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
         + queueDepth * 1.2
         + assetPressure
         + websocketPressure
-        + backend.requestLoad * 0.16
-        + network.deliveryPressure * 0.20
+        + backendPressure
+        + networkPressure
+        + databasePressure
+        + runtimePressure
         - frontend.sessionWarmth * 0.08);
     global.reliability = clampPercent(100.0 - reliabilityPenalty);
-    global.complexity = clampPercent(complexityPressure + persistenceComplexity + runtimeComplexity + serviceComplexity);
+    global.complexity = clampPercent(complexityPressure + persistenceComplexity + runtimeComplexity + serviceComplexity + databaseComplexity);
     global.scalability = clampPercent(100.0 - global.infrastructurePressure * 0.45 - global.complexity * 0.2 + frontend.sessionWarmth * 0.08);
     snapshot.global = global;
 
@@ -127,12 +167,18 @@ void MetricsAggregator::update(MetricsSnapshot& snapshot)
     addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Frontend, "Asset bandwidth", assetPressure);
     addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Frontend, "Websocket pressure", websocketPressure);
     addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Frontend, "Session warmth", -frontend.sessionWarmth * 0.08);
-    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Runtime, "Backend load", backend.requestLoad * 0.16);
-    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Runtime, "Network delivery", network.deliveryPressure * 0.20);
-    addContribution(snapshot, GlobalMetricId::Reliability, MetricContributionDomain::Frontend, "Session staleness risk", -reliabilityPenalty);
-    addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Persistence, "Persistence/session systems", persistenceComplexity);
+    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Backend, "Backend pressure", backendPressure);
+    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Network, "Network delivery", networkPressure);
+    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Database, "Persistence pressure", databasePressure);
+    addContribution(snapshot, GlobalMetricId::InfrastructurePressure, MetricContributionDomain::Runtime, "Runtime pressure", runtimePressure);
+    addContribution(snapshot, GlobalMetricId::Reliability, MetricContributionDomain::Frontend, "Session staleness risk", -frontendReliabilityRisk);
+    addContribution(snapshot, GlobalMetricId::Reliability, MetricContributionDomain::Backend, "Backend reliability risk", -backendReliabilityRisk);
+    addContribution(snapshot, GlobalMetricId::Reliability, MetricContributionDomain::Database, "Database reliability risk", -databaseReliabilityRisk);
+    addContribution(snapshot, GlobalMetricId::Reliability, MetricContributionDomain::Runtime, "Runtime execution risk", -runtimeReliabilityRisk);
+    addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Database, "Persistence/session systems", persistenceComplexity);
+    addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Database, "Database coordination", databaseComplexity);
     addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Runtime, "Runtime systems", runtimeComplexity);
-    addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Runtime, "Service fragmentation", serviceComplexity);
+    addContribution(snapshot, GlobalMetricId::Complexity, MetricContributionDomain::Backend, "Service fragmentation", serviceComplexity);
 }
 
 void Metrics::reset()
@@ -231,6 +277,14 @@ void Metrics::setPressureState(const PressureState& state)
     snapshot_.pressureState.network.bandwidthPressure = clamp01(snapshot_.pressureState.network.bandwidthPressure);
     snapshot_.pressureState.network.latencySensitivity = clamp01(snapshot_.pressureState.network.latencySensitivity);
     snapshot_.pressureState.network.trafficBurstiness = clamp01(snapshot_.pressureState.network.trafficBurstiness);
+    snapshot_.pressureState.database.readPressure = clamp01(snapshot_.pressureState.database.readPressure);
+    snapshot_.pressureState.database.writePressure = clamp01(snapshot_.pressureState.database.writePressure);
+    snapshot_.pressureState.database.contention = clamp01(snapshot_.pressureState.database.contention);
+    snapshot_.pressureState.database.replicationLag = clamp01(snapshot_.pressureState.database.replicationLag);
+    snapshot_.pressureState.runtime.cpuPressure = clamp01(snapshot_.pressureState.runtime.cpuPressure);
+    snapshot_.pressureState.runtime.memoryPressure = clamp01(snapshot_.pressureState.runtime.memoryPressure);
+    snapshot_.pressureState.runtime.allocationOrGcPressure = clamp01(snapshot_.pressureState.runtime.allocationOrGcPressure);
+    snapshot_.pressureState.runtime.schedulingPressure = clamp01(snapshot_.pressureState.runtime.schedulingPressure);
     MetricsAggregator::update(snapshot_);
 }
 

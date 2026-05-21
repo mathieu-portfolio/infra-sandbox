@@ -14,7 +14,9 @@ enum class GlobalMetricId {
 
 enum class MetricContributionDomain {
     Frontend,
-    Persistence,
+    Backend,
+    Network,
+    Database,
     Runtime,
 };
 
@@ -66,6 +68,22 @@ struct NetworkMetrics {
     double deliveryPressure = 0.0;
 };
 
+struct DatabaseMetrics {
+    double readPressure = 0.0;
+    double writePressure = 0.0;
+    double contention = 0.0;
+    double replicationLag = 0.0;
+    double persistenceRisk = 0.0;
+};
+
+struct RuntimeMetrics {
+    double cpuPressure = 0.0;
+    double memoryPressure = 0.0;
+    double allocationOrGcPressure = 0.0;
+    double schedulingPressure = 0.0;
+    double executionRisk = 0.0;
+};
+
 struct FrontendState {
     double assetWeight = 0.0;
     double renderComplexity = 0.0;
@@ -88,10 +106,26 @@ struct NetworkState {
     double trafficBurstiness = 0.0;
 };
 
+struct DatabaseState {
+    double readPressure = 0.0;
+    double writePressure = 0.0;
+    double contention = 0.0;
+    double replicationLag = 0.0;
+};
+
+struct RuntimeState {
+    double cpuPressure = 0.0;
+    double memoryPressure = 0.0;
+    double allocationOrGcPressure = 0.0;
+    double schedulingPressure = 0.0;
+};
+
 struct PressureState {
     FrontendState frontend;
     BackendState backend;
     NetworkState network;
+    DatabaseState database;
+    RuntimeState runtime;
 };
 
 struct FlowMetrics {
@@ -147,6 +181,8 @@ struct MetricsSnapshot {
     FrontendMetrics frontend;
     BackendMetrics backend;
     NetworkMetrics network;
+    DatabaseMetrics database;
+    RuntimeMetrics runtime;
     PressureState pressureState;
     std::vector<PressureContextSignal> activePressureSignals;
     std::vector<MetricContribution> contributions;

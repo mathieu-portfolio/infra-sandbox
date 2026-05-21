@@ -62,6 +62,10 @@
       },
       "backend": {
         "request_load": 0.04
+      },
+      "database": {
+        "read_pressure": 0.1,
+        "contention": 0.03
       }
     },
     "pressure_signals": [
@@ -93,6 +97,10 @@
       },
       "network": {
         "traffic_burstiness": 0.08
+      },
+      "runtime": {
+        "scheduling_pressure": 0.04,
+        "allocation_or_gc_pressure": 0.03
       }
     },
     "pressure_signals": [
@@ -153,6 +161,10 @@
       "backend": {
         "queue_pressure": 0.08,
         "compute_intensity": 0.04
+      },
+      "database": {
+        "contention": 0.12,
+        "replication_lag": 0.04
       }
     },
     "pressure_signals": [

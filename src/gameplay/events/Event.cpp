@@ -24,6 +24,14 @@ void addPressureState(PressureState& target, const PressureState& source)
     target.network.bandwidthPressure += source.network.bandwidthPressure;
     target.network.latencySensitivity += source.network.latencySensitivity;
     target.network.trafficBurstiness += source.network.trafficBurstiness;
+    target.database.readPressure += source.database.readPressure;
+    target.database.writePressure += source.database.writePressure;
+    target.database.contention += source.database.contention;
+    target.database.replicationLag += source.database.replicationLag;
+    target.runtime.cpuPressure += source.runtime.cpuPressure;
+    target.runtime.memoryPressure += source.runtime.memoryPressure;
+    target.runtime.allocationOrGcPressure += source.runtime.allocationOrGcPressure;
+    target.runtime.schedulingPressure += source.runtime.schedulingPressure;
 }
 }
 

@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cmath>
 #include <cstdio>
+#include <string>
 
 namespace {
 struct SpecializationSummary {
@@ -61,6 +62,26 @@ double frontendHealth(const MetricsSnapshot& metrics)
         + metrics.frontend.sessionWarmth * 0.08);
 }
 
+double backendHealth(const MetricsSnapshot& metrics)
+{
+    return clampScore(100.0 - std::max({metrics.backend.requestLoad, metrics.backend.queuePressure, metrics.backend.computeIntensity, metrics.backend.reliabilityRisk}));
+}
+
+double networkHealth(const MetricsSnapshot& metrics)
+{
+    return clampScore(100.0 - metrics.network.deliveryPressure);
+}
+
+double databaseHealth(const MetricsSnapshot& metrics)
+{
+    return clampScore(100.0 - metrics.database.persistenceRisk);
+}
+
+double runtimeHealth(const MetricsSnapshot& metrics)
+{
+    return clampScore(100.0 - metrics.runtime.executionRisk);
+}
+
 const MetricsSnapshot* comparisonSnapshot(const UiState& state)
 {
     if (state.metricsHistory.size() < 2) {
@@ -74,15 +95,23 @@ std::array<SpecializationSummary, static_cast<std::size_t>(MetricsSpecialization
     const UiState& state)
 {
     double frontendTrend = 0.0;
+    double backendTrend = 0.0;
+    double networkTrend = 0.0;
+    double databaseTrend = 0.0;
+    double runtimeTrend = 0.0;
     if (const MetricsSnapshot* before = comparisonSnapshot(state); before != nullptr) {
         frontendTrend = frontendHealth(metrics) - frontendHealth(*before);
+        backendTrend = backendHealth(metrics) - backendHealth(*before);
+        networkTrend = networkHealth(metrics) - networkHealth(*before);
+        databaseTrend = databaseHealth(metrics) - databaseHealth(*before);
+        runtimeTrend = runtimeHealth(metrics) - runtimeHealth(*before);
     }
     return {
         SpecializationSummary{MetricsSpecialization::Frontend, "Frontend", frontendHealth(metrics), frontendTrend, true},
-        SpecializationSummary{MetricsSpecialization::Backend, "Backend", 100.0 - std::max({metrics.backend.requestLoad, metrics.backend.queuePressure, metrics.backend.computeIntensity}), 0.0, false},
-        SpecializationSummary{MetricsSpecialization::Network, "Network", 100.0 - metrics.network.deliveryPressure, 0.0, false},
-        SpecializationSummary{MetricsSpecialization::Database, "Database", 100.0 - std::min(100.0, metrics.databaseUtilization * 45.0 + metrics.databaseQueueDepth * 1.5 + metrics.backend.queuePressure * 0.25), 0.0, false},
-        SpecializationSummary{MetricsSpecialization::Runtime, "Runtime", 100.0 - metrics.global.complexity * 0.25, 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Backend, "Backend", backendHealth(metrics), backendTrend, true},
+        SpecializationSummary{MetricsSpecialization::Network, "Network", networkHealth(metrics), networkTrend, true},
+        SpecializationSummary{MetricsSpecialization::Database, "Database", databaseHealth(metrics), databaseTrend, true},
+        SpecializationSummary{MetricsSpecialization::Runtime, "Runtime", runtimeHealth(metrics), runtimeTrend, true},
     };
 }
 
@@ -174,15 +203,95 @@ void drawFrontendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     EndScissorMode();
 }
 
-void drawPendingSpecializationDetails(const SpecializationSummary& summary, Rectangle bounds)
+void drawContributionRow(const MetricsSnapshot& metrics, MetricContributionDomain domain, float x, float y, float width)
+{
+    char buffer[32];
+    if (const MetricContribution* contribution = strongestContribution(metrics, domain); contribution != nullptr) {
+        std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
+        compactMetricRow(contribution->label, buffer, x, y, width, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
+    }
+}
+
+void drawBackendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 100.0f;
     const float width = bounds.width - 28.0f;
-    std::snprintf(buffer, sizeof(buffer), "%.0f", summary.health);
-    compactMetricRow("health", buffer, x, y, width, scoreColor(summary.health, true));
-    compactMetricRow("metrics", "pending", x, y + 13.0f, width, {139, 148, 158, 255});
+    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.requestLoad);
+    compactMetricRow("requestLoad", buffer, x, y, width, scoreColor(metrics.backend.requestLoad, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.queuePressure);
+    compactMetricRow("queuePressure", buffer, x, y + 13.0f, width, scoreColor(metrics.backend.queuePressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.computeIntensity);
+    compactMetricRow("computeIntensity", buffer, x, y + 26.0f, width, scoreColor(metrics.backend.computeIntensity, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.serviceFragmentation);
+    compactMetricRow("serviceFragmentation", buffer, x, y + 39.0f, width, scoreColor(metrics.backend.serviceFragmentation, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.reliabilityRisk);
+    compactMetricRow("reliabilityRisk", buffer, x, y + 52.0f, width, scoreColor(metrics.backend.reliabilityRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Backend, x, y + 68.0f, width);
+    EndScissorMode();
+}
+
+void drawNetworkDetails(const MetricsSnapshot& metrics, Rectangle bounds)
+{
+    char buffer[32];
+    const float x = bounds.x + 14.0f;
+    const float y = bounds.y + 100.0f;
+    const float width = bounds.width - 28.0f;
+    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.bandwidthPressure);
+    compactMetricRow("bandwidthPressure", buffer, x, y, width, scoreColor(metrics.network.bandwidthPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.latencySensitivity);
+    compactMetricRow("latencySensitivity", buffer, x, y + 13.0f, width, scoreColor(metrics.network.latencySensitivity, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.trafficBurstiness);
+    compactMetricRow("trafficBurstiness", buffer, x, y + 26.0f, width, scoreColor(metrics.network.trafficBurstiness, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.deliveryPressure);
+    compactMetricRow("deliveryPressure", buffer, x, y + 39.0f, width, scoreColor(metrics.network.deliveryPressure, false));
+    drawContributionRow(metrics, MetricContributionDomain::Network, x, y + 55.0f, width);
+    EndScissorMode();
+}
+
+void drawDatabaseDetails(const MetricsSnapshot& metrics, Rectangle bounds)
+{
+    char buffer[32];
+    const float x = bounds.x + 14.0f;
+    const float y = bounds.y + 100.0f;
+    const float width = bounds.width - 28.0f;
+    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.readPressure);
+    compactMetricRow("readPressure", buffer, x, y, width, scoreColor(metrics.database.readPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.writePressure);
+    compactMetricRow("writePressure", buffer, x, y + 13.0f, width, scoreColor(metrics.database.writePressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.contention);
+    compactMetricRow("contention", buffer, x, y + 26.0f, width, scoreColor(metrics.database.contention, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.replicationLag);
+    compactMetricRow("replicationLag", buffer, x, y + 39.0f, width, scoreColor(metrics.database.replicationLag, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.persistenceRisk);
+    compactMetricRow("persistenceRisk", buffer, x, y + 52.0f, width, scoreColor(metrics.database.persistenceRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Database, x, y + 68.0f, width);
+    EndScissorMode();
+}
+
+void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
+{
+    char buffer[32];
+    const float x = bounds.x + 14.0f;
+    const float y = bounds.y + 100.0f;
+    const float width = bounds.width - 28.0f;
+    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.cpuPressure);
+    compactMetricRow("cpuPressure", buffer, x, y, width, scoreColor(metrics.runtime.cpuPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.memoryPressure);
+    compactMetricRow("memoryPressure", buffer, x, y + 13.0f, width, scoreColor(metrics.runtime.memoryPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.allocationOrGcPressure);
+    compactMetricRow("allocationOrGcPressure", buffer, x, y + 26.0f, width, scoreColor(metrics.runtime.allocationOrGcPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.schedulingPressure);
+    compactMetricRow("schedulingPressure", buffer, x, y + 39.0f, width, scoreColor(metrics.runtime.schedulingPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.executionRisk);
+    compactMetricRow("executionRisk", buffer, x, y + 52.0f, width, scoreColor(metrics.runtime.executionRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Runtime, x, y + 68.0f, width);
+    EndScissorMode();
 }
 }
 
@@ -316,10 +425,24 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
         const std::string label = signal.temporary ? signal.name + " (event)" : signal.name;
         drawTextClipped(label, {x + 92.0f, y + 94.0f, width - 164.0f, 12.0f}, 11, {245, 184, 76, 255});
     }
-    if (context.state->selectedMetricsSpecialization == MetricsSpecialization::Frontend) {
+    switch (context.state->selectedMetricsSpecialization) {
+    case MetricsSpecialization::Frontend:
         drawFrontendDetails(metrics, specializations);
-    } else {
-        drawPendingSpecializationDetails(selectedSummary, specializations);
+        break;
+    case MetricsSpecialization::Backend:
+        drawBackendDetails(metrics, specializations);
+        break;
+    case MetricsSpecialization::Network:
+        drawNetworkDetails(metrics, specializations);
+        break;
+    case MetricsSpecialization::Database:
+        drawDatabaseDetails(metrics, specializations);
+        break;
+    case MetricsSpecialization::Runtime:
+        drawRuntimeDetails(metrics, specializations);
+        break;
+    case MetricsSpecialization::Count:
+        break;
     }
 
     Rectangle alerts = left.alerts;
