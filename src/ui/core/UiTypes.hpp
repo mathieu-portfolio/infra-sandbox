@@ -71,6 +71,15 @@ enum class NodeInspectionTab {
     Count
 };
 
+enum class MetricsSpecialization {
+    Frontend,
+    Backend,
+    Network,
+    Database,
+    Runtime,
+    Count
+};
+
 struct ObservabilityState {
     bool metricsUnlocked = false;
     bool trafficUnlocked = false;
@@ -207,6 +216,7 @@ struct UiState {
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};
     bool showDebug = false;
     bool showMetrics = true;
+    MetricsSpecialization selectedMetricsSpecialization = MetricsSpecialization::Frontend;
     bool showHud = true;
     bool showGeoGrid = true;
     bool optionsMenuOpen = false;

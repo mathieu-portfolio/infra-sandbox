@@ -8,15 +8,35 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cmath>
 #include <cstdio>
 
 namespace {
+struct SpecializationSummary {
+    MetricsSpecialization id = MetricsSpecialization::Frontend;
+    const char* label = "";
+    double health = 100.0;
+    double trend = 0.0;
+    bool implemented = false;
+};
+
 void metricRow(const char* icon, const char* label, const char* value, float x, float y, Color valueColor)
 {
     IconRegistry::instance().drawIcon(icon, {x, y + 1.0f, 16.0f, 16.0f}, valueColor);
     drawTextClipped(label, {x + 24.0f, y, 112.0f, 18.0f}, 14, {139, 148, 158, 255});
     drawTextClipped(value, {x + 150.0f, y, 82.0f, 18.0f}, 14, valueColor);
+}
+
+void compactMetricRow(const char* label, const char* value, float x, float y, float width, Color valueColor)
+{
+    drawTextClipped(label, {x, y, width - 56.0f, 12.0f}, 11, {139, 148, 158, 255});
+    drawTextClipped(value, {x + width - 54.0f, y, 54.0f, 12.0f}, 11, valueColor);
+}
+
+double clampScore(double value)
+{
+    return std::clamp(value, 0.0, 100.0);
 }
 
 Color scoreColor(double score, bool higherIsBetter)
@@ -31,15 +51,73 @@ Color scoreColor(double score, bool higherIsBetter)
     return {235, 86, 100, 255};
 }
 
-const MetricContribution* strongestContribution(const MetricsSnapshot& metrics)
+double frontendHealth(const MetricsSnapshot& metrics)
+{
+    return clampScore(
+        100.0
+        - metrics.frontend.perceivedLatency * 26.0
+        - metrics.frontend.framePressure * 0.18
+        - metrics.frontend.sessionStalenessRisk * 0.35
+        + metrics.frontend.sessionWarmth * 0.08);
+}
+
+const MetricsSnapshot* comparisonSnapshot(const UiState& state)
+{
+    if (state.metricsHistory.size() < 2) {
+        return nullptr;
+    }
+    return &state.metricsHistory.front();
+}
+
+std::array<SpecializationSummary, static_cast<std::size_t>(MetricsSpecialization::Count)> specializationSummaries(
+    const MetricsSnapshot& metrics,
+    const UiState& state)
+{
+    double frontendTrend = 0.0;
+    if (const MetricsSnapshot* before = comparisonSnapshot(state); before != nullptr) {
+        frontendTrend = frontendHealth(metrics) - frontendHealth(*before);
+    }
+    return {
+        SpecializationSummary{MetricsSpecialization::Frontend, "Frontend", frontendHealth(metrics), frontendTrend, true},
+        SpecializationSummary{MetricsSpecialization::Backend, "Backend", 100.0 - std::min(100.0, metrics.apiUtilization * 65.0 + metrics.apiQueueDepth * 2.0), 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Network, "Network", 100.0 - metrics.frontend.websocketPressure * 0.55, 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Database, "Database", 100.0 - std::min(100.0, metrics.databaseUtilization * 65.0 + metrics.databaseQueueDepth * 2.0), 0.0, false},
+        SpecializationSummary{MetricsSpecialization::Runtime, "Runtime", 100.0 - metrics.global.complexity * 0.25, 0.0, false},
+    };
+}
+
+const SpecializationSummary& summaryFor(
+    const std::array<SpecializationSummary, static_cast<std::size_t>(MetricsSpecialization::Count)>& summaries,
+    MetricsSpecialization specialization)
+{
+    return summaries[static_cast<std::size_t>(specialization)];
+}
+
+const MetricContribution* strongestContribution(const MetricsSnapshot& metrics, MetricContributionDomain domain)
 {
     const MetricContribution* strongest = nullptr;
     for (const auto& contribution : metrics.contributions) {
+        if (contribution.domain != domain) {
+            continue;
+        }
         if (strongest == nullptr || std::abs(contribution.amount) > std::abs(strongest->amount)) {
             strongest = &contribution;
         }
     }
     return strongest;
+}
+
+Rectangle specializationButton(Rectangle bounds, int index)
+{
+    constexpr float gap = 6.0f;
+    constexpr int columns = 3;
+    const float buttonWidth = (bounds.width - 28.0f - gap * static_cast<float>(columns - 1)) / static_cast<float>(columns);
+    return {
+        bounds.x + 14.0f + static_cast<float>(index % columns) * (buttonWidth + gap),
+        bounds.y + 38.0f + static_cast<float>(index / columns) * 30.0f,
+        buttonWidth,
+        24.0f,
+    };
 }
 
 Rectangle sandboxButton(float x, float y, float width, int index)
@@ -53,22 +131,88 @@ void drawButton(Rectangle bounds, const char* label)
     DrawRectangleRoundedLines(bounds, 0.16f, 6, {70, 86, 104, 130});
     drawTextClipped(label, {bounds.x + 8.0f, bounds.y + 5.0f, bounds.width - 16.0f, 14.0f}, 12, {230, 237, 243, 255});
 }
+
+void drawSpecializationButton(Rectangle bounds, const SpecializationSummary& summary, bool selected)
+{
+    const Color healthColor = scoreColor(summary.health, true);
+    DrawRectangleRounded(bounds, 0.16f, 6, selected ? Color{32, 42, 54, 245} : Color{22, 27, 34, 220});
+    DrawRectangleRoundedLines(bounds, 0.16f, 6, selected ? Color{89, 196, 255, 170} : Color{70, 86, 104, 110});
+    DrawCircleV({bounds.x + 9.0f, bounds.y + bounds.height * 0.5f}, 3.5f, healthColor);
+    const char* trend = summary.trend > 1.0 ? " +" : (summary.trend < -1.0 ? " -" : "");
+    char label[32];
+    std::snprintf(label, sizeof(label), "%s%s", summary.label, trend);
+    drawTextClipped(label, {bounds.x + 17.0f, bounds.y + 5.0f, bounds.width - 20.0f, 14.0f}, 12, summary.implemented ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
+}
+
+void drawFrontendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
+{
+    char buffer[32];
+    const float x = bounds.x + 14.0f;
+    const float y = bounds.y + 100.0f;
+    const float width = bounds.width - 28.0f;
+    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.perceivedLatency * 1000.0);
+    compactMetricRow("perceivedLatency", buffer, x, y, width, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.renderLatency * 1000.0);
+    compactMetricRow("renderLatency", buffer, x, y + 13.0f, width, metrics.frontend.renderLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.framePressure);
+    compactMetricRow("framePressure", buffer, x, y + 26.0f, width, scoreColor(metrics.frontend.framePressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.assetBandwidth);
+    compactMetricRow("assetBandwidth", buffer, x, y + 39.0f, width, scoreColor(metrics.frontend.assetBandwidth, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.interactionDelay * 1000.0);
+    compactMetricRow("interactionDelay", buffer, x, y + 52.0f, width, metrics.frontend.interactionDelay > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.websocketPressure);
+    compactMetricRow("websocketPressure", buffer, x, y + 65.0f, width, scoreColor(metrics.frontend.websocketPressure, false));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.sessionWarmth);
+    compactMetricRow("sessionWarmth", buffer, x, y + 78.0f, width, scoreColor(metrics.frontend.sessionWarmth, true));
+    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.sessionStalenessRisk);
+    compactMetricRow("sessionStalenessRisk", buffer, x, y + 91.0f, width, scoreColor(metrics.frontend.sessionStalenessRisk, false));
+    if (const MetricContribution* contribution = strongestContribution(metrics, MetricContributionDomain::Frontend); contribution != nullptr) {
+        std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
+        compactMetricRow(contribution->label, buffer, x, y + 107.0f, width, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
+    }
+    EndScissorMode();
+}
+
+void drawPendingSpecializationDetails(const SpecializationSummary& summary, Rectangle bounds)
+{
+    char buffer[32];
+    const float x = bounds.x + 14.0f;
+    const float y = bounds.y + 100.0f;
+    const float width = bounds.width - 28.0f;
+    std::snprintf(buffer, sizeof(buffer), "%.0f", summary.health);
+    compactMetricRow("health", buffer, x, y, width, scoreColor(summary.health, true));
+    compactMetricRow("metrics", "pending", x, y + 13.0f, width, {139, 148, 158, 255});
+}
 }
 
 void MetricsPanel::update(UiContext& context, const Simulation&)
 {
-    if (context.state == nullptr || !context.state->sandboxMode || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (context.state == nullptr || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
     }
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
+    const Vector2 mouse = GetMousePosition();
+
+    if (context.state->showMetrics && left.specializations.height > 0.0f) {
+        for (int i = 0; i < static_cast<int>(MetricsSpecialization::Count); ++i) {
+            if (CheckCollisionPointRec(mouse, specializationButton(left.specializations, i))) {
+                context.state->selectedMetricsSpecialization = static_cast<MetricsSpecialization>(i);
+                return;
+            }
+        }
+    }
+
+    if (!context.state->sandboxMode) {
+        return;
+    }
     const float x = left.sandbox.x;
     const float width = left.sandbox.width;
     const float y = left.sandbox.y;
     if (left.sandbox.height <= 0.0f) {
         return;
     }
-    const Vector2 mouse = GetMousePosition();
     const char* requests[] = {"traffic_spike", "retry_storm", "db_slowdown", "regional_traffic_spike", "recovery"};
     for (int i = 0; i < 5; ++i) {
         if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, i))) {
@@ -152,17 +296,25 @@ void MetricsPanel::draw(const UiContext& context, const Simulation& simulation) 
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.global.scalability);
     metricRow("metric.total_traffic", "Scalability", buffer, x + 14.0f, y + 128.0f, scoreColor(metrics.global.scalability, true));
 
-    drawTextClipped("Frontend", {x + 14.0f, y + 158.0f, width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.perceivedLatency * 1000.0);
-    metricRow("metric.latency_average", "Perceived Lat.", buffer, x + 14.0f, y + 176.0f, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
-    std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.framePressure);
-    metricRow("metric.queue_depth", "Frame Pressure", buffer, x + 14.0f, y + 198.0f, scoreColor(metrics.frontend.framePressure, false));
-    if (const MetricContribution* contribution = strongestContribution(metrics); contribution != nullptr) {
-        std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
-        metricRow("alert.explanation", contribution->label, buffer, x + 14.0f, y + 220.0f, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
+    Rectangle specializations = left.specializations;
+    y = specializations.y;
+    drawPanelFrame(specializations, "Specializations");
+    const auto summaries = specializationSummaries(metrics, *context.state);
+    for (int i = 0; i < static_cast<int>(MetricsSpecialization::Count); ++i) {
+        const auto specialization = static_cast<MetricsSpecialization>(i);
+        drawSpecializationButton(
+            specializationButton(specializations, i),
+            summaryFor(summaries, specialization),
+            specialization == context.state->selectedMetricsSpecialization);
+    }
+    const SpecializationSummary& selectedSummary = summaryFor(summaries, context.state->selectedMetricsSpecialization);
+    std::snprintf(buffer, sizeof(buffer), "%.0f", selectedSummary.health);
+    drawTextClipped(selectedSummary.label, {x + 14.0f, y + 94.0f, 112.0f, 12.0f}, 11, {230, 237, 243, 255});
+    drawTextClipped(buffer, {x + width - 58.0f, y + 94.0f, 44.0f, 12.0f}, 11, scoreColor(selectedSummary.health, true));
+    if (context.state->selectedMetricsSpecialization == MetricsSpecialization::Frontend) {
+        drawFrontendDetails(metrics, specializations);
     } else {
-        std::snprintf(buffer, sizeof(buffer), "%.0f%%", metrics.frontend.sessionWarmth);
-        metricRow("metric.cache_hit_rate", "Session Warmth", buffer, x + 14.0f, y + 220.0f, {151, 111, 255, 255});
+        drawPendingSpecializationDetails(selectedSummary, specializations);
     }
 
     Rectangle alerts = left.alerts;

@@ -27,6 +27,7 @@ struct TopBarLayout {
 struct LeftSidebarLayout {
     Rectangle root{};
     Rectangle overview{};
+    Rectangle specializations{};
     Rectangle alerts{};
     Rectangle sandbox{};
     Rectangle legend{};

@@ -185,10 +185,13 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
     rootStyle.gap = UiTheme::gap;
     root->style(rootStyle);
     auto overview = std::make_unique<ui::PanelNode>("overview");
-    overview->style(ui::fixedHeight(250.0f));
+    overview->style(ui::fixedHeight(166.0f));
     root->add(std::move(overview));
+    auto specializations = std::make_unique<ui::PanelNode>("specializations");
+    specializations->style(ui::fixedHeight(224.0f));
+    root->add(std::move(specializations));
     auto alerts = std::make_unique<ui::PanelNode>("alerts");
-    alerts->style(ui::fixedHeight(142.0f));
+    alerts->style(ui::fixedHeight(132.0f));
     root->add(std::move(alerts));
     if (sandboxMode) {
         auto sandbox = std::make_unique<ui::PanelNode>("sandbox");
@@ -203,6 +206,7 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
     return {
         .root = leftSidebar,
         .overview = boundsOf(*root, "overview"),
+        .specializations = boundsOf(*root, "specializations"),
         .alerts = boundsOf(*root, "alerts"),
         .sandbox = boundsOf(*root, "sandbox"),
         .legend = boundsOf(*root, "legend"),
