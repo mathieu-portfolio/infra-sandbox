@@ -2,6 +2,7 @@
 
 #include "rendering/layers/RendererLayerUtils.hpp"
 #include "ui/widgets/IconRegistry.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 
 #include "raylib.h"
 
@@ -10,6 +11,27 @@
 #include <string>
 
 using namespace rendering::layers;
+
+namespace {
+UiFrameView buildSimulationOnlyUiFrameView(const Simulation& simulation)
+{
+    UiFrameView view{};
+    view.graphValue = &simulation.graph();
+    view.requestsValue = &simulation.requests();
+    view.runtimeSystemsValue = &simulation.runtimeSystems();
+    view.metricsValue = simulation.metrics();
+    view.pressureValue = simulation.pressure();
+    view.pressureAnalysisValue.snapshot = &view.pressureValue;
+    view.timeSecondsValue = simulation.timeSeconds();
+    view.simulationSpeedValue = simulation.simulationSpeed();
+    view.mechanicAllowed = [&simulation](MechanicType mechanic) { return simulation.isMechanicAllowed(mechanic); };
+    view.canScaleNodeValue = [&simulation](int nodeId, int maxScaleLevel) { return simulation.canScaleNode(nodeId, maxScaleLevel); };
+    view.scaleLevelForNodeValue = [&simulation](int nodeId) { return simulation.scaleLevelForNode(nodeId); };
+    view.maxScaleLevelForNodeValue = [&simulation](int nodeId, int contentMaxScaleLevel) { return simulation.maxScaleLevelForNode(nodeId, contentMaxScaleLevel); };
+    view.hasAnyRegionCapacityValue = [&simulation](int slots) { return simulation.hasAnyRegionCapacity(slots); };
+    return view;
+}
+}
 
 void Renderer::drawMutationPreview(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera) const
 {
@@ -24,7 +46,8 @@ void Renderer::drawMutationPreview(const rendering::viewmodels::RenderFrameView&
     bool activePreview = state.placementActive;
     if (!activePreview) {
         const ActionPanelModel model;
-        const auto cards = model.buildCards(simulation, state, width, height);
+        const UiFrameView view = buildSimulationOnlyUiFrameView(simulation);
+        const auto cards = model.buildCards(view, state, width, height);
         const int index = state.hoveredActionIndex >= 0 ? state.hoveredActionIndex : state.selectedActionIndex;
         if (index >= 0 && index < static_cast<int>(cards.size()) && cards[static_cast<std::size_t>(index)].kind == ActionCardKind::TopologyMutation && cards[static_cast<std::size_t>(index)].available) {
             mutation = cards[static_cast<std::size_t>(index)].mutation;

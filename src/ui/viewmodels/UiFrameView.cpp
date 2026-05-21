@@ -28,9 +28,9 @@ bool UiScenarioView::isScenarioUnlocked(const ScenarioDefinition& definition) co
 UiFrameView buildUiFrameView(const Simulation& simulation, const ScenarioManager& scenarioManager)
 {
     UiFrameView view{};
-    view.graphValue = &view.graph();
-    view.requestsValue = &view.requests();
-    view.runtimeSystemsValue = &view.runtimeSystems();
+    view.graphValue = &simulation.graph();
+    view.requestsValue = &simulation.requests();
+    view.runtimeSystemsValue = &simulation.runtimeSystems();
     view.metricsValue = simulation.metrics();
     view.pressureValue = simulation.pressure();
     view.pressureAnalysisValue.snapshot = &view.pressureValue;

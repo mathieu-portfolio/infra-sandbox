@@ -7,6 +7,7 @@
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/actions/EventOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "ui/viewmodels/UiFrameView.hpp"
 #include "rendering/RenderPrimitives.hpp"
 
 #include <algorithm>
@@ -180,7 +181,8 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
 {
     const ActionPanelModel model;
-    const auto cards = model.buildCards(simulation, uiState, GetScreenWidth(), GetScreenHeight());
+    const UiFrameView view = buildUiFrameView(simulation, scenarioManager);
+    const auto cards = model.buildCards(view, uiState, GetScreenWidth(), GetScreenHeight());
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
     const UiLayout layout = computeUiLayout(screenWidth, screenHeight);
