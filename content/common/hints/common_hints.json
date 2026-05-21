@@ -1,0 +1,112 @@
+{
+  "hints": [
+    {
+      "id": "cdn_cache_hit",
+      "trigger": "cdn_high_cache_usage",
+      "text": "The CDN reduced origin traffic by serving cached content closer to users.",
+      "category": "Performance"
+    },
+    {
+      "id": "graphql_fanout",
+      "trigger": "graphql_high_latency",
+      "text": "The GraphQL gateway is amplifying backend traffic through request fanout.",
+      "category": "Backend"
+    },
+    {
+      "id": "retry_storm",
+      "trigger": "high_retry_pressure",
+      "text": "Retries are increasing total traffic and making failures spread faster.",
+      "category": "Reliability"
+    },
+    {
+      "id": "queue_backlog",
+      "trigger": "high_queue_pressure",
+      "text": "Requests are waiting longer in queues because downstream systems are overloaded.",
+      "category": "Scalability"
+    },
+    {
+      "id": "autoscaling_lag",
+      "trigger": "autoscaling_under_pressure",
+      "text": "Autoscaling reacts with delay, so sudden bursts can still overload the platform.",
+      "category": "Platform"
+    },
+    {
+      "id": "auth_bottleneck",
+      "trigger": "auth_high_latency",
+      "text": "Centralized authentication simplifies security but creates a shared dependency bottleneck.",
+      "category": "Security"
+    },
+    {
+      "id": "service_mesh_overhead",
+      "trigger": "mesh_latency_increase",
+      "text": "The service mesh improved observability and retries, but added network overhead.",
+      "category": "Platform"
+    },
+    {
+      "id": "cache_miss_spike",
+      "trigger": "cache_low_hit_rate",
+      "text": "Low cache hit rates are forcing more requests to reach backend systems.",
+      "category": "Performance"
+    },
+    {
+      "id": "etl_delay",
+      "trigger": "etl_queue_growth",
+      "text": "The ETL pipeline is delaying analytical data updates under heavy ingestion load.",
+      "category": "Data"
+    },
+    {
+      "id": "warehouse_isolation",
+      "trigger": "warehouse_enabled",
+      "text": "The data warehouse isolated analytical workloads from production systems.",
+      "category": "Data"
+    },
+    {
+      "id": "ddos_filtering",
+      "trigger": "ddos_mitigated",
+      "text": "Edge filtering reduced malicious traffic before it reached core services.",
+      "category": "Network"
+    },
+    {
+      "id": "vector_search_latency",
+      "trigger": "vector_search_active",
+      "text": "Semantic retrieval improves relevance but adds retrieval latency and storage pressure.",
+      "category": "AI"
+    },
+    {
+      "id": "gpu_saturation",
+      "trigger": "ai_compute_pressure",
+      "text": "AI inference workloads are saturating compute resources and increasing queue times.",
+      "category": "AI"
+    },
+    {
+      "id": "regional_failover",
+      "trigger": "traffic_rerouted",
+      "text": "Traffic was rerouted to healthier regions to maintain availability.",
+      "category": "Infrastructure"
+    },
+    {
+      "id": "deployment_risk",
+      "trigger": "active_deployment",
+      "text": "Deployments temporarily increase instability because systems are changing live.",
+      "category": "Deployment"
+    },
+    {
+      "id": "canary_success",
+      "trigger": "canary_deployment",
+      "text": "The canary release limited the impact of unstable changes to a small user group.",
+      "category": "Deployment"
+    },
+    {
+      "id": "feature_flag_recovery",
+      "trigger": "feature_flag_disabled",
+      "text": "Feature flags allowed risky functionality to be disabled without a rollback.",
+      "category": "Deployment"
+    },
+    {
+      "id": "telemetry_growth",
+      "trigger": "high_metrics_ingestion",
+      "text": "Observability systems generate massive write-heavy workloads at scale.",
+      "category": "Observability"
+    }
+  ]
+}
