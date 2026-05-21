@@ -1,0 +1,461 @@
+{
+  "id": "tech_industry_nodes_lab",
+  "display_name": "Tech Industry Nodes Lab",
+  "description": "Catalog topology for high-priority industry systems. Nodes use existing lightweight abstractions to teach recognizable pressure patterns without deep subsystem simulation.",
+  "tags": [
+    "systems",
+    "catalog",
+    "education"
+  ],
+  "regions": [
+    "NorthAmerica",
+    "Europe"
+  ],
+  "nodes": [
+    {
+      "id": "global_users",
+      "display_name": "Global users",
+      "description": "Mixed user demand entering the platform.",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 40.71,
+        "longitude": -74.0,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 6.5
+    },
+    {
+      "id": "cdn",
+      "display_name": "CDN",
+      "description": "Edge caching layer that lowers origin pressure when assets are cacheable.",
+      "type": "cdn_edge",
+      "geo": {
+        "latitude": 41.88,
+        "longitude": -87.62,
+        "region": "NorthAmerica"
+      },
+      "processing_capacity_per_second": 16.0,
+      "timeout_seconds": 2.5,
+      "resource_profile": {
+        "compute": 0.25,
+        "memory": 0.35,
+        "storage": 0.45,
+        "network": 0.8
+      }
+    },
+    {
+      "id": "dns_resolver",
+      "display_name": "DNS Resolver",
+      "description": "Routing and failover dependency approximated as a service discovery node.",
+      "type": "dns_resolver",
+      "geo": {
+        "latitude": 39.04,
+        "longitude": -77.49,
+        "region": "NorthAmerica"
+      },
+      "processing_capacity_per_second": 14.0,
+      "timeout_seconds": 2.0,
+      "resource_profile": {
+        "compute": 0.25,
+        "memory": 0.2,
+        "storage": 0.1,
+        "network": 0.65
+      }
+    },
+    {
+      "id": "ddos_protection",
+      "display_name": "DDoS Protection",
+      "description": "Traffic filtering shield that represents mitigation before requests reach the app.",
+      "type": "ddos_protection",
+      "geo": {
+        "latitude": 39.1,
+        "longitude": -94.58,
+        "region": "NorthAmerica"
+      },
+      "processing_capacity_per_second": 18.0,
+      "timeout_seconds": 2.8,
+      "resource_profile": {
+        "compute": 0.35,
+        "memory": 0.25,
+        "storage": 0.1,
+        "network": 0.9
+      }
+    },
+    {
+      "id": "graphql_gateway",
+      "display_name": "GraphQL Gateway",
+      "description": "Aggregation layer where one client request can fan out to several backend reads.",
+      "type": "graphql_gateway",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 7.5,
+      "timeout_seconds": 4.0,
+      "resource_profile": {
+        "compute": 0.7,
+        "memory": 0.35,
+        "storage": 0.05,
+        "network": 0.7
+      }
+    },
+    {
+      "id": "service_mesh",
+      "display_name": "Service Mesh",
+      "description": "Sidecar-style routing that improves resilience visibility while adding latency and complexity.",
+      "type": "service_mesh",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.69,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 10.0,
+      "timeout_seconds": 3.8,
+      "resource_profile": {
+        "compute": 0.45,
+        "memory": 0.35,
+        "storage": 0.05,
+        "network": 0.75
+      }
+    },
+    {
+      "id": "kubernetes_cluster",
+      "display_name": "Kubernetes Cluster",
+      "description": "Orchestration layer for elastic compute capacity and scheduling pressure.",
+      "type": "kubernetes_cluster",
+      "geo": {
+        "latitude": 50.13,
+        "longitude": 8.66,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 14.0,
+      "timeout_seconds": 5.0,
+      "resource_profile": {
+        "compute": 0.7,
+        "memory": 0.55,
+        "storage": 0.25,
+        "network": 0.45
+      }
+    },
+    {
+      "id": "app_api",
+      "display_name": "Application API",
+      "description": "User-facing API receiving the approximated dependency pressure.",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.65,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.8,
+      "timeout_seconds": 4.5,
+      "resource_profile": {
+        "compute": 0.7,
+        "memory": 0.35,
+        "storage": 0.1,
+        "network": 0.5
+      }
+    },
+    {
+      "id": "identity_provider",
+      "display_name": "Identity Provider",
+      "description": "Centralized authentication dependency that can become a login bottleneck.",
+      "type": "identity_provider",
+      "geo": {
+        "latitude": 48.85,
+        "longitude": 2.35,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 6.0,
+      "timeout_seconds": 3.6,
+      "resource_profile": {
+        "compute": 0.55,
+        "memory": 0.4,
+        "storage": 0.35,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "feature_flag_service",
+      "display_name": "Feature Flag Service",
+      "description": "Runtime configuration dependency for safer rollouts and kill switches.",
+      "type": "feature_flag_service",
+      "geo": {
+        "latitude": 48.86,
+        "longitude": 2.36,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 9.0,
+      "timeout_seconds": 3.2,
+      "resource_profile": {
+        "compute": 0.35,
+        "memory": 0.3,
+        "storage": 0.25,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "ci_cd_pipeline",
+      "display_name": "CI/CD Pipeline",
+      "description": "Deployment safety system that represents release risk and rollback coordination.",
+      "type": "ci_cd_pipeline",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.0,
+      "timeout_seconds": 8.0,
+      "resource_profile": {
+        "compute": 0.65,
+        "memory": 0.45,
+        "storage": 0.45,
+        "network": 0.25
+      }
+    },
+    {
+      "id": "distributed_lock_service",
+      "display_name": "Distributed Lock Service",
+      "description": "Coordination point that serializes critical operations and exposes contention.",
+      "type": "distributed_lock_service",
+      "geo": {
+        "latitude": 50.09,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 4.0,
+      "timeout_seconds": 3.5,
+      "resource_profile": {
+        "compute": 0.4,
+        "memory": 0.35,
+        "storage": 0.3,
+        "network": 0.45
+      }
+    },
+    {
+      "id": "object_storage",
+      "display_name": "Object Storage",
+      "description": "Blob and static asset storage with high bandwidth and moderate access latency.",
+      "type": "object_storage",
+      "geo": {
+        "latitude": 53.55,
+        "longitude": 9.99,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 9.0,
+      "timeout_seconds": 5.0,
+      "resource_profile": {
+        "compute": 0.2,
+        "memory": 0.2,
+        "storage": 0.95,
+        "network": 0.65
+      }
+    },
+    {
+      "id": "timeseries_database",
+      "display_name": "Time Series Database",
+      "description": "Telemetry ingestion store that behaves like write-heavy observability storage.",
+      "type": "timeseries_database",
+      "geo": {
+        "latitude": 52.51,
+        "longitude": 13.38,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 5.5,
+      "resource_profile": {
+        "compute": 0.45,
+        "memory": 0.45,
+        "storage": 0.85,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "etl_pipeline",
+      "display_name": "ETL Pipeline",
+      "description": "Delayed data transformation path that turns operational events into batch work.",
+      "type": "batch_processor",
+      "geo": {
+        "latitude": 52.5,
+        "longitude": 13.42,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.5,
+      "timeout_seconds": 7.0,
+      "resource_profile": {
+        "compute": 0.7,
+        "memory": 0.45,
+        "storage": 0.65,
+        "network": 0.3
+      }
+    },
+    {
+      "id": "data_warehouse",
+      "display_name": "Data Warehouse",
+      "description": "Analytics store that isolates reporting workloads from production serving.",
+      "type": "data_warehouse",
+      "geo": {
+        "latitude": 52.49,
+        "longitude": 13.43,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.5,
+      "timeout_seconds": 7.0,
+      "resource_profile": {
+        "compute": 0.55,
+        "memory": 0.55,
+        "storage": 0.95,
+        "network": 0.3
+      }
+    },
+    {
+      "id": "ai_inference_gateway",
+      "display_name": "AI Inference Gateway",
+      "description": "Expensive inference entry point with compute cost and queue sensitivity.",
+      "type": "ai_inference_gateway",
+      "geo": {
+        "latitude": 51.05,
+        "longitude": 13.74,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.4,
+      "timeout_seconds": 6.0,
+      "resource_profile": {
+        "compute": 0.95,
+        "memory": 0.75,
+        "storage": 0.15,
+        "network": 0.45
+      }
+    },
+    {
+      "id": "vector_database",
+      "display_name": "Vector Database",
+      "description": "Semantic retrieval dependency for RAG and embedding search.",
+      "type": "vector_database",
+      "geo": {
+        "latitude": 51.06,
+        "longitude": 13.75,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.2,
+      "timeout_seconds": 5.8,
+      "resource_profile": {
+        "compute": 0.55,
+        "memory": 0.7,
+        "storage": 0.8,
+        "network": 0.35
+      }
+    }
+  ],
+  "links": [
+    {
+      "source": "global_users",
+      "target": "app_api",
+      "base_latency_seconds": 0.34,
+      "bandwidth_per_second": 34.0
+    },
+    {
+      "source": "global_users",
+      "target": "cdn",
+      "base_latency_seconds": 0.12,
+      "bandwidth_per_second": 95.0
+    },
+    {
+      "source": "cdn",
+      "target": "object_storage",
+      "base_latency_seconds": 0.22,
+      "bandwidth_per_second": 110.0
+    },
+    {
+      "source": "global_users",
+      "target": "dns_resolver",
+      "base_latency_seconds": 0.08,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "dns_resolver",
+      "target": "ddos_protection",
+      "base_latency_seconds": 0.09,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "ddos_protection",
+      "target": "graphql_gateway",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 70.0
+    },
+    {
+      "source": "graphql_gateway",
+      "target": "service_mesh",
+      "base_latency_seconds": 0.12,
+      "bandwidth_per_second": 90.0
+    },
+    {
+      "source": "service_mesh",
+      "target": "kubernetes_cluster",
+      "base_latency_seconds": 0.09,
+      "bandwidth_per_second": 100.0
+    },
+    {
+      "source": "kubernetes_cluster",
+      "target": "app_api",
+      "base_latency_seconds": 0.08,
+      "bandwidth_per_second": 100.0
+    },
+    {
+      "source": "app_api",
+      "target": "identity_provider",
+      "base_latency_seconds": 0.14,
+      "bandwidth_per_second": 50.0
+    },
+    {
+      "source": "app_api",
+      "target": "feature_flag_service",
+      "base_latency_seconds": 0.1,
+      "bandwidth_per_second": 70.0
+    },
+    {
+      "source": "app_api",
+      "target": "distributed_lock_service",
+      "base_latency_seconds": 0.16,
+      "bandwidth_per_second": 45.0
+    },
+    {
+      "source": "app_api",
+      "target": "timeseries_database",
+      "base_latency_seconds": 0.24,
+      "bandwidth_per_second": 35.0
+    },
+    {
+      "source": "timeseries_database",
+      "target": "etl_pipeline",
+      "base_latency_seconds": 0.35,
+      "bandwidth_per_second": 32.0
+    },
+    {
+      "source": "etl_pipeline",
+      "target": "data_warehouse",
+      "base_latency_seconds": 0.42,
+      "bandwidth_per_second": 28.0
+    },
+    {
+      "source": "app_api",
+      "target": "ai_inference_gateway",
+      "base_latency_seconds": 0.32,
+      "bandwidth_per_second": 24.0
+    },
+    {
+      "source": "ai_inference_gateway",
+      "target": "vector_database",
+      "base_latency_seconds": 0.24,
+      "bandwidth_per_second": 22.0
+    },
+    {
+      "source": "ci_cd_pipeline",
+      "target": "kubernetes_cluster",
+      "base_latency_seconds": 0.2,
+      "bandwidth_per_second": 30.0
+    }
+  ]
+}

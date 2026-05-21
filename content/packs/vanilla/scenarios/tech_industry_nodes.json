@@ -1,0 +1,175 @@
+{
+  "id": "tech_industry_nodes_lab",
+  "display_name": "Tech Industry Nodes Lab",
+  "description": "Sandbox catalog of common tech-industry systems using lightweight approximations: edge delivery, routing, security, orchestration, data engineering, coordination, and AI retrieval.",
+  "tags": [
+    "sandbox",
+    "systems",
+    "catalog",
+    "education"
+  ],
+  "sandbox_lab": true,
+  "archetype": "global_read_platform",
+  "minimum_tier": "geographic_scale",
+  "topology_template": "tech_industry_nodes_lab",
+  "traffic_pattern": "constant",
+  "turn_duration": {
+    "template": "template.turn_duration.operational_cycle"
+  },
+  "educational_focus": [
+    "scaling",
+    "queues",
+    "caching",
+    "reliability",
+    "latency",
+    "persistence"
+  ],
+  "guaranteed_pressures": [
+    "traffic",
+    "queue",
+    "compute",
+    "persistence",
+    "latency"
+  ],
+  "allowed_actions": [
+    "scale_up",
+    "enable_cache",
+    "clear_cache",
+    "add_cache",
+    "add_read_replica",
+    "add_queue",
+    "add_regional_cache",
+    "toggle_retries",
+    "throttle_traffic"
+  ],
+  "engineering_capacity": {
+    "frontend": 1,
+    "backend": 3,
+    "infrastructure": 4,
+    "data": 3,
+    "total": 14
+  },
+  "starting_actions": [
+    "scale_up",
+    "enable_cache",
+    "throttle_traffic"
+  ],
+  "unlockable_actions": [
+    "clear_cache",
+    "add_cache",
+    "add_read_replica",
+    "add_queue",
+    "add_regional_cache",
+    "toggle_retries"
+  ],
+  "recommended_actions": [
+    "scale_up",
+    "enable_cache",
+    "throttle_traffic",
+    "add_queue"
+  ],
+  "objectives": [
+    {
+      "objective_id": "observe_traffic_latency",
+      "starts_active": true
+    },
+    {
+      "objective_id": "stabilize_api_queue"
+    }
+  ],
+  "failure_conditions": [
+    "latency_under_6s"
+  ],
+  "events": [
+    "traffic_spike_40",
+    "database_slowdown",
+    "retry_storm",
+    "cache_warmup"
+  ],
+  "sandbox_events": [
+    "sandbox_traffic_spike",
+    "sandbox_retry_storm",
+    "sandbox_db_slowdown",
+    "sandbox_regional_traffic_spike",
+    "sandbox_recovery"
+  ],
+  "pressure_context": {
+    "frontend": {
+      "asset_weight": 0.08,
+      "realtime_intensity": 0.04
+    },
+    "backend": {
+      "request_load": 0.08,
+      "service_fragmentation": 0.12
+    },
+    "network": {
+      "bandwidth_pressure": 0.08,
+      "latency_sensitivity": 0.06,
+      "traffic_burstiness": 0.04
+    },
+    "database": {
+      "read_pressure": 0.08,
+      "write_pressure": 0.07,
+      "contention": 0.08,
+      "replication_lag": 0.04
+    },
+    "runtime": {
+      "cpu_pressure": 0.08,
+      "memory_pressure": 0.05,
+      "allocation_or_gc_pressure": 0.04,
+      "scheduling_pressure": 0.08
+    }
+  },
+  "pressure_signals": [
+    {
+      "domain": "backend",
+      "name": "Service Catalog Complexity",
+      "summary": "Many recognizable platform dependencies increase coordination, queue, and routing pressure."
+    }
+  ],
+  "request_types": {
+    "lightweight_share": 0.52,
+    "database_heavy_cacheable_share": 0.34,
+    "cache_key_space": 80
+  },
+  "retries": {
+    "enabled": true,
+    "max_retries": 1,
+    "retry_delay_seconds": 0.9
+  },
+  "phases": [
+    {
+      "id": "catalog_baseline",
+      "display_name": "Catalog baseline",
+      "event_message": "The platform starts with many useful dependencies but no single deep subsystem model.",
+      "start_turn": 1,
+      "duration_turns": 2,
+      "transition_duration": {
+        "template": "template.turn_duration.operational_cycle"
+      },
+      "traffic_multiplier": 1.08
+    },
+    {
+      "id": "dependency_pressure",
+      "display_name": "Dependency pressure",
+      "event_message": "Routing, auth, data, and AI dependencies make simple capacity choices less obvious.",
+      "start_turn": 3,
+      "duration_turns": 3,
+      "transition_duration": {
+        "template": "template.turn_duration.operational_cycle"
+      },
+      "traffic_multiplier": 1.36
+    },
+    {
+      "id": "stabilization_window",
+      "display_name": "Stabilization window",
+      "event_message": "Use existing actions to manage pressure without modeling each technology in depth.",
+      "start_turn": 6,
+      "duration_turns": 2,
+      "transition_duration": {
+        "template": "template.turn_duration.operational_cycle"
+      },
+      "traffic_multiplier": 1.22
+    }
+  ]
+}
