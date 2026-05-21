@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <deque>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 enum class UiLayer {
@@ -125,6 +126,7 @@ struct VisualFeedbackEvent {
 
 struct ActionFeedback {
     double timeSeconds = 0.0;
+    std::string actionId;
     std::string actionName;
     std::string target;
     std::string message;
@@ -144,6 +146,7 @@ struct PlannedIntervention {
     MechanicCommand command{};
     TopologyMutation mutation{};
     TopologyMutationType mutationType = TopologyMutationType::AddCache;
+    std::string actionId;
     std::string actionName;
     std::string target;
     std::string preview;
@@ -208,6 +211,7 @@ struct UiState {
     bool showGeoGrid = true;
     bool optionsMenuOpen = false;
     bool fullscreenToggleRequested = false;
+    bool resetScenarioRequested = false;
     bool packDroplistOpen = false;
     std::string requestedPackId;
     bool scenarioDroplistOpen = false;
@@ -232,7 +236,11 @@ struct UiState {
     bool sandboxStepRequested = false;
     bool placementActive = false;
     TopologyMutationType activeMutation = TopologyMutationType::AddCache;
+    std::string activeActionId;
     int placementCandidateIndex = 0;
+    int activeActionCategoryIndex = 0;
+    float nodeActionScrollOffset = 0.0f;
+    std::unordered_map<std::string, int> actionUseCounts;
     int hoveredActionIndex = -1;
     std::vector<EngineeringCost> hoveredActionEngineeringCosts;
     int selectedActionIndex = -1;

@@ -39,6 +39,11 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.timelineCategoryDroplistOpen = false;
     state.timelineFilterDroplistOpen = false;
     state.placementActive = false;
+    state.activeActionId.clear();
+    state.activeActionCategoryIndex = 0;
+    state.nodeActionScrollOffset = 0.0f;
+    state.actionUseCounts.clear();
+    state.resetScenarioRequested = false;
     state.hoveredActionIndex = -1;
     state.selectedActionIndex = -1;
     state.latestFeedback = feedback;

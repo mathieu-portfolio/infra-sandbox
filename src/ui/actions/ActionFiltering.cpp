@@ -4,23 +4,53 @@
 
 namespace actions_ui {
 
-std::string categoryFilterLabel(const std::vector<ActionCardModel>& cards, int index)
+std::vector<std::string> categoryFilterLabels(const std::vector<ActionCardModel>& cards)
 {
-    if (index == 0) return "All";
-    std::vector<std::string> categories;
+    std::vector<std::string> labels{"All"};
     for (const auto& card : cards) {
-        if (!card.available || card.categories.empty()) {
+        if (card.categories.empty()) {
             continue;
         }
-        if (std::find(categories.begin(), categories.end(), card.categories.front()) == categories.end()) {
-            categories.push_back(card.categories.front());
+        const std::string& category = card.categories.front();
+        if (std::find(labels.begin(), labels.end(), category) == labels.end()) {
+            labels.push_back(category);
         }
     }
-    if (index - 1 < static_cast<int>(categories.size())) {
-        return categories[static_cast<std::size_t>(index - 1)];
+    const bool hasRisky = std::find(labels.begin(), labels.end(), "Risky") != labels.end();
+    while (labels.size() < 4) {
+        static const char* fallback[] = {"Scaling", "Optimization", "Reliability"};
+        const std::string candidate = fallback[std::min(static_cast<int>(labels.size()) - 1, 2)];
+        if (std::find(labels.begin(), labels.end(), candidate) == labels.end()) {
+            labels.push_back(candidate);
+        } else {
+            break;
+        }
     }
-    static const char* fallback[] = {"Scaling", "Optimization", "Reliability"};
-    return fallback[std::min(index - 1, 2)];
+    if (labels.size() > 4) {
+        labels.resize(4);
+        if (hasRisky && std::find(labels.begin(), labels.end(), "Risky") == labels.end()) {
+            labels.back() = "Risky";
+        }
+    }
+    return labels;
+}
+
+std::string categoryFilterLabel(const std::vector<ActionCardModel>& cards, int index)
+{
+    const auto labels = categoryFilterLabels(cards);
+    if (index >= 0 && index < static_cast<int>(labels.size())) {
+        return labels[static_cast<std::size_t>(index)];
+    }
+    return "All";
+}
+
+bool actionMatchesCategory(const ActionCardModel& card, const std::vector<std::string>& labels, int index)
+{
+    if (index <= 0 || index >= static_cast<int>(labels.size())) {
+        return true;
+    }
+    const std::string& selected = labels[static_cast<std::size_t>(index)];
+    return std::find(card.categories.begin(), card.categories.end(), selected) != card.categories.end();
 }
 
 }

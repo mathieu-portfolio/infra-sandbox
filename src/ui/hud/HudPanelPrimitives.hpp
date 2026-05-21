@@ -10,6 +10,7 @@ Rectangle hudScenarioDroplistBounds(int screenWidth);
 Rectangle hudPackDroplistBounds(int screenWidth);
 Rectangle hudObjectivesDroplistBounds(int screenWidth);
 Rectangle hudPhaseButtonBounds(int screenWidth);
+Rectangle hudResetButtonBounds(int screenWidth);
 Rectangle hudFeedbackBounds(int screenWidth);
 Rectangle hudHelpBounds(int screenWidth);
 Rectangle hudOptionsButtonBounds(int screenWidth);

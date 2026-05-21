@@ -4,6 +4,8 @@
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/UiPrimitives.hpp"
 
+#include <algorithm>
+
 namespace {
 TopBarLayout topBarLayoutForWidth(int screenWidth)
 {
@@ -39,7 +41,15 @@ Rectangle hudObjectivesDroplistBounds(int screenWidth)
 
 Rectangle hudPhaseButtonBounds(int screenWidth)
 {
-    return topBarLayoutForWidth(screenWidth).phase;
+    Rectangle phase = topBarLayoutForWidth(screenWidth).phase;
+    phase.width = std::max(92.0f, phase.width - 82.0f);
+    return phase;
+}
+
+Rectangle hudResetButtonBounds(int screenWidth)
+{
+    Rectangle phase = topBarLayoutForWidth(screenWidth).phase;
+    return {phase.x + phase.width - 74.0f, phase.y, 74.0f, phase.height};
 }
 
 Rectangle hudFeedbackBounds(int screenWidth)

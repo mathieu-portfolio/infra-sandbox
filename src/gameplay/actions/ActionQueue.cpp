@@ -5,7 +5,7 @@
 
 namespace gameplay::actions {
 
-void ActionQueue::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const
+void ActionQueue::queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target, std::string actionId) const
 {
     if (worldActionRequiredBeforeNodeActions(uiState)) {
         uiState.latestFeedback = nodeActionGateMessage(uiState);
@@ -25,15 +25,19 @@ void ActionQueue::queueMechanic(const Simulation& simulation, UiState& uiState, 
     uiState.plannedInterventions.push_back({
         .kind = PlannedInterventionKind::Mechanic,
         .command = command,
+        .actionId = actionId,
         .actionName = std::move(actionName),
         .target = std::move(target),
         .preview = "Queued for the next turn.",
         .engineeringCosts = costs,
     });
+    if (!uiState.plannedInterventions.back().actionId.empty()) {
+        ++uiState.actionUseCounts[uiState.plannedInterventions.back().actionId];
+    }
     uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
 }
 
-void ActionQueue::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const
+void ActionQueue::queueTopologyMutation(const Simulation&, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview, std::string actionId) const
 {
     if (worldActionRequiredBeforeNodeActions(uiState)) {
         uiState.latestFeedback = nodeActionGateMessage(uiState);
@@ -51,11 +55,15 @@ void ActionQueue::queueTopologyMutation(const Simulation&, UiState& uiState, con
         .kind = PlannedInterventionKind::TopologyMutation,
         .mutation = mutation,
         .mutationType = type,
+        .actionId = actionId,
         .actionName = std::move(actionName),
         .target = std::move(target),
         .preview = std::move(preview),
         .engineeringCosts = costs,
     });
+    if (!uiState.plannedInterventions.back().actionId.empty()) {
+        ++uiState.actionUseCounts[uiState.plannedInterventions.back().actionId];
+    }
     uiState.latestFeedback = uiState.plannedInterventions.back().actionName + " queued. Resolve the turn to see consequences.";
 }
 

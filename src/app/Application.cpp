@@ -204,7 +204,13 @@ void Application::applySandboxRequests()
 
 void Application::applyUiRequests()
 {
-    gameplayPhaseController_.applyUiRequests(renderer_.uiManager().state(), session_, worldActionController_);
+    UiState& state = renderer_.uiManager().state();
+    if (state.resetScenarioRequested) {
+        state.resetScenarioRequested = false;
+        resetScenario();
+        return;
+    }
+    gameplayPhaseController_.applyUiRequests(state, session_, worldActionController_);
 }
 
 void Application::applyWindowRequests()

@@ -197,6 +197,11 @@ void HudPanel::update(UiContext& context, const Simulation&, const ScenarioManag
     if (objectivesDropdown_.update(context, scenarioManager, mouse)) {
         return;
     }
+    if (CheckCollisionPointRec(mouse, hudResetButtonBounds(context.screenWidth))) {
+        context.state->resetScenarioRequested = true;
+        context.state->latestFeedback = "Resetting scenario.";
+        return;
+    }
     if (optionsMenu_.update(context, mouse)) {
         return;
     }
@@ -226,6 +231,7 @@ void HudPanel::draw(const UiContext& context, const Simulation& simulation, cons
     DrawText(buffer, static_cast<int>(top.time.x), static_cast<int>(top.time.y + 10.0f), 15, {230, 237, 243, 255});
 
     drawHudTopButton(hudPhaseButtonBounds(context.screenWidth), phaseActionLabel(context.state->gameplayPhase), context.state->gameplayPhase == GameplayPhase::Planning);
+    drawHudTopButton(hudResetButtonBounds(context.screenWidth), "Reset", false);
     DrawText(phaseName(context.state->gameplayPhase), static_cast<int>(top.phaseLabel.x), static_cast<int>(top.phaseLabel.y + 10.0f), 14, {139, 148, 158, 255});
 
     objectivesDropdown_.drawField(context, scenarioManager);

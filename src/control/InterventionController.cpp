@@ -145,6 +145,7 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
             break;
         case InputAction::CancelPlacement:
             uiState.placementActive = false;
+            uiState.activeActionId.clear();
             break;
         case InputAction::ToggleCache:
             actionQueue.queueMechanic(simulation, uiState, {MechanicType::EnableCache}, "Toggle Cache", "Global cache behavior");
@@ -262,8 +263,9 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             const auto& card = cards[static_cast<std::size_t>(uiState.selectedActionIndex)];
             if (card.available && card.kind == ActionCardKind::Mechanic) {
                 const double amount = card.mechanic == MechanicType::ThrottleTraffic ? -1.0 : 1.5;
-                actionQueue.queueMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target);
+                actionQueue.queueMechanic(simulation, uiState, {card.mechanic, uiState.selection.nodeId, amount}, card.name, card.target, card.actionId);
             } else if (card.available && card.kind == ActionCardKind::TopologyMutation) {
+                uiState.activeActionId = card.actionId;
                 placementService.startPlacement(simulation, uiState, card.mutation);
             }
         }
@@ -306,6 +308,7 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
             break;
         case ActionCardKind::CancelPreview:
             uiState.placementActive = false;
+            uiState.activeActionId.clear();
             uiState.latestFeedback = "Topology preview cancelled.";
             break;
         }

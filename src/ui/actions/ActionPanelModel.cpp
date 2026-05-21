@@ -3,6 +3,7 @@
 #include "content/ContentRegistry.hpp"
 #include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/actions/EngineeringCapacityPanel.hpp"
+#include "ui/actions/ActionFiltering.hpp"
 #include "ui/core/UiCore.hpp"
 #include "ui/layout/RightSidebarLayout.hpp"
 #include "ui/core/UiLayout.hpp"
@@ -135,6 +136,12 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
             stateLabel = "Maxed";
         }
     }
+    const int used = state.actionUseCounts.count(definition.id) ? state.actionUseCounts.at(definition.id) : 0;
+    if (available && definition.useLimit > 0 && used >= definition.useLimit) {
+        available = false;
+        unavailableReason = "No uses remaining for this scenario.";
+        stateLabel = "Used";
+    }
     std::string capacityReason;
     if (available && exceedsEngineeringCapacity(state, definition.engineeringCosts, capacityReason)) {
         available = false;
@@ -144,6 +151,7 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
     return {
         .kind = ActionCardKind::Mechanic,
         .mechanic = definition.mechanic,
+        .actionId = definition.id,
         .name = definition.displayName,
         .description = definition.description,
         .target = selectedTarget(simulation, state),
@@ -167,6 +175,8 @@ ActionCardModel mechanicCard(const Simulation& simulation, const UiState& state,
         .currentScaleLevel = currentScaleLevel,
         .maxScaleLevel = maxScaleLevel,
         .available = available,
+        .useLimit = definition.useLimit,
+        .usesRemaining = std::max(0, definition.useLimit - (state.actionUseCounts.count(definition.id) ? state.actionUseCounts.at(definition.id) : 0)),
         .requiresConfirmation = definition.requiresConfirmation,
     };
 }
@@ -182,6 +192,12 @@ ActionCardModel topologyCard(const Simulation& simulation, const UiState& state,
         unavailableReason = "Insufficient regional deployment capacity.";
         stateLabel = "No capacity";
     }
+    const int used = state.actionUseCounts.count(definition.id) ? state.actionUseCounts.at(definition.id) : 0;
+    if (available && definition.useLimit > 0 && used >= definition.useLimit) {
+        available = false;
+        unavailableReason = "No uses remaining for this scenario.";
+        stateLabel = "Used";
+    }
     std::string capacityReason;
     if (available && exceedsEngineeringCapacity(state, definition.engineeringCosts, capacityReason)) {
         available = false;
@@ -191,6 +207,7 @@ ActionCardModel topologyCard(const Simulation& simulation, const UiState& state,
     return {
         .kind = ActionCardKind::TopologyMutation,
         .mechanic = definition.mechanic,
+        .actionId = definition.id,
         .mutation = definition.mutation,
         .name = definition.displayName,
         .description = definition.description,
@@ -214,6 +231,8 @@ ActionCardModel topologyCard(const Simulation& simulation, const UiState& state,
         .complexityCost = definition.complexityCost,
         .regionSlotUsage = definition.regionSlotUsage,
         .available = available,
+        .useLimit = definition.useLimit,
+        .usesRemaining = std::max(0, definition.useLimit - (state.actionUseCounts.count(definition.id) ? state.actionUseCounts.at(definition.id) : 0)),
         .requiresConfirmation = definition.requiresConfirmation,
     };
 }
@@ -325,25 +344,22 @@ std::vector<ActionCardModel> ActionPanelModel::buildCards(const Simulation& simu
 
     const ActionSectionsLayout layout = actionSectionsLayout(state, screenWidth, screenHeight);
     const Rectangle list = layout.actionList;
+    const auto labels = actions_ui::categoryFilterLabels(cards);
+    const int activeCategory = std::clamp(state.activeActionCategoryIndex, 0, static_cast<int>(labels.size()) - 1);
     const float columns = list.width >= 524.0f ? 2.0f : 1.0f;
     const float cardGap = 16.0f;
     const float cardWidth = columns > 1.0f ? (list.width - cardGap) * 0.5f : list.width;
     float x = list.x;
-    float y = list.y;
+    float y = list.y - std::max(0.0f, state.nodeActionScrollOffset);
     float rowHeight = 0.0f;
     const NodeActionCardView cardView;
     for (auto& card : cards) {
-        if (!card.available) {
+        if (!card.available || !actions_ui::actionMatchesCategory(card, labels, activeCategory)) {
             card.bounds = {};
             continue;
         }
 
         const float cardHeight = cardView.measureHeight(card, cardWidth);
-        if (y + cardHeight > list.y + list.height) {
-            card.bounds = {};
-            continue;
-        }
-
         card.bounds = {x, y, cardWidth, cardHeight};
         rowHeight = std::max(rowHeight, cardHeight);
 

@@ -19,6 +19,7 @@ enum class ActionCardKind {
 struct ActionCardModel {
     ActionCardKind kind = ActionCardKind::Mechanic;
     MechanicType mechanic = MechanicType::ScaleUp;
+    std::string actionId;
     TopologyMutationType mutation = TopologyMutationType::AddCache;
     std::string name;
     std::string description;
@@ -46,6 +47,8 @@ struct ActionCardModel {
     int regionSlotLimit = 0;
     int regionSlotUsage = 0;
     bool available = true;
+    int useLimit = 0;
+    int usesRemaining = 0;
     bool requiresConfirmation = false;
     Rectangle bounds{};
 };

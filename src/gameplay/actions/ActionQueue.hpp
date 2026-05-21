@@ -12,8 +12,8 @@ namespace gameplay::actions {
 
 class ActionQueue {
 public:
-    void queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target) const;
-    void queueTopologyMutation(const Simulation& simulation, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview) const;
+    void queueMechanic(const Simulation& simulation, UiState& uiState, const MechanicCommand& command, std::string actionName, std::string target, std::string actionId = {}) const;
+    void queueTopologyMutation(const Simulation& simulation, UiState& uiState, const TopologyMutation& mutation, TopologyMutationType type, std::string actionName, std::string target, std::string preview, std::string actionId = {}) const;
 };
 
 }

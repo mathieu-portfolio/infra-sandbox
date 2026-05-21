@@ -214,7 +214,17 @@ void WorldActionController::applyPlan(UiState& state, ScenarioSession& session) 
     if (action.complexityDelta > 0.0) {
         session.simulation().addComplexity(action.complexityDelta);
     }
-    state.actionHistory.push_back({session.simulation().timeSeconds(), action.name, "World", action.description, session.simulation().metrics(), false, true, 0.0});
+    state.actionHistory.push_back({
+        session.simulation().timeSeconds(),
+        action.id,
+        action.name,
+        "World",
+        action.description,
+        session.simulation().metrics(),
+        false,
+        true,
+        0.0,
+    });
     state.lastCapacityUsageSummary = state.lastCapacityUsageSummary.empty()
         ? "World action: " + action.name
         : state.lastCapacityUsageSummary + "; world action: " + action.name;
@@ -264,7 +274,17 @@ void WorldActionController::applyPlannedInterventions(UiState& state, ScenarioSe
                 });
             }
         }
-        state.actionHistory.push_back({session.simulation().timeSeconds(), planned.actionName, planned.target, planned.preview, session.simulation().metrics(), true, false, 4.0});
+        state.actionHistory.push_back({
+            session.simulation().timeSeconds(),
+            planned.actionId,
+            planned.actionName,
+            planned.target,
+            planned.preview,
+            session.simulation().metrics(),
+            true,
+            false,
+            4.0,
+        });
     }
     state.plannedInterventions.clear();
     clearPlan(state);

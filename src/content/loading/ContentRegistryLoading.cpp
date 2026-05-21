@@ -893,6 +893,7 @@ InterventionDefinition parseIntervention(const Json& object)
     intervention.maxScaleLevel = static_cast<int>(numberAt(object, "max_scale_level", intervention.maxScaleLevel));
     intervention.diminishingReturn = numberAt(object, "diminishing_return", intervention.diminishingReturn);
     intervention.regionSlotUsage = static_cast<int>(numberAt(object, "region_slot_usage", intervention.kind == InterventionKind::TopologyMutation ? 1.0 : 0.0));
+    intervention.useLimit = static_cast<int>(numberAt(object, "use_limit", intervention.useLimit));
     return intervention;
 }
 

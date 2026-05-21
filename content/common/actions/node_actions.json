@@ -51,7 +51,8 @@
     },
     "tags": [
       "cache"
-    ]
+    ],
+    "use_limit": 2
   },
   {
     "id": "throttle_traffic",
@@ -96,14 +97,14 @@
       "Traffic pressure shifts toward user-facing latency"
     ],
     "complexity_cost": 0.25,
-    "engineering_costs": {
-    },
+    "engineering_costs": {},
     "availability": {
       "requires_mechanic": "throttle_traffic"
     },
     "tags": [
       "traffic"
-    ]
+    ],
+    "use_limit": 2
   },
   {
     "id": "scale_up",
@@ -156,7 +157,8 @@
     },
     "tags": [
       "compute"
-    ]
+    ],
+    "use_limit": 3
   },
   {
     "id": "add_cache",
@@ -215,7 +217,8 @@
       "cache",
       "topology"
     ],
-    "show_usage_details": false
+    "show_usage_details": false,
+    "use_limit": 1
   },
   {
     "id": "add_read_replica",
@@ -272,7 +275,8 @@
       "database",
       "topology"
     ],
-    "show_usage_details": false
+    "show_usage_details": false,
+    "use_limit": 1
   },
   {
     "id": "add_queue",
@@ -332,7 +336,8 @@
       "queue",
       "topology"
     ],
-    "show_usage_details": false
+    "show_usage_details": false,
+    "use_limit": 1
   },
   {
     "id": "add_regional_cache",
@@ -394,7 +399,8 @@
       "geography",
       "topology"
     ],
-    "show_usage_details": false
+    "show_usage_details": false,
+    "use_limit": 1
   },
   {
     "id": "toggle_retries",
@@ -436,14 +442,14 @@
       "Reliability pressure shifts between retries and visible errors"
     ],
     "complexity_cost": 0.25,
-    "engineering_costs": {
-    },
+    "engineering_costs": {},
     "availability": {
       "requires_mechanic": "toggle_retries"
     },
     "tags": [
       "reliability"
-    ]
+    ],
+    "use_limit": 2
   },
   {
     "id": "clear_cache",
@@ -485,13 +491,123 @@
       "Read pressure shifts from cache back to persistence"
     ],
     "complexity_cost": 0.0,
-    "engineering_costs": {
-    },
+    "engineering_costs": {},
     "availability": {
       "requires_mechanic": "clear_cache"
     },
     "tags": [
       "cache"
-    ]
+    ],
+    "use_limit": 2
+  },
+  {
+    "id": "premature_cache_flush",
+    "display_name": "Flush Cache to Reduce Memory",
+    "icon_id": "action.generic",
+    "description": "Clear cached responses to free memory and force fresh downstream reads.",
+    "kind": "mechanic",
+    "mechanic": "clear_cache",
+    "target_types": [
+      "node"
+    ],
+    "affected_layers": [
+      "persistence",
+      "reliability"
+    ],
+    "node_types": [
+      "api_service",
+      "cache",
+      "cdn_edge"
+    ],
+    "categories": [
+      "Risky",
+      "Optimization"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "latency"
+    ],
+    "useful_when": "Use only when stale or poisoned cached data is the real problem, not when read traffic is already stressing storage.",
+    "architectural_pattern": "Cache Invalidation",
+    "technology_example": "Manual cache purge",
+    "expected_benefits": "Can remove stale entries and temporarily reduce cache memory pressure.",
+    "tradeoffs": "Often worsens latency and database pressure by forcing a cache miss storm.",
+    "positive_effects": [
+      "Stale cached data is removed"
+    ],
+    "negative_effects": [
+      "Database read pressure may spike",
+      "Average latency may worsen"
+    ],
+    "pressure_shifts": [
+      "Cache pressure shifts into persistence pressure"
+    ],
+    "complexity_cost": 0.35,
+    "engineering_costs": {
+      "backend": 1
+    },
+    "availability": {
+      "requires_mechanic": "clear_cache"
+    },
+    "tags": [
+      "misdiagnosis",
+      "cache"
+    ],
+    "use_limit": 1
+  },
+  {
+    "id": "scale_api_for_database_pain",
+    "display_name": "Scale API During DB Pain",
+    "icon_id": "action.scale_up",
+    "description": "Add API processing power even when the visible symptoms may be caused by a downstream database bottleneck.",
+    "kind": "mechanic",
+    "mechanic": "scale_up",
+    "target_types": [
+      "node"
+    ],
+    "affected_layers": [
+      "resources",
+      "persistence"
+    ],
+    "node_types": [
+      "api_service"
+    ],
+    "categories": [
+      "Risky",
+      "Scaling"
+    ],
+    "affected_pressures": [
+      "persistence",
+      "queue"
+    ],
+    "useful_when": "Use when API compute is truly the root bottleneck. It is a trap when queues are caused by downstream persistence.",
+    "architectural_pattern": "Premature Vertical Scaling",
+    "technology_example": "Larger API instance",
+    "expected_benefits": "May reduce local API queueing if compute is saturated.",
+    "tradeoffs": "Can push more requests into an already overloaded database path.",
+    "positive_effects": [
+      "Local API throughput may rise"
+    ],
+    "negative_effects": [
+      "Downstream database pressure can worsen",
+      "Extra capacity may solve the wrong layer"
+    ],
+    "pressure_shifts": [
+      "Compute pressure shifts into persistence pressure"
+    ],
+    "complexity_cost": 1.0,
+    "engineering_costs": {
+      "infrastructure": 1
+    },
+    "max_scale_level": 3,
+    "diminishing_return": 0.72,
+    "availability": {
+      "requires_mechanic": "scale_up"
+    },
+    "tags": [
+      "misdiagnosis",
+      "scaling"
+    ],
+    "use_limit": 1
   }
 ]

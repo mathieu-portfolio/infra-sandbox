@@ -199,6 +199,9 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
         {52, 43, 91, 230},
         {205, 190, 255, 255});
 
-    const std::string price = engineeringCostLabel(card.engineeringCosts);
-    drawTextClipped(price, {card.bounds.x + card.bounds.width - 142.0f, footerY + 2.0f, 130.0f, 16.0f}, 12, {86, 210, 151, 255});
+    std::string price = engineeringCostLabel(card.engineeringCosts);
+    if (card.useLimit > 0) {
+        price += " | " + std::to_string(card.usesRemaining) + "/" + std::to_string(card.useLimit);
+    }
+    drawTextClipped(price, {card.bounds.x + card.bounds.width - 162.0f, footerY + 2.0f, 150.0f, 16.0f}, 12, {86, 210, 151, 255});
 }

@@ -54,6 +54,7 @@ struct InterventionDefinition {
     int maxScaleLevel = 3;
     double diminishingReturn = 0.72;
     int regionSlotUsage = 0;
+    int useLimit = 2;
 };
 
 struct WorldActionDefinition {

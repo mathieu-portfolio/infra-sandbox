@@ -29,6 +29,11 @@ void ActionPlacementService::startPlacement(const Simulation& simulation, UiStat
     }
     uiState.placementActive = true;
     uiState.activeMutation = type;
+    if (uiState.activeActionId.empty()) {
+        if (const auto* intervention = interventionFor(mechanic)) {
+            uiState.activeActionId = intervention->id;
+        }
+    }
     uiState.placementCandidateIndex = 0;
     uiState.latestFeedback = std::string(topologyMutationName(type)) + " selected. Hover the map to preview a region, then click to queue placement.";
 }
@@ -72,7 +77,8 @@ void ActionPlacementService::confirmPlacement(Simulation& simulation, ScenarioMa
 
     const std::string feedback = feedbackForTopologyMutation(uiState.activeMutation, option.displayName);
     const ActionQueue queue;
-    queue.queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), option.displayName, feedback);
+    queue.queueTopologyMutation(simulation, uiState, preview.mutation, uiState.activeMutation, topologyMutationName(uiState.activeMutation), option.displayName, feedback, uiState.activeActionId);
+    uiState.activeActionId.clear();
     uiState.placementActive = false;
     (void)scenarioManager;
 }

@@ -255,10 +255,34 @@ void ActionPanel::update(UiContext& context, const Simulation& simulation)
     context.state->hoveredActionEngineeringCosts.clear();
     const ActionPanelModel model;
     const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
+    const ActionSectionsLayout actionsLayout = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
+    if (CheckCollisionPointRec(mouse, actionsLayout.actionList)) {
+        const float wheel = GetMouseWheelMove();
+        if (wheel != 0.0f) {
+            context.state->nodeActionScrollOffset = std::max(0.0f, context.state->nodeActionScrollOffset - wheel * 42.0f);
+            float contentBottom = actionsLayout.actionList.y;
+            for (const auto& card : cards) {
+                if (card.bounds.height > 0.0f) {
+                    contentBottom = std::max(contentBottom, card.bounds.y + card.bounds.height + context.state->nodeActionScrollOffset);
+                }
+            }
+            const float maxScroll = std::max(0.0f, contentBottom - (actionsLayout.actionList.y + actionsLayout.actionList.height));
+            context.state->nodeActionScrollOffset = std::min(context.state->nodeActionScrollOffset, maxScroll);
+        }
+    }
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
         const RightSidebarLayout panel = computeRightSidebarLayout(layout.rightSidebar);
+        const auto categoryLabels = actions_ui::categoryFilterLabels(cards);
+        for (int i = 0; i < 4 && i < static_cast<int>(categoryLabels.size()); ++i) {
+            if (CheckCollisionPointRec(mouse, actionsLayout.filters[i])) {
+                context.state->activeActionCategoryIndex = i;
+                context.state->nodeActionScrollOffset = 0.0f;
+                context.state->selectedActionIndex = -1;
+                return;
+            }
+        }
         constexpr int kNodeTabCount = static_cast<int>(NodeInspectionTab::Count);
         if (CheckCollisionPointRec(mouse, panel.tabs)) {
             for (int i = 0; i < kNodeTabCount; ++i) {
@@ -469,8 +493,10 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     const ActionSectionsLayout actions = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     DrawText("AVAILABLE NODE ACTIONS", static_cast<int>(actions.title.x), static_cast<int>(actions.title.y), 14, {230, 237, 243, 255});
     engineeringCapacityPanel_.draw(actions.capacity, *context.state);
+    const auto categoryLabels = actions_ui::categoryFilterLabels(cards);
+    context.state->activeActionCategoryIndex = std::clamp(context.state->activeActionCategoryIndex, 0, std::max(0, static_cast<int>(categoryLabels.size()) - 1));
     for (int i = 0; i < 4; ++i) {
-        drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == 0);
+        drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == context.state->activeActionCategoryIndex);
     }
     BeginScissorMode(static_cast<int>(actions.actionList.x - 2.0f), static_cast<int>(actions.actionList.y), static_cast<int>(actions.actionList.width + 4.0f), static_cast<int>(actions.actionList.height));
     if (cards.empty()) {
@@ -479,6 +505,9 @@ void ActionPanel::draw(const UiContext& context, const Simulation& simulation) c
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
         const auto& card = cards[static_cast<std::size_t>(i)];
         if (!card.available || card.bounds.height <= 0.0f) {
+            continue;
+        }
+        if (card.bounds.y + card.bounds.height < actions.actionList.y || card.bounds.y > actions.actionList.y + actions.actionList.height) {
             continue;
         }
         const bool highlighted = i == context.state->hoveredActionIndex || i == context.state->selectedActionIndex;

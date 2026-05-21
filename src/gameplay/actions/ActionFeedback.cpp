@@ -43,7 +43,17 @@ std::string feedbackForTopologyMutation(TopologyMutationType mutationType, const
 void recordActionFeedback(UiState& uiState, const Simulation& simulation, std::string actionName, std::string target, std::string message)
 {
     uiState.latestFeedback = message;
-    uiState.actionHistory.push_back({simulation.timeSeconds(), std::move(actionName), std::move(target), message, simulation.metrics(), true, false, 4.0});
+    uiState.actionHistory.push_back({
+        simulation.timeSeconds(),
+        {},
+        std::move(actionName),
+        std::move(target),
+        message,
+        simulation.metrics(),
+        true,
+        false,
+        4.0,
+    });
     while (uiState.actionHistory.size() > 8) {
         uiState.actionHistory.pop_front();
     }
