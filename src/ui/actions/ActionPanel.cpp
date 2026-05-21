@@ -2,6 +2,8 @@
 
 #include "core/topology/NodeDefinition.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
+#include "ui/actions/ActionPanelInteraction.hpp"
+#include "ui/actions/ActionPanelTabs.hpp"
 #include "ui/actions/cards/NodeActionCardView.hpp"
 #include "ui/widgets/IconRegistry.hpp"
 #include "ui/layout/RightSidebarLayout.hpp"
@@ -22,7 +24,6 @@
 #include <vector>
 
 namespace {
-
 Rectangle nodeBounds(const ui::UiNode& root, const char* id)
 {
     if (const ui::UiNode* node = root.find(id); node != nullptr) {
@@ -30,58 +31,6 @@ Rectangle nodeBounds(const ui::UiNode& root, const char* id)
     }
     return {};
 }
-
-struct ActionHeaderLayout {
-    Rectangle title;
-    Rectangle capacity;
-    Rectangle worldStatus;
-    Rectangle filters[4]{};
-};
-
-ActionHeaderLayout computeActionHeaderLayout(Rectangle bounds)
-{
-    auto root = ui::verticalStack("actionHeaderRoot");
-    ui::LayoutStyle rootStyle;
-    rootStyle.gap = 8.0f;
-    root->style(rootStyle);
-
-    auto title = std::make_unique<ui::PanelNode>("title");
-    title->style(ui::fixedHeight(18.0f));
-    root->add(std::move(title));
-
-    auto capacity = std::make_unique<ui::PanelNode>("capacity");
-    capacity->style(ui::fixedHeight(140.0f));
-    root->add(std::move(capacity));
-
-    auto filters = ui::grid(4, "filters");
-    ui::LayoutStyle filtersStyle;
-    filtersStyle.heightMode = ui::SizeMode::Fixed;
-    filtersStyle.fixedHeight = 26.0f;
-    filtersStyle.widthMode = ui::SizeMode::Flex;
-    filtersStyle.flexGrow = 1.0f;
-    filters->style(filtersStyle);
-    filters->columnGap = 10.0f;
-    filters->fixedCellHeight = 26.0f;
-    for (int i = 0; i < 4; ++i) {
-        auto filter = std::make_unique<ui::PanelNode>("filter" + std::to_string(i));
-        filter->style(ui::fixedHeight(26.0f));
-        filters->add(std::move(filter));
-    }
-    root->add(std::move(filters));
-
-    root->measure({bounds.width, bounds.height});
-    root->layout(bounds);
-
-    ActionHeaderLayout layout;
-    layout.title = nodeBounds(*root, "title");
-    layout.capacity = nodeBounds(*root, "capacity");
-    layout.worldStatus = {};
-    for (int i = 0; i < 4; ++i) {
-        layout.filters[i] = nodeBounds(*root, ("filter" + std::to_string(i)).c_str());
-    }
-    return layout;
-}
-
 
 Rectangle tabBounds(Rectangle bounds, int index, int count)
 {
@@ -248,73 +197,9 @@ void drawLockedObservability(Rectangle bounds, NodeInspectionTab tab)
 
 void ActionPanel::update(UiContext& context, const Simulation& simulation)
 {
-    if (context.state == nullptr) {
-        return;
-    }
-    context.state->hoveredActionIndex = -1;
-    context.state->hoveredActionEngineeringCosts.clear();
-    const ActionPanelModel model;
-    const auto cards = model.buildCards(simulation, *context.state, context.screenWidth, context.screenHeight);
-    const ActionSectionsLayout actionsLayout = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
-    const Vector2 mouse = GetMousePosition();
-    if (CheckCollisionPointRec(mouse, actionsLayout.actionList)) {
-        const float wheel = GetMouseWheelMove();
-        if (wheel != 0.0f) {
-            context.state->nodeActionScrollOffset = std::max(0.0f, context.state->nodeActionScrollOffset - wheel * 42.0f);
-            float contentBottom = actionsLayout.actionList.y;
-            for (const auto& card : cards) {
-                if (card.bounds.height > 0.0f) {
-                    contentBottom = std::max(contentBottom, card.bounds.y + card.bounds.height + context.state->nodeActionScrollOffset);
-                }
-            }
-            const float maxScroll = std::max(0.0f, contentBottom - (actionsLayout.actionList.y + actionsLayout.actionList.height));
-            context.state->nodeActionScrollOffset = std::min(context.state->nodeActionScrollOffset, maxScroll);
-        }
-    }
-    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
-        const RightSidebarLayout panel = computeRightSidebarLayout(layout.rightSidebar);
-        const auto categoryLabels = actions_ui::categoryFilterLabels(cards);
-        for (int i = 0; i < 4 && i < static_cast<int>(categoryLabels.size()); ++i) {
-            if (CheckCollisionPointRec(mouse, actionsLayout.filters[i])) {
-                context.state->activeActionCategoryIndex = i;
-                context.state->nodeActionScrollOffset = 0.0f;
-                context.state->selectedActionIndex = -1;
-                return;
-            }
-        }
-        constexpr int kNodeTabCount = static_cast<int>(NodeInspectionTab::Count);
-        if (CheckCollisionPointRec(mouse, panel.tabs)) {
-            for (int i = 0; i < kNodeTabCount; ++i) {
-                if (CheckCollisionPointRec(mouse, tabBounds(panel.tabs, i, kNodeTabCount))) {
-                    context.state->activeNodeInspectionTab = nodeTabAt(i);
-                    return;
-                }
-            }
-        }
-    }
-    context.state->hoveredWorldActionIndex = -1;
-    if (context.state->eventPopupMode != EventPopupMode::None) {
-        return;
-    }
-    if (context.state->gameplayPhase == GameplayPhase::Planning && context.state->worldActionDraftVisible) {
-        const Rectangle overlay = WorldActionOverlay::overlayBounds(context.screenWidth, context.screenHeight);
-        const int count = static_cast<int>(context.state->worldActionDraft.size());
-        for (int i = 0; i < static_cast<int>(context.state->worldActionDraft.size()); ++i) {
-            if (CheckCollisionPointRec(mouse, WorldActionOverlay::draftCardBounds(overlay, i, count))) {
-                context.state->hoveredWorldActionIndex = i;
-                return;
-            }
-        }
-    }
-    for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
-        if (CheckCollisionPointRec(mouse, cards[static_cast<std::size_t>(i)].bounds)) {
-            context.state->hoveredActionIndex = i;
-            context.state->hoveredActionEngineeringCosts = cards[static_cast<std::size_t>(i)].engineeringCosts;
-            return;
-        }
-    }
+    ActionPanelInteraction{}.update(context, simulation);
 }
+
 
 void ActionPanel::draw(const UiContext& context, const Simulation& simulation) const
 {
