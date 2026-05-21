@@ -18,6 +18,16 @@ Rectangle centeredTopBarField(Rectangle bounds)
     constexpr float height = 34.0f;
     return {bounds.x, bounds.y + (bounds.height - height) * 0.5f, bounds.width, height};
 }
+
+float specializationPanelContentHeight()
+{
+    constexpr float titleAndTopPadding = 38.0f;
+    constexpr float specializationRows = 5.0f * 28.0f;
+    constexpr float gapBeforeDetails = 6.0f;
+    constexpr float frontendDetailRows = 10.0f * 18.0f;
+    constexpr float bottomPadding = 22.0f;
+    return titleAndTopPadding + specializationRows + gapBeforeDetails + frontendDetailRows + bottomPadding;
+}
 }
 
 UiLayout computeUiLayout(int screenWidth, int screenHeight)
@@ -188,7 +198,7 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
     overview->style(ui::fixedHeight(166.0f));
     root->add(std::move(overview));
     auto specializations = std::make_unique<ui::PanelNode>("specializations");
-    specializations->style(ui::fixedHeight(224.0f));
+    specializations->style(ui::contentSize(0.0f, specializationPanelContentHeight()));
     root->add(std::move(specializations));
     auto alerts = std::make_unique<ui::PanelNode>("alerts");
     alerts->style(ui::fixedHeight(132.0f));

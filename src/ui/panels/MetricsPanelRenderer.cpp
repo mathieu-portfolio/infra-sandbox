@@ -18,13 +18,11 @@
 namespace {
 Rectangle specializationButton(Rectangle bounds, int index)
 {
-    constexpr float gap = 6.0f;
-    constexpr int columns = 3;
-    const float buttonWidth = (bounds.width - 28.0f - gap * static_cast<float>(columns - 1)) / static_cast<float>(columns);
+    constexpr float rowHeight = 28.0f;
     return {
-        bounds.x + 14.0f + static_cast<float>(index % columns) * (buttonWidth + gap),
-        bounds.y + 38.0f + static_cast<float>(index / columns) * 30.0f,
-        buttonWidth,
+        bounds.x + 14.0f,
+        bounds.y + 38.0f + static_cast<float>(index) * rowHeight,
+        bounds.width - 28.0f,
         24.0f,
     };
 }
@@ -50,8 +48,8 @@ void metricRow(const char* icon, const char* label, const char* value, float x, 
 
 void compactMetricRow(const char* label, const char* value, float x, float y, float width, Color valueColor)
 {
-    drawTextClipped(label, {x, y, width - 56.0f, 12.0f}, 11, {139, 148, 158, 255});
-    drawTextClipped(value, {x + width - 54.0f, y, 54.0f, 12.0f}, 11, valueColor);
+    drawTextClipped(label, {x, y, width - 72.0f, 15.0f}, 12, {139, 148, 158, 255});
+    drawTextClipped(value, {x + width - 70.0f, y, 70.0f, 15.0f}, 12, valueColor);
 }
 
 void drawSpecializationButton(Rectangle bounds, const metrics_panel::SpecializationSummary& summary, bool selected)
@@ -59,39 +57,36 @@ void drawSpecializationButton(Rectangle bounds, const metrics_panel::Specializat
     const Color healthColor = metrics_panel::scoreColor(summary.health, true);
     DrawRectangleRounded(bounds, 0.16f, 6, selected ? Color{32, 42, 54, 245} : Color{22, 27, 34, 220});
     DrawRectangleRoundedLines(bounds, 0.16f, 6, selected ? Color{89, 196, 255, 170} : Color{70, 86, 104, 110});
-    DrawCircleV({bounds.x + 9.0f, bounds.y + bounds.height * 0.5f}, 3.5f, healthColor);
-    const char* trend = summary.trend > 1.0 ? " +" : (summary.trend < -1.0 ? " -" : "");
-    char label[32];
-    std::snprintf(label, sizeof(label), "%s%s", summary.label, trend);
-    drawTextClipped(label, {bounds.x + 17.0f, bounds.y + 5.0f, bounds.width - 20.0f, 14.0f}, 12, summary.implemented ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
+    DrawCircleV({bounds.x + 10.0f, bounds.y + bounds.height * 0.5f}, 3.5f, healthColor);
+    drawTextClipped(summary.label, {bounds.x + 22.0f, bounds.y + 5.0f, bounds.width - 30.0f, 14.0f}, 12, summary.implemented ? Color{230, 237, 243, 255} : Color{139, 148, 158, 255});
 }
 
 void drawFrontendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
-    const float y = bounds.y + 100.0f;
+    const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
     BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.perceivedLatency * 1000.0);
-    compactMetricRow("perceivedLatency", buffer, x, y, width, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    compactMetricRow("Perceived latency", buffer, x, y, width, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.renderLatency * 1000.0);
-    compactMetricRow("renderLatency", buffer, x, y + 13.0f, width, metrics.frontend.renderLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    compactMetricRow("Render latency", buffer, x, y + 18.0f, width, metrics.frontend.renderLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.framePressure);
-    compactMetricRow("framePressure", buffer, x, y + 26.0f, width, metrics_panel::scoreColor(metrics.frontend.framePressure, false));
+    compactMetricRow("Frame pressure", buffer, x, y + 36.0f, width, metrics_panel::scoreColor(metrics.frontend.framePressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.assetBandwidth);
-    compactMetricRow("assetBandwidth", buffer, x, y + 39.0f, width, metrics_panel::scoreColor(metrics.frontend.assetBandwidth, false));
+    compactMetricRow("Asset bandwidth", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.frontend.assetBandwidth, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.interactionDelay * 1000.0);
-    compactMetricRow("interactionDelay", buffer, x, y + 52.0f, width, metrics.frontend.interactionDelay > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
+    compactMetricRow("Interaction delay", buffer, x, y + 72.0f, width, metrics.frontend.interactionDelay > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.websocketPressure);
-    compactMetricRow("websocketPressure", buffer, x, y + 65.0f, width, metrics_panel::scoreColor(metrics.frontend.websocketPressure, false));
+    compactMetricRow("WebSocket pressure", buffer, x, y + 90.0f, width, metrics_panel::scoreColor(metrics.frontend.websocketPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.sessionWarmth);
-    compactMetricRow("sessionWarmth", buffer, x, y + 78.0f, width, metrics_panel::scoreColor(metrics.frontend.sessionWarmth, true));
+    compactMetricRow("Session warmth", buffer, x, y + 108.0f, width, metrics_panel::scoreColor(metrics.frontend.sessionWarmth, true));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.frontend.sessionStalenessRisk);
-    compactMetricRow("sessionStalenessRisk", buffer, x, y + 91.0f, width, metrics_panel::scoreColor(metrics.frontend.sessionStalenessRisk, false));
+    compactMetricRow("Staleness risk", buffer, x, y + 126.0f, width, metrics_panel::scoreColor(metrics.frontend.sessionStalenessRisk, false));
     if (const MetricContribution* contribution = metrics_panel::strongestContribution(metrics, MetricContributionDomain::Frontend); contribution != nullptr) {
         std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
-        compactMetricRow(contribution->label, buffer, x, y + 107.0f, width, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
+        compactMetricRow(contribution->label, buffer, x, y + 148.0f, width, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
     }
     EndScissorMode();
 }
@@ -109,20 +104,20 @@ void drawBackendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
-    const float y = bounds.y + 100.0f;
+    const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
     BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.requestLoad);
-    compactMetricRow("requestLoad", buffer, x, y, width, metrics_panel::scoreColor(metrics.backend.requestLoad, false));
+    compactMetricRow("Request load", buffer, x, y, width, metrics_panel::scoreColor(metrics.backend.requestLoad, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.queuePressure);
-    compactMetricRow("queuePressure", buffer, x, y + 13.0f, width, metrics_panel::scoreColor(metrics.backend.queuePressure, false));
+    compactMetricRow("Queue pressure", buffer, x, y + 18.0f, width, metrics_panel::scoreColor(metrics.backend.queuePressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.computeIntensity);
-    compactMetricRow("computeIntensity", buffer, x, y + 26.0f, width, metrics_panel::scoreColor(metrics.backend.computeIntensity, false));
+    compactMetricRow("Compute intensity", buffer, x, y + 36.0f, width, metrics_panel::scoreColor(metrics.backend.computeIntensity, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.serviceFragmentation);
-    compactMetricRow("serviceFragmentation", buffer, x, y + 39.0f, width, metrics_panel::scoreColor(metrics.backend.serviceFragmentation, false));
+    compactMetricRow("Service fragmentation", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.backend.serviceFragmentation, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.reliabilityRisk);
-    compactMetricRow("reliabilityRisk", buffer, x, y + 52.0f, width, metrics_panel::scoreColor(metrics.backend.reliabilityRisk, false));
-    drawContributionRow(metrics, MetricContributionDomain::Backend, x, y + 68.0f, width);
+    compactMetricRow("Reliability risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.backend.reliabilityRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Backend, x, y + 94.0f, width);
     EndScissorMode();
 }
 
@@ -130,18 +125,18 @@ void drawNetworkDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
-    const float y = bounds.y + 100.0f;
+    const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
     BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.bandwidthPressure);
-    compactMetricRow("bandwidthPressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.network.bandwidthPressure, false));
+    compactMetricRow("Bandwidth pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.network.bandwidthPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.latencySensitivity);
-    compactMetricRow("latencySensitivity", buffer, x, y + 13.0f, width, metrics_panel::scoreColor(metrics.network.latencySensitivity, false));
+    compactMetricRow("Latency sensitivity", buffer, x, y + 18.0f, width, metrics_panel::scoreColor(metrics.network.latencySensitivity, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.trafficBurstiness);
-    compactMetricRow("trafficBurstiness", buffer, x, y + 26.0f, width, metrics_panel::scoreColor(metrics.network.trafficBurstiness, false));
+    compactMetricRow("Traffic burstiness", buffer, x, y + 36.0f, width, metrics_panel::scoreColor(metrics.network.trafficBurstiness, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.deliveryPressure);
-    compactMetricRow("deliveryPressure", buffer, x, y + 39.0f, width, metrics_panel::scoreColor(metrics.network.deliveryPressure, false));
-    drawContributionRow(metrics, MetricContributionDomain::Network, x, y + 55.0f, width);
+    compactMetricRow("Delivery pressure", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.network.deliveryPressure, false));
+    drawContributionRow(metrics, MetricContributionDomain::Network, x, y + 76.0f, width);
     EndScissorMode();
 }
 
@@ -149,20 +144,20 @@ void drawDatabaseDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
-    const float y = bounds.y + 100.0f;
+    const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
     BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.readPressure);
-    compactMetricRow("readPressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.database.readPressure, false));
+    compactMetricRow("Read pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.database.readPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.writePressure);
-    compactMetricRow("writePressure", buffer, x, y + 13.0f, width, metrics_panel::scoreColor(metrics.database.writePressure, false));
+    compactMetricRow("Write pressure", buffer, x, y + 18.0f, width, metrics_panel::scoreColor(metrics.database.writePressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.contention);
-    compactMetricRow("contention", buffer, x, y + 26.0f, width, metrics_panel::scoreColor(metrics.database.contention, false));
+    compactMetricRow("Contention", buffer, x, y + 36.0f, width, metrics_panel::scoreColor(metrics.database.contention, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.replicationLag);
-    compactMetricRow("replicationLag", buffer, x, y + 39.0f, width, metrics_panel::scoreColor(metrics.database.replicationLag, false));
+    compactMetricRow("Replication lag", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.database.replicationLag, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.persistenceRisk);
-    compactMetricRow("persistenceRisk", buffer, x, y + 52.0f, width, metrics_panel::scoreColor(metrics.database.persistenceRisk, false));
-    drawContributionRow(metrics, MetricContributionDomain::Database, x, y + 68.0f, width);
+    compactMetricRow("Persistence risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.database.persistenceRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Database, x, y + 94.0f, width);
     EndScissorMode();
 }
 
@@ -170,20 +165,20 @@ void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
 {
     char buffer[32];
     const float x = bounds.x + 14.0f;
-    const float y = bounds.y + 100.0f;
+    const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
     BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.cpuPressure);
-    compactMetricRow("cpuPressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.runtime.cpuPressure, false));
+    compactMetricRow("CPU pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.runtime.cpuPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.memoryPressure);
-    compactMetricRow("memoryPressure", buffer, x, y + 13.0f, width, metrics_panel::scoreColor(metrics.runtime.memoryPressure, false));
+    compactMetricRow("Memory pressure", buffer, x, y + 18.0f, width, metrics_panel::scoreColor(metrics.runtime.memoryPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.allocationOrGcPressure);
-    compactMetricRow("allocationOrGcPressure", buffer, x, y + 26.0f, width, metrics_panel::scoreColor(metrics.runtime.allocationOrGcPressure, false));
+    compactMetricRow("Alloc / GC pressure", buffer, x, y + 36.0f, width, metrics_panel::scoreColor(metrics.runtime.allocationOrGcPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.schedulingPressure);
-    compactMetricRow("schedulingPressure", buffer, x, y + 39.0f, width, metrics_panel::scoreColor(metrics.runtime.schedulingPressure, false));
+    compactMetricRow("Scheduling pressure", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.runtime.schedulingPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.executionRisk);
-    compactMetricRow("executionRisk", buffer, x, y + 52.0f, width, metrics_panel::scoreColor(metrics.runtime.executionRisk, false));
-    drawContributionRow(metrics, MetricContributionDomain::Runtime, x, y + 68.0f, width);
+    compactMetricRow("Execution risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.runtime.executionRisk, false));
+    drawContributionRow(metrics, MetricContributionDomain::Runtime, x, y + 94.0f, width);
     EndScissorMode();
 }
 }
@@ -228,14 +223,10 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
             metrics_panel::summaryFor(summaries, specialization),
             specialization == context.state->selectedMetricsSpecialization);
     }
-    const metrics_panel::SpecializationSummary& selectedSummary = metrics_panel::summaryFor(summaries, context.state->selectedMetricsSpecialization);
-    std::snprintf(buffer, sizeof(buffer), "%.0f", selectedSummary.health);
-    drawTextClipped(selectedSummary.label, {x + 14.0f, y + 94.0f, 112.0f, 12.0f}, 11, {230, 237, 243, 255});
-    drawTextClipped(buffer, {x + width - 58.0f, y + 94.0f, 44.0f, 12.0f}, 11, metrics_panel::scoreColor(selectedSummary.health, true));
     if (!metrics.activePressureSignals.empty()) {
         const auto& signal = metrics.activePressureSignals.front();
         const std::string label = signal.temporary ? signal.name + " (event)" : signal.name;
-        drawTextClipped(label, {x + 92.0f, y + 94.0f, width - 164.0f, 12.0f}, 11, {245, 184, 76, 255});
+        drawTextClipped(label, {x + 14.0f, specializations.y + specializations.height - 18.0f, width - 28.0f, 14.0f}, 11, {245, 184, 76, 255});
     }
     switch (context.state->selectedMetricsSpecialization) {
     case MetricsSpecialization::Frontend:

@@ -11,13 +11,11 @@
 namespace {
 Rectangle specializationButton(Rectangle bounds, int index)
 {
-    constexpr float gap = 6.0f;
-    constexpr int columns = 3;
-    const float buttonWidth = (bounds.width - 28.0f - gap * static_cast<float>(columns - 1)) / static_cast<float>(columns);
+    constexpr float rowHeight = 28.0f;
     return {
-        bounds.x + 14.0f + static_cast<float>(index % columns) * (buttonWidth + gap),
-        bounds.y + 38.0f + static_cast<float>(index / columns) * 30.0f,
-        buttonWidth,
+        bounds.x + 14.0f,
+        bounds.y + 38.0f + static_cast<float>(index) * rowHeight,
+        bounds.width - 28.0f,
         24.0f,
     };
 }
