@@ -253,29 +253,23 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     drawPanelFrame(alerts, "Alerts");
     BeginScissorMode(static_cast<int>(alerts.x), static_cast<int>(alerts.y), static_cast<int>(alerts.width), static_cast<int>(alerts.height));
     int row = 0;
-    for (const auto& hint : view.pressure().hints) {
-        if (row >= 3) {
-            break;
+    const float scrollY = context.state != nullptr ? context.state->alertsScrollOffset : 0.0f;
+    auto drawAlertRow = [&](const char* iconId, const std::string& text, Color iconColor) {
+        const float rowY = y + 40.0f + static_cast<float>(row) * 32.0f - scrollY;
+        if (rowY > alerts.y - 32.0f && rowY < alerts.y + alerts.height) {
+            IconRegistry::instance().drawIcon(iconId, {x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, iconColor);
+            drawTextClipped(text, {x + 38.0f, rowY, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         }
-        IconRegistry::instance().drawIcon("alert.hint", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {245, 184, 76, 255});
-        drawTextClipped(hint, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         ++row;
+    };
+    for (const auto& hint : view.pressure().hints) {
+        drawAlertRow("alert.hint", hint, {245, 184, 76, 255});
     }
     for (const auto& pattern : view.pressure().suspiciousPatterns) {
-        if (row >= 3) {
-            break;
-        }
-        IconRegistry::instance().drawIcon("alert.pattern", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {151, 111, 255, 255});
-        drawTextClipped(pattern, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
-        ++row;
+        drawAlertRow("alert.pattern", pattern, {151, 111, 255, 255});
     }
     for (const auto& explanation : view.pressure().explanations) {
-        if (row >= 3) {
-            break;
-        }
-        IconRegistry::instance().drawIcon("alert.explanation", {x + 14.0f, y + 42.0f + row * 32.0f, 16.0f, 16.0f}, {89, 196, 255, 255});
-        drawTextClipped(explanation, {x + 38.0f, y + 40.0f + row * 32.0f, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
-        ++row;
+        drawAlertRow("alert.explanation", explanation, {89, 196, 255, 255});
     }
     if (row == 0) {
         IconRegistry::instance().drawIcon("alert.empty_state", {x + 14.0f, y + 42.0f, 16.0f, 16.0f}, {86, 210, 151, 255});

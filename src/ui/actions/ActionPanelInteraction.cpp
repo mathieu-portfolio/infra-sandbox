@@ -5,6 +5,7 @@
 #include "ui/actions/ActionPanelTabs.hpp"
 #include "ui/actions/WorldActionOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "ui/core/ScrollHandling.hpp"
 #include "ui/layout/RightSidebarLayout.hpp"
 
 #include "raylib.h"
@@ -23,20 +24,14 @@ void ActionPanelInteraction::update(UiContext& context, const UiFrameView& view)
     const auto cards = model.buildCards(view, *context.state, context.screenWidth, context.screenHeight);
     const ActionSectionsLayout actionsLayout = model.actionSectionsLayout(*context.state, context.screenWidth, context.screenHeight);
     const Vector2 mouse = GetMousePosition();
-    if (CheckCollisionPointRec(mouse, actionsLayout.actionList)) {
-        const float wheel = GetMouseWheelMove();
-        if (wheel != 0.0f) {
-            context.state->nodeActionScrollOffset = std::max(0.0f, context.state->nodeActionScrollOffset - wheel * 42.0f);
-            float contentBottom = actionsLayout.actionList.y;
-            for (const auto& card : cards) {
-                if (card.bounds.height > 0.0f) {
-                    contentBottom = std::max(contentBottom, card.bounds.y + card.bounds.height + context.state->nodeActionScrollOffset);
-                }
-            }
-            const float maxScroll = std::max(0.0f, contentBottom - (actionsLayout.actionList.y + actionsLayout.actionList.height));
-            context.state->nodeActionScrollOffset = std::min(context.state->nodeActionScrollOffset, maxScroll);
+    float actionContentBottom = actionsLayout.actionList.y;
+    for (const auto& card : cards) {
+        if (card.bounds.height > 0.0f) {
+            actionContentBottom = std::max(actionContentBottom, card.bounds.y + card.bounds.height + context.state->nodeActionScrollOffset);
         }
     }
+    const float actionContentHeight = std::max(0.0f, actionContentBottom - actionsLayout.actionList.y);
+    (void)ui::updateScrollOffset(actionsLayout.actionList, actionContentHeight, GetMouseWheelMove(), mouse, context.state->nodeActionScrollOffset);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
         const RightSidebarLayout panel = computeRightSidebarLayout(layout.rightSidebar);

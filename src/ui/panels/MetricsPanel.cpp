@@ -2,6 +2,7 @@
 
 #include "ui/panels/MetricsPanelRenderer.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "ui/core/ScrollHandling.hpp"
 
 #include "raylib.h"
 
@@ -26,14 +27,23 @@ Rectangle sandboxButton(float x, float y, float width, int index)
 }
 }
 
-void MetricsPanel::update(UiContext& context, const UiFrameView&)
+void MetricsPanel::update(UiContext& context, const UiFrameView& view)
 {
-    if (context.state == nullptr || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (context.state == nullptr) {
         return;
     }
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
     const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
     const Vector2 mouse = GetMousePosition();
+
+
+    const int alertRows = static_cast<int>(view.pressure().hints.size() + view.pressure().suspiciousPatterns.size() + view.pressure().explanations.size());
+    const float alertsContentHeight = 40.0f + static_cast<float>(std::max(1, alertRows)) * 32.0f + 10.0f;
+    (void)ui::updateScrollOffset(left.alerts, alertsContentHeight, GetMouseWheelMove(), mouse, context.state->alertsScrollOffset);
+
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        return;
+    }
 
     if (context.state->showMetrics && left.specializations.height > 0.0f) {
         for (int i = 0; i < static_cast<int>(MetricsSpecialization::Count); ++i) {

@@ -3,6 +3,7 @@
 #include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/UiPrimitives.hpp"
+#include "ui/core/ScrollHandling.hpp"
 
 #include "raylib.h"
 
@@ -287,16 +288,30 @@ void drawTimelineMenu(Rectangle field, const std::vector<const char*>& labels)
 }
 }
 
-void TimelinePanel::update(UiContext& context, const UiFrameView&, const UiScenarioView&)
+void TimelinePanel::update(UiContext& context, const UiFrameView& view, const UiScenarioView& scenarioView)
 {
-    if (context.state == nullptr || !IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+    if (context.state == nullptr) {
         return;
     }
 
     const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const BottomPanelLayout bottom = computeBottomPanelLayout(layout.bottomPanel);
     const Rectangle categoryField = categoryDroplistBounds(layout.bottomPanel);
     const Rectangle filterField = filterDroplistBounds(layout.bottomPanel);
     const Vector2 mouse = GetMousePosition();
+    const auto activityRows = buildActivityRows(*context.state, view, scenarioView);
+    int matchingRows = 0;
+    for (const auto& row : activityRows) {
+        if (rowMatches(row, *context.state)) {
+            ++matchingRows;
+        }
+    }
+    const float timelineContentHeight = static_cast<float>(std::max(1, matchingRows)) * 22.0f;
+    (void)ui::updateScrollOffset(bottom.rows, timelineContentHeight, GetMouseWheelMove(), mouse, context.state->timelineScrollOffset);
+    if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        return;
+    }
+
     constexpr std::array<TimelineCategory, 7> categories{
         TimelineCategory::All,
         TimelineCategory::Objectives,
@@ -377,27 +392,30 @@ void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, cons
     drawChart({bottom.charts.x + 52.0f + chartW * 4.0f, bottom.charts.y, chartW, bottom.charts.height}, "Cache (%)", {151, 111, 255, 255}, context.state->metricsHistory, 4);
 
     int row = 0;
-    const int timelineY = static_cast<int>(bottom.rows.y);
-    const int maxRows = std::max(4, static_cast<int>(bottom.rows.height / 22.0f));
+    const float timelineY = bottom.rows.y - context.state->timelineScrollOffset;
     const auto rows = buildActivityRows(*context.state, view, scenarioView);
+    BeginScissorMode(static_cast<int>(bottom.rows.x), static_cast<int>(bottom.rows.y), static_cast<int>(bottom.rows.width), static_cast<int>(bottom.rows.height));
     for (const auto& activity : rows) {
-        if (row >= maxRows || !rowMatches(activity, *context.state)) {
+        if (!rowMatches(activity, *context.state)) {
             continue;
         }
-        const float y = static_cast<float>(timelineY + row * 22);
-        const Color color = categoryColor(activity.category);
-        const std::string timeLabel = scenarioView.visibleCalendarLabel();
-        IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
-        drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
-        drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
-        drawTextClipped(activity.detail, {panel.x + 322.0f, y, panel.width - 482.0f, 16.0f}, 12, {139, 148, 158, 255});
-        drawCategoryBadge({panel.x + panel.width - 118.0f, y - 1.0f, 104.0f, 18.0f}, activity.category);
+        const float y = timelineY + static_cast<float>(row) * 22.0f;
+        if (y > bottom.rows.y - 22.0f && y < bottom.rows.y + bottom.rows.height) {
+            const Color color = categoryColor(activity.category);
+            const std::string timeLabel = scenarioView.visibleCalendarLabel();
+            IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
+            drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
+            drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
+            drawTextClipped(activity.detail, {panel.x + 322.0f, y, panel.width - 482.0f, 16.0f}, 12, {139, 148, 158, 255});
+            drawCategoryBadge({panel.x + panel.width - 118.0f, y - 1.0f, 104.0f, 18.0f}, activity.category);
+        }
         ++row;
     }
 
     if (row == 0) {
-        drawTextClipped("No events match the selected filters.", {panel.x + 14.0f, static_cast<float>(timelineY), panel.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
+        drawTextClipped("No events match the selected filters.", {panel.x + 14.0f, bottom.rows.y, panel.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
     }
+    EndScissorMode();
 
     if (context.state->timelineCategoryDroplistOpen) {
         drawTimelineMenu(categoryField, {"All Events", "Objectives", "Traffic", "Change", "Database", "Reliability", "System"});

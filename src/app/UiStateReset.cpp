@@ -42,6 +42,8 @@ void resetUiStateForScenario(UiState& state, const std::string& feedback)
     state.activeActionId.clear();
     state.activeActionCategoryIndex = 0;
     state.nodeActionScrollOffset = 0.0f;
+    state.alertsScrollOffset = 0.0f;
+    state.timelineScrollOffset = 0.0f;
     state.actionUseCounts.clear();
     state.resetScenarioRequested = false;
     state.hoveredActionIndex = -1;

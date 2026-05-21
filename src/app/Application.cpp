@@ -3,6 +3,8 @@
 #include "app/UiStateReset.hpp"
 #include "content/ContentRegistry.hpp"
 
+#include "ui/core/UiLayout.hpp"
+
 #include "raylib.h"
 
 #include <algorithm>
@@ -232,6 +234,8 @@ void Application::applyWindowRequests()
 bool Application::shouldBlockCameraInput() const
 {
     const UiState& uiState = renderer_.uiManager().state();
-    return uiState.eventPopupMode != EventPopupMode::None
+    const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
+    return pointInUiPanel(GetMousePosition(), layout)
+        || uiState.eventPopupMode != EventPopupMode::None
         || (uiState.gameplayPhase == GameplayPhase::Planning && uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty());
 }

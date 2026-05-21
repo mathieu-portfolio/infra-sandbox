@@ -252,6 +252,8 @@ struct UiState {
     int placementCandidateIndex = 0;
     int activeActionCategoryIndex = 0;
     float nodeActionScrollOffset = 0.0f;
+    float alertsScrollOffset = 0.0f;
+    float timelineScrollOffset = 0.0f;
     std::unordered_map<std::string, int> actionUseCounts;
     int hoveredActionIndex = -1;
     std::vector<EngineeringCost> hoveredActionEngineeringCosts;
