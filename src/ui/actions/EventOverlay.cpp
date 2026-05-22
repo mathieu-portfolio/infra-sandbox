@@ -77,13 +77,13 @@ struct EventOverlayLayout {
     std::vector<Rectangle> rows;
 };
 
-EventOverlayLayout buildEventOverlayLayout(int screenWidth, int screenHeight, EventPopupMode mode, const std::vector<EventLogEntry>& events)
+EventOverlayLayout buildEventOverlayLayout(int screenWidth, int screenHeight, EventPopupMode mode, const std::vector<EventLogEntry>& events, const DockLayoutState& dockState = {})
 {
     const bool planning = mode == EventPopupMode::PlanningStart;
-    const float screenW = static_cast<float>(screenWidth);
-    const float screenH = static_cast<float>(screenHeight);
-    const float width = std::clamp(screenW - 120.0f, 360.0f, 760.0f);
-    const float maxHeight = std::max(220.0f, screenH - 170.0f);
+    const UiLayout uiLayout = computeUiLayout(screenWidth, screenHeight, dockState);
+    const Rectangle worldView = uiLayout.worldView;
+    const float width = std::clamp(worldView.width - 96.0f, 360.0f, 760.0f);
+    const float maxHeight = std::max(220.0f, worldView.height - 96.0f);
     const float rowWidth = width - 44.0f;
 
     auto root = ui::verticalStack("eventOverlay");
@@ -145,7 +145,7 @@ EventOverlayLayout buildEventOverlayLayout(int screenWidth, int screenHeight, Ev
 
     const ui::Size measured = root->measure({width, maxHeight});
     const float height = std::min(maxHeight, measured.height);
-    const Rectangle overlay{screenW * 0.5f - width * 0.5f, screenH * 0.5f - height * 0.5f, width, height};
+    const Rectangle overlay{worldView.x + worldView.width * 0.5f - width * 0.5f, worldView.y + worldView.height * 0.5f - height * 0.5f, width, height};
     root->layout(overlay);
 
     EventOverlayLayout layout;
@@ -195,7 +195,8 @@ void EventOverlay::draw(const UiContext& context, const UiScenarioView& scenario
         context.screenWidth,
         context.screenHeight,
         context.state->eventPopupMode,
-        context.state->eventPopupEvents);
+        context.state->eventPopupEvents,
+        context.state->dockLayout);
 
     DrawRectangleRounded(layout.overlay, 0.025f, 8, {9, 16, 27, 248});
     DrawRectangleRoundedLines(layout.overlay, 0.025f, 8, {70, 86, 104, 150});

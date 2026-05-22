@@ -174,8 +174,8 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     timelinePanel_.draw(context, view, view.scenario);
     selectionPanel_.draw(context, view);
     debugPanel_.draw(context, view);
-    hudPanel_.draw(context, view, view.scenario, packManager);
     actionPanel_.drawPlanningOverlays(context, view.scenario);
+    hudPanel_.draw(context, view, view.scenario, packManager);
     drawDockResizeHandles(computeDockLayout(state_.dockLayout, GetScreenWidth(), GetScreenHeight()), state_.dockLayout);
 }
 

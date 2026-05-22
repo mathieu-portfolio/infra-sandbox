@@ -213,8 +213,10 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
                 : "Event recap reviewed. Continue analysis.";
             return;
         }
-        uiState.suppressMapSelectionOnce = true;
-        return;
+        if (!pointInUiPanel(event.mousePosition, layout)) {
+            uiState.suppressMapSelectionOnce = true;
+            return;
+        }
     }
 
     if (uiState.gameplayPhase != GameplayPhase::Planning) {

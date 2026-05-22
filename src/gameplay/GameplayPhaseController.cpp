@@ -16,10 +16,20 @@ void GameplayPhaseController::reset()
     transitionReturnsToObservation_ = false;
 }
 
-void GameplayPhaseController::beginScenarioGroundingSimulation(UiState& state, ScenarioSession& session, const WorldActionController& worldActions)
+void GameplayPhaseController::prepareScenarioGrounding(UiState& state, std::string feedback)
 {
     transitionReturnsToObservation_ = true;
+    state.gameplayPhase = GameplayPhase::Planning;
     state.transitionPlaybackScale = 24.0;
+    state.transitionDurationLabel = "initial operational cycle";
+    state.latestFeedback = feedback.empty()
+        ? "Scenario loaded. Press the phase button to run the initial operational cycle."
+        : std::move(feedback);
+}
+
+void GameplayPhaseController::beginScenarioGroundingSimulation(UiState& state, ScenarioSession& session, const WorldActionController& worldActions)
+{
+    prepareScenarioGrounding(state);
     beginTransition(state, session, worldActions);
     state.transitionDurationLabel = "initial operational cycle";
     state.latestFeedback = "Running the initial operational cycle to establish traffic, queues, and pressure.";
@@ -71,9 +81,9 @@ void GameplayPhaseController::beginTransition(UiState& state, ScenarioSession& s
 {
     const GameplayDuration& duration = session.scenarioManager().currentTransitionDuration();
     state.transitionTargetSimulatedSeconds = duration.simulationSeconds;
-    state.transitionDurationLabel = duration.label.empty()
-        ? std::string("platform evolution")
-        : duration.label;
+    state.transitionDurationLabel = transitionReturnsToObservation_
+        ? std::string("initial operational cycle")
+        : (duration.label.empty() ? std::string("platform evolution") : duration.label);
     const double calendarDays = gameplayDurationCalendarDays(duration);
     session.scenarioManager().setCalendarProgressionScale(duration.simulationSeconds > 0.0 ? calendarDays / duration.simulationSeconds : 0.0);
     session.scenarioManager().beginTurn();

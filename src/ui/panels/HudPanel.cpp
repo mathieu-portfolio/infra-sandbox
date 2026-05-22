@@ -171,6 +171,18 @@ void HudPanel::update(UiContext& context, const UiFrameView&, const UiScenarioVi
     }
 
     const Vector2 mouse = GetMousePosition();
+    if (handleViewModeBar(context, mouse)) {
+        return;
+    }
+    if (packDropdown_.update(context, packManager, mouse)) {
+        return;
+    }
+    if (scenarioDropdown_.update(context, scenarioView, mouse)) {
+        return;
+    }
+    if (objectivesDropdown_.update(context, scenarioView, mouse)) {
+        return;
+    }
     if (context.state->eventPopupMode != EventPopupMode::None) {
         const EventPopupMode mode = context.state->eventPopupMode;
         const Rectangle button = EventOverlay::acknowledgeButtonBounds(
@@ -185,20 +197,7 @@ void HudPanel::update(UiContext& context, const UiFrameView&, const UiScenarioVi
             if (mode == EventPopupMode::PlanningStart && !context.state->worldActionDraft.empty()) {
                 context.state->worldActionDraftVisible = true;
             }
-            return;
         }
-        return;
-    }
-    if (handleViewModeBar(context, mouse)) {
-        return;
-    }
-    if (packDropdown_.update(context, packManager, mouse)) {
-        return;
-    }
-    if (scenarioDropdown_.update(context, scenarioView, mouse)) {
-        return;
-    }
-    if (objectivesDropdown_.update(context, scenarioView, mouse)) {
         return;
     }
     if (CheckCollisionPointRec(mouse, hudResetButtonBounds(context.screenWidth))) {

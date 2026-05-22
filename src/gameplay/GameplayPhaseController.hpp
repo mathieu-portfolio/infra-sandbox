@@ -11,6 +11,7 @@
 class GameplayPhaseController {
 public:
     void reset();
+    void prepareScenarioGrounding(UiState& state, std::string feedback = {});
     void beginScenarioGroundingSimulation(UiState& state, ScenarioSession& session, const WorldActionController& worldActions);
     void applyUiRequests(UiState& state, ScenarioSession& session, const WorldActionController& worldActions);
     void beginTransition(UiState& state, ScenarioSession& session, const WorldActionController& worldActions);

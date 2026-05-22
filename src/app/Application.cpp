@@ -42,7 +42,7 @@ Application::Application()
     for (const auto& error : content::ContentRegistry::instance().loadErrors()) {
         TraceLog(LOG_WARNING, "Content: %s", error.c_str());
     }
-    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
+    initializeLoadedScenario("Scenario loaded. Press the phase button to run the initial operational cycle.");
 }
 
 Application::~Application()
@@ -118,18 +118,18 @@ void Application::handleInput()
 void Application::resetScenario()
 {
     session_.reset();
-    initializeLoadedScenario("Scenario reset. Running an initial operational cycle.");
+    initializeLoadedScenario("Scenario reset. Press the phase button to run the initial operational cycle.");
 }
 
 void Application::loadDefaultPackScenario()
 {
     const content::ContentPackMetadata& metadata = content::ContentRegistry::instance().packMetadata();
     if (!metadata.defaultScenarioId.empty() && session_.loadScenario(metadata.defaultScenarioId)) {
-        initializeLoadedScenario("Content pack loaded. Running the default scenario's initial operational cycle.");
+        initializeLoadedScenario("Content pack loaded. Press the phase button to run the default scenario's initial operational cycle.");
         return;
     }
     session_.reloadDefaultScenario();
-    initializeLoadedScenario("Content pack loaded. Running the default scenario's initial operational cycle.");
+    initializeLoadedScenario("Content pack loaded. Press the phase button to run the default scenario's initial operational cycle.");
 }
 
 void Application::loadRequestedPack(const std::string& packId)
@@ -152,7 +152,7 @@ void Application::loadScenario(std::size_t scenarioIndex)
         return;
     }
 
-    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
+    initializeLoadedScenario("Scenario loaded. Press the phase button to run the initial operational cycle.");
 }
 
 void Application::loadScenario(const std::string& scenarioId)
@@ -161,7 +161,7 @@ void Application::loadScenario(const std::string& scenarioId)
         return;
     }
 
-    initializeLoadedScenario("Scenario loaded. Running an initial operational cycle.");
+    initializeLoadedScenario("Scenario loaded. Press the phase button to run the initial operational cycle.");
 }
 
 void Application::initializeLoadedScenario(const std::string& feedback)
@@ -170,7 +170,7 @@ void Application::initializeLoadedScenario(const std::string& feedback)
     resetUiStateForScenario(state, feedback);
     gameplayPhaseController_.reset();
     session_.simulation().setPaused(true);
-    gameplayPhaseController_.beginScenarioGroundingSimulation(state, session_, worldActionController_);
+    gameplayPhaseController_.prepareScenarioGrounding(state, feedback);
 }
 
 void Application::applyPendingScenarioSelection()
