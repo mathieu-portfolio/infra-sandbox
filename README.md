@@ -48,4 +48,4 @@ Views:
 ## Documentation
 
 - [Architecture](docs/architecture-and-rendering.md)
-- [Simulation](simulation-and-content.md)
+- [Simulation](docs/simulation-and-content.md)
