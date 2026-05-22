@@ -52,7 +52,7 @@ void Renderer::drawDependencyHighlights(const rendering::viewmodels::RenderFrame
     const Simulation& simulation = frame.simulation;
     const GeoLayoutFrame& layout = frame.geoLayout;
 
-    const int selectedNodeId = uiManager_.state().selection.nodeId;
+    const int selectedNodeId = frame.uiState.selection.nodeId;
     if (selectedNodeId < 0) {
         return;
     }

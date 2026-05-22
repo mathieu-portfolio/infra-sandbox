@@ -28,7 +28,7 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
         const Vector2 center = worldToScreen(nodeLayout->displayPosition, width, height, camera);
         const Color healthColor = colorForHealth(node.health);
         const Color definitionColor = toRaylib(definition.color);
-        const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, uiManager_.state());
+        const Color overlayTint = uiManager_.overlayController().nodeTint(node, simulation, frame.uiState);
         const std::string iconId = iconIdForNode(node.type);
         const bool hasIcon = IconRegistry::instance().hasIcon(iconId);
         const float actionPulse = visualFeedback_.nodeActionPulse(node.id);
@@ -50,7 +50,6 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
             const float radius = definition.defaultVisualSize * 0.5f;
             DrawCircleV(center, radius + 12.0f, {definitionColor.r, definitionColor.g, definitionColor.b, 35});
             IconRegistry::instance().drawIcon(iconId, {center.x - radius, center.y - radius, radius * 2.0f, radius * 2.0f}, definitionColor);
-            DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius + 8.0f, healthColor);
         } else if (definition.renderStyle == NodeRenderStyle::DemandPulse) {
             const float trafficPulse = pulse(simulation.timeSeconds(), 4.0, node.id);
             const float radius = 28.0f + static_cast<float>(node.requestRatePerSecond) * 2.0f + trafficPulse * 8.0f;
@@ -100,7 +99,7 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
             DrawCircleV(center, 58.0f, overlayTint);
         }
 
-        if (uiManager_.state().selection.nodeId == node.id) {
+        if (frame.uiState.selection.nodeId == node.id) {
             DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 64.0f, {230, 237, 243, 230});
         }
 

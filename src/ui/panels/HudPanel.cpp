@@ -48,6 +48,13 @@ UiViewMode viewModeAt(int index)
 
 void selectViewMode(UiState& state, UiViewMode mode)
 {
+    if (state.activeViewMode == mode) {
+        return;
+    }
+
+    state.viewTransition.previous = state.activeViewMode;
+    state.viewTransition.current = mode;
+    state.viewTransition.progress = 0.0f;
     state.activeViewMode = mode;
     state.activeOverlay = overlayForViewMode(mode);
     state.scenarioDroplistOpen = false;

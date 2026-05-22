@@ -97,6 +97,7 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
     state_.engineeringCapacityPreviewVisible = hasActiveCapacityPreview(state_);
     updateActionObservations(simulation);
     updateMetricHistory(simulation);
+    updateViewTransition(GetFrameTime());
     const UiFrameView view = buildUiFrameView(simulation, scenarioManager);
     hudPanel_.update(context, view, view.scenario, packManager);
     metricsPanel_.update(context, view);
@@ -104,6 +105,24 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
     actionPanel_.update(context, view);
     timelinePanel_.update(context, view, view.scenario);
     debugPanel_.update(context, view);
+}
+
+void UiManager::updateViewTransition(float deltaSeconds)
+{
+    auto& transition = state_.viewTransition;
+    if (!transition.active()) {
+        transition.previous = state_.activeViewMode;
+        transition.current = state_.activeViewMode;
+        transition.progress = 1.0f;
+        return;
+    }
+
+    const float duration = std::max(0.01f, transition.durationSeconds);
+    transition.progress = std::min(1.0f, transition.progress + deltaSeconds / duration);
+    if (transition.progress >= 1.0f) {
+        transition.previous = state_.activeViewMode;
+        transition.current = state_.activeViewMode;
+    }
 }
 
 void UiManager::updateActionObservations(const Simulation& simulation)

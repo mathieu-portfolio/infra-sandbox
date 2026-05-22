@@ -11,6 +11,8 @@
 #include "simulation/core/Simulation.hpp"
 #include "ui/UiManager.hpp"
 
+#include "raylib.h"
+
 class Renderer {
 public:
     explicit Renderer(const ScenarioDefinition& scenario);
@@ -26,6 +28,11 @@ private:
     void drawQueueBars(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
     void drawClusters(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
     void drawLabels(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawWorld(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void drawWorldToTexture(RenderTexture2D& target, const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera);
+    void ensureTransitionTargets(int width, int height);
+    void releaseTransitionTargets();
+    void drawTextureFullscreen(Texture2D texture, float alpha) const;
     void drawMutationPreview(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera) const;
 
 public:
@@ -38,4 +45,9 @@ private:
     GeoLayoutSystem geoLayoutSystem_;
     UiManager uiManager_;
     VisualFeedbackSystem visualFeedback_;
+    RenderTexture2D previousViewTarget_{};
+    RenderTexture2D currentViewTarget_{};
+    int transitionTargetWidth_ = 0;
+    int transitionTargetHeight_ = 0;
+    bool hasTransitionTargets_ = false;
 };

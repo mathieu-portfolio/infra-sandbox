@@ -62,6 +62,15 @@ enum class OverlayMode {
     RetryAmplification
 };
 
+struct TopologyViewTransition {
+    UiViewMode previous = UiViewMode::Overview;
+    UiViewMode current = UiViewMode::Overview;
+    float progress = 1.0f;
+    float durationSeconds = 0.25f;
+
+    [[nodiscard]] bool active() const { return progress < 1.0f && previous != current; }
+};
+
 
 enum class NodeInspectionTab {
     Overview,
@@ -213,6 +222,7 @@ struct UiState {
     std::string lastCapacityUsageSummary;
     UiViewMode activeViewMode = UiViewMode::Overview;
     OverlayMode activeOverlay = OverlayMode::Bottlenecks;
+    TopologyViewTransition viewTransition{};
     UiSelection selection{};
     NodeInspectionTab activeNodeInspectionTab = NodeInspectionTab::Overview;
     ObservabilityState observability{};

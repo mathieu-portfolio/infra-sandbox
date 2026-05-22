@@ -25,6 +25,7 @@ public:
 private:
     void updateActionObservations(const Simulation& simulation);
     void updateMetricHistory(const Simulation& simulation);
+    void updateViewTransition(float deltaSeconds);
 
     UiState state_{};
     OverlayController overlayController_{};
