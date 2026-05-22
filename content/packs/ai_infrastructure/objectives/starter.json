@@ -2,10 +2,10 @@
   {
     "id": "scale_ai_inference",
     "display_name": "Scale AI Inference",
-    "description": "Serve AI requests without saturating compute capacity.",
+    "description": "Keep the AI serving path responsive while expensive compute requests increase.",
     "type": "pressure_below",
     "condition": "pressure_below",
-    "summary": "Serve AI requests without saturating compute capacity.",
+    "summary": "Keep AI compute and queue pressure under control.",
     "tags": [
       "ai",
       "compute",
@@ -13,9 +13,21 @@
       "latency"
     ],
     "pressure": "compute",
-    "threshold": 0.55,
-    "duration_turns": [
-      "ai"
-    ]
+    "threshold": 0.62,
+    "duration_turns": 3
+  },
+  {
+    "id": "ai_latency_under_5s",
+    "display_name": "AI Latency Under 5s",
+    "description": "Avoid letting inference latency dominate the whole request path.",
+    "type": "latency_below",
+    "condition": "latency_below",
+    "summary": "Keep p95 latency under five seconds during AI demand spikes.",
+    "tags": [
+      "ai",
+      "latency"
+    ],
+    "threshold_seconds": 5.0,
+    "duration_turns": 4
   }
 ]

@@ -10,7 +10,7 @@
     "location": {
       "template": "template.location.node_type",
       "args": {
-        "node_type": "service_mesh"
+        "node_type": "api_service"
       }
     },
     "trigger": {
@@ -32,16 +32,15 @@
     },
     "duration_turns": 2,
     "tags": [
-      "common",
       "service_mesh",
       "retries",
-      "reliability"
+      "platform"
     ]
   },
   {
     "id": "platform_kubernetes_autoscaling_lag",
     "display_name": "Autoscaling Lag",
-    "description": "Load rises faster than the cluster can schedule enough new capacity.",
+    "description": "Load rises faster than the worker pool can add capacity.",
     "category": "platform",
     "moment": "runtime",
     "weight": 0.65,
@@ -49,7 +48,7 @@
     "location": {
       "template": "template.location.node_type",
       "args": {
-        "node_type": "kubernetes_cluster"
+        "node_type": "worker"
       }
     },
     "trigger": {
@@ -60,17 +59,20 @@
     },
     "effect": {
       "type": "degrade_node_capacity",
+      "processing_capacity_multiplier": {
+        "min": 0.72,
+        "max": 0.88
+      },
       "latency_multiplier": {
-        "min": 1.18,
-        "max": 1.4
+        "min": 1.15,
+        "max": 1.35
       }
     },
     "duration_turns": 2,
     "tags": [
-      "common",
-      "kubernetes",
       "autoscaling",
-      "capacity"
+      "worker",
+      "platform"
     ]
   }
 ]

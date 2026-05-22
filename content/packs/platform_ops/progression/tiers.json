@@ -1,0 +1,39 @@
+[
+  {
+    "id": "platform_foundations",
+    "display_name": "Platform Foundations",
+    "description": "Understand platform work as automation around capacity, rollouts, retries, and operational feedback loops.",
+    "tags": [
+      "platform"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Failure rate"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "toggle_retries",
+      "clear_cache"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry",
+      "failure"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "queue",
+      "worker",
+      "database",
+      "cache"
+    ]
+  }
+]

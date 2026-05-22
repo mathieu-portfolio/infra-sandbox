@@ -1,0 +1,20 @@
+[
+  {
+    "id": "botnet_rotation",
+    "display_name": "Botnet Rotation",
+    "description": "Traffic sources rotate, so simple throttling reduces but does not eliminate pressure.",
+    "tags": [
+      "security",
+      "abuse"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "request_load": 0.08,
+        "queue_pressure": 0.08
+      },
+      "network": {
+        "latency_sensitivity": 0.04
+      }
+    }
+  }
+]

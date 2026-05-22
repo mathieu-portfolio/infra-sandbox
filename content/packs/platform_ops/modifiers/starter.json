@@ -1,0 +1,19 @@
+[
+  {
+    "id": "autoscaling_delay",
+    "display_name": "Autoscaling Delay",
+    "description": "Capacity changes arrive after pressure has already built up.",
+    "tags": [
+      "platform",
+      "autoscaling"
+    ],
+    "pressure_effects": {
+      "backend": {
+        "queue_pressure": 0.06
+      },
+      "runtime": {
+        "scheduling_pressure": 0.06
+      }
+    }
+  }
+]

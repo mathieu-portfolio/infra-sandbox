@@ -2,7 +2,7 @@
   {
     "id": "ai_feature_launch",
     "display_name": "AI Feature Launch",
-    "description": "A new AI feature sends slower and more expensive requests through inference.",
+    "description": "A new AI feature sends slower and more expensive requests through the backend path.",
     "category": "ai",
     "moment": "runtime",
     "weight": 0.65,
@@ -10,7 +10,7 @@
     "location": {
       "template": "template.location.node_type",
       "args": {
-        "node_type": "ai_inference_gateway"
+        "node_type": "api_service"
       }
     },
     "trigger": {
@@ -32,7 +32,6 @@
     },
     "duration_turns": 2,
     "tags": [
-      "common",
       "ai",
       "inference",
       "compute"
@@ -41,7 +40,7 @@
   {
     "id": "ai_vector_search_reindex",
     "display_name": "Vector Reindex",
-    "description": "Embedding updates make semantic retrieval slower while the index catches up.",
+    "description": "Embedding updates make retrieval slower while the storage path catches up.",
     "category": "ai",
     "moment": "runtime",
     "weight": 0.45,
@@ -49,7 +48,7 @@
     "location": {
       "template": "template.location.node_type",
       "args": {
-        "node_type": "vector_database"
+        "node_type": "database"
       }
     },
     "trigger": {
@@ -71,10 +70,9 @@
     },
     "duration_turns": 2,
     "tags": [
-      "common",
       "ai",
-      "vector_database",
-      "retrieval"
+      "retrieval",
+      "database"
     ]
   }
 ]

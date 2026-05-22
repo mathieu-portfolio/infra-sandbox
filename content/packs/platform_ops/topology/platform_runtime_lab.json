@@ -1,0 +1,111 @@
+{
+  "id": "platform_runtime_lab",
+  "display_name": "Platform Runtime Lab",
+  "description": "A Kubernetes cluster and service mesh sit on the hot path, making autoscaling lag and retry amplification visible.",
+  "tags": [
+    "scenario",
+    "educational"
+  ],
+  "regions": [
+    "Europe",
+    "NorthAmerica"
+  ],
+  "nodes": [
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "request_rate_per_second": 3.0
+    },
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 2.4
+    },
+    {
+      "id": "edge_gateway",
+      "display_name": "Edge gateway",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 4.8,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "service_mesh",
+      "display_name": "Service mesh",
+      "type": "service_mesh",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.66,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.4,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "kubernetes_cluster",
+      "display_name": "Kubernetes cluster",
+      "type": "kubernetes_cluster",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.0,
+      "timeout_seconds": 5.5
+    }
+  ],
+  "links": [
+    {
+      "source": "eu_users",
+      "target": "edge_gateway",
+      "base_latency_seconds": 0.55,
+      "bandwidth_per_second": 40.0
+    },
+    {
+      "source": "na_users",
+      "target": "edge_gateway",
+      "base_latency_seconds": 0.9,
+      "bandwidth_per_second": 40.0
+    },
+    {
+      "source": "edge_gateway",
+      "target": "service_mesh",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 70.0
+    },
+    {
+      "source": "service_mesh",
+      "target": "kubernetes_cluster",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 70.0
+    },
+    {
+      "source": "kubernetes_cluster",
+      "target": "service_mesh",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 70.0
+    },
+    {
+      "source": "service_mesh",
+      "target": "edge_gateway",
+      "base_latency_seconds": 0.28,
+      "bandwidth_per_second": 70.0
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+[
+  {
+    "id": "security_basics",
+    "display_name": "Security Operations Basics",
+    "description": "Understand centralized auth as a useful control point that can also become a shared performance dependency.",
+    "tags": [
+      "security"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Failure rate"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "enable_cache",
+      "toggle_retries"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "failure",
+      "retry"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "queue",
+      "worker",
+      "database",
+      "cache"
+    ]
+  }
+]

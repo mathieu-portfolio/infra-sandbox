@@ -1,0 +1,39 @@
+[
+  {
+    "id": "ai_serving_basics",
+    "display_name": "AI Serving Basics",
+    "description": "Model AI features as expensive backend work: queues, workers, storage lookups, and user-facing latency.",
+    "tags": [
+      "ai"
+    ],
+    "visible_metrics": [
+      "Input rate",
+      "Processed req/s",
+      "Queue depth",
+      "Latency",
+      "Database utilization"
+    ],
+    "available_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "enable_cache",
+      "add_read_replica"
+    ],
+    "allowed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "compute",
+      "persistence"
+    ],
+    "allowed_node_types": [
+      "client_cluster",
+      "api_service",
+      "queue",
+      "worker",
+      "database",
+      "cache"
+    ]
+  }
+]

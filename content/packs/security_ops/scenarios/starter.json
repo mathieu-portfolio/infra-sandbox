@@ -1,0 +1,100 @@
+[
+  {
+    "id": "credential_abuse_wave",
+    "display_name": "Credential Abuse Wave",
+    "description": "Suspicious authentication traffic competes with legitimate users. Learn where throttling, queues, caching, and capacity help, and where they only move the bottleneck.",
+    "tags": [
+      "security",
+      "auth",
+      "abuse"
+    ],
+    "archetype": "security_ops",
+    "minimum_tier": "security_basics",
+    "topology_template": "auth_security_lab",
+    "traffic_pattern": "credential_attack",
+    "turn_duration": {
+      "template": "template.turn_duration.operational_cycle"
+    },
+    "educational_focus": [
+      "centralized auth dependency",
+      "abusive traffic",
+      "rate limiting tradeoffs",
+      "queue protection"
+    ],
+    "guaranteed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "failure"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "enable_cache",
+      "toggle_retries"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "security": 2,
+      "total": 9
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "unlockable_actions": [
+      "add_queue",
+      "enable_cache",
+      "toggle_retries"
+    ],
+    "recommended_actions": [
+      "throttle_traffic",
+      "add_queue",
+      "enable_cache"
+    ],
+    "objectives": [
+      {
+        "objective_id": "protect_authentication_stack",
+        "starts_active": true
+      }
+    ],
+    "events": [
+      "security_auth_login_surge",
+      "security_bot_retry_wave"
+    ],
+    "failure_conditions": [
+      "security_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "probe_wave",
+        "display_name": "Probe wave",
+        "event_message": "Login probes increase shared auth traffic.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.2
+      },
+      {
+        "id": "credential_stuffing",
+        "display_name": "Credential stuffing",
+        "event_message": "Automated attempts saturate authentication and queue capacity.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.8
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.8
+    }
+  }
+]

@@ -10,7 +10,7 @@
     "location": {
       "template": "template.location.node_type",
       "args": {
-        "node_type": "identity_provider"
+        "node_type": "api_service"
       }
     },
     "trigger": {
@@ -32,10 +32,47 @@
     },
     "duration_turns": 2,
     "tags": [
-      "common",
       "auth",
       "identity",
       "login"
+    ]
+  },
+  {
+    "id": "security_bot_retry_wave",
+    "display_name": "Bot Retry Wave",
+    "description": "Failed automated logins retry aggressively and increase queue pressure.",
+    "category": "security",
+    "moment": "runtime",
+    "weight": 0.55,
+    "repeatable": true,
+    "location": {
+      "template": "template.location.node_type",
+      "args": {
+        "node_type": "queue"
+      }
+    },
+    "trigger": {
+      "template": "template.trigger.time_turn",
+      "args": {
+        "turn": 4
+      }
+    },
+    "effect": {
+      "type": "modify_burst_intensity",
+      "traffic_multiplier": {
+        "min": 1.25,
+        "max": 1.55
+      },
+      "latency_multiplier": {
+        "min": 1.12,
+        "max": 1.3
+      }
+    },
+    "duration_turns": 2,
+    "tags": [
+      "auth",
+      "bot",
+      "retry"
     ]
   }
 ]

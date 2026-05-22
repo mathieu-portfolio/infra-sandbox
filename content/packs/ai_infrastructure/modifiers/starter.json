@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ai_expensive_requests",
+    "display_name": "Expensive Inference Requests",
+    "description": "AI requests consume more backend compute than normal product traffic.",
+    "tags": [
+      "ai",
+      "compute"
+    ],
+    "pressure_effects": {
+      "runtime": {
+        "cpu_pressure": 0.12,
+        "scheduling_pressure": 0.06
+      },
+      "backend": {
+        "queue_pressure": 0.08
+      }
+    }
+  }
+]

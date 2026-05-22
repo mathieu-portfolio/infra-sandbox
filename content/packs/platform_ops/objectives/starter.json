@@ -1,0 +1,31 @@
+[
+  {
+    "id": "platform_latency_under_5s",
+    "display_name": "Platform Latency Under 5s",
+    "description": "Keep delivery and runtime platform pressure from leaking into user latency.",
+    "type": "latency_below",
+    "condition": "latency_below",
+    "summary": "Keep p95 latency under five seconds during rollout pressure.",
+    "tags": [
+      "platform",
+      "latency"
+    ],
+    "threshold_seconds": 5.0,
+    "duration_turns": 4
+  },
+  {
+    "id": "stabilize_platform_queue",
+    "display_name": "Stabilize Platform Queue",
+    "description": "Drain queue pressure after a deployment burst.",
+    "type": "pressure_below",
+    "condition": "pressure_below",
+    "summary": "Keep queue pressure controlled during rollout and autoscaling lag.",
+    "tags": [
+      "platform",
+      "queue"
+    ],
+    "pressure": "queue",
+    "threshold": 0.58,
+    "duration_turns": 3
+  }
+]

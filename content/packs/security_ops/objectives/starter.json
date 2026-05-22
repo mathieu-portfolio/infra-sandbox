@@ -2,20 +2,31 @@
   {
     "id": "protect_authentication_stack",
     "display_name": "Protect Authentication Stack",
-    "description": "Prevent authentication systems from becoming a bottleneck.",
+    "description": "Prevent centralized authentication from becoming the system bottleneck.",
     "type": "pressure_below",
     "condition": "pressure_below",
-    "summary": "Prevent authentication systems from becoming a bottleneck.",
+    "summary": "Keep authentication-related latency and queue pressure controlled.",
     "tags": [
       "security",
-      "failure",
       "latency",
       "queue"
     ],
     "pressure": "latency",
-    "threshold": 0.5,
-    "duration_turns": [
-      "auth"
-    ]
+    "threshold": 0.6,
+    "duration_turns": 3
+  },
+  {
+    "id": "security_latency_under_5s",
+    "display_name": "Security Latency Under 5s",
+    "description": "Keep abusive traffic from making legitimate users time out.",
+    "type": "latency_below",
+    "condition": "latency_below",
+    "summary": "Keep p95 latency under five seconds during the attack wave.",
+    "tags": [
+      "security",
+      "latency"
+    ],
+    "threshold_seconds": 5.0,
+    "duration_turns": 4
   }
 ]

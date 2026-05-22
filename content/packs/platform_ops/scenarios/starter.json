@@ -1,0 +1,99 @@
+[
+  {
+    "id": "deployment_pipeline_failure",
+    "display_name": "Deployment Pipeline Pressure",
+    "description": "Several releases land while user traffic grows. Learn why platform automation helps, but delayed scaling and retries can still amplify pressure.",
+    "tags": [
+      "platform",
+      "deployment",
+      "autoscaling"
+    ],
+    "archetype": "platform_ops",
+    "minimum_tier": "platform_foundations",
+    "topology_template": "platform_delivery_lab",
+    "traffic_pattern": "deployment_burst",
+    "turn_duration": {
+      "template": "template.turn_duration.operational_cycle"
+    },
+    "educational_focus": [
+      "autoscaling lag",
+      "retry amplification",
+      "queue buildup",
+      "safe rollout pressure"
+    ],
+    "guaranteed_pressures": [
+      "traffic",
+      "queue",
+      "latency",
+      "retry"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "toggle_retries",
+      "clear_cache"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 3,
+      "total": 9
+    },
+    "starting_actions": [
+      "scale_up",
+      "toggle_retries"
+    ],
+    "unlockable_actions": [
+      "add_queue",
+      "throttle_traffic",
+      "clear_cache"
+    ],
+    "recommended_actions": [
+      "add_queue",
+      "toggle_retries",
+      "scale_up"
+    ],
+    "objectives": [
+      {
+        "objective_id": "stabilize_platform_queue",
+        "starts_active": true
+      }
+    ],
+    "events": [
+      "platform_service_mesh_retry_amplification",
+      "platform_kubernetes_autoscaling_lag"
+    ],
+    "failure_conditions": [
+      "platform_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "release_train",
+        "display_name": "Release train",
+        "event_message": "Multiple changes increase operational pressure.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.25
+      },
+      {
+        "id": "autoscaling_lag",
+        "display_name": "Autoscaling lag",
+        "event_message": "Capacity reacts more slowly than demand.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.7
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 2,
+      "retry_delay_seconds": 0.6
+    }
+  }
+]

@@ -1,0 +1,114 @@
+[
+  {
+    "id": "gpu_cluster_contention",
+    "display_name": "AI Inference Contention",
+    "description": "A product adds AI responses. The simulation approximates GPU pressure with a valid backend queue and worker path, teaching batching, queues, retrieval, and latency without requiring new node types.",
+    "tags": [
+      "ai",
+      "inference",
+      "queue"
+    ],
+    "archetype": "ai_serving",
+    "minimum_tier": "ai_serving_basics",
+    "topology_template": "ai_serving_lab",
+    "traffic_pattern": "ai_inference_growth",
+    "turn_duration": {
+      "template": "template.turn_duration.operational_cycle"
+    },
+    "educational_focus": [
+      "expensive requests",
+      "queue pressure",
+      "retrieval latency",
+      "capacity planning"
+    ],
+    "guaranteed_pressures": [
+      "compute",
+      "queue",
+      "latency",
+      "persistence"
+    ],
+    "allowed_actions": [
+      "throttle_traffic",
+      "scale_up",
+      "add_queue",
+      "enable_cache",
+      "add_read_replica"
+    ],
+    "engineering_capacity": {
+      "backend": 2,
+      "infrastructure": 2,
+      "data": 1,
+      "total": 9
+    },
+    "starting_actions": [
+      "throttle_traffic",
+      "scale_up"
+    ],
+    "unlockable_actions": [
+      "add_queue",
+      "enable_cache",
+      "add_read_replica"
+    ],
+    "recommended_actions": [
+      "add_queue",
+      "scale_up",
+      "enable_cache"
+    ],
+    "objectives": [
+      {
+        "objective_id": "scale_ai_inference",
+        "starts_active": true
+      }
+    ],
+    "events": [
+      "ai_feature_launch",
+      "ai_vector_search_reindex"
+    ],
+    "failure_conditions": [
+      "ai_latency_under_5s"
+    ],
+    "phases": [
+      {
+        "id": "launch",
+        "display_name": "AI launch",
+        "event_message": "AI calls start competing with normal product traffic.",
+        "start_turn": 1,
+        "duration_turns": 2,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.2
+      },
+      {
+        "id": "contention",
+        "display_name": "Serving contention",
+        "event_message": "Queue and compute pressure now dominate response time.",
+        "start_turn": 3,
+        "duration_turns": 3,
+        "transition_duration": {
+          "template": "template.turn_duration.operational_cycle"
+        },
+        "traffic_multiplier": 1.65
+      }
+    ],
+    "node_overrides": [
+      {
+        "id": "eu_api",
+        "processing_capacity_per_second": 3.8
+      },
+      {
+        "id": "eu_worker",
+        "processing_capacity_per_second": 2.2
+      },
+      {
+        "id": "eu_database",
+        "processing_capacity_per_second": 2.5
+      }
+    ],
+    "retries": {
+      "enabled": true,
+      "max_retries": 1,
+      "retry_delay_seconds": 0.9
+    }
+  }
+]

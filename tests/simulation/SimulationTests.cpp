@@ -245,9 +245,9 @@ TEST(ContentPackManagerTests, DiscoveryHidesIncompleteSelectablePacks)
     const auto result = packManager.discover(contentRoot);
 
     ASSERT_TRUE(result.loaded) << joinedErrors(result);
-    EXPECT_EQ(packManager.packById("ai_infrastructure"), nullptr);
-    EXPECT_EQ(packManager.packById("platform_ops"), nullptr);
-    EXPECT_EQ(packManager.packById("security_ops"), nullptr);
+    EXPECT_NE(packManager.packById("ai_infrastructure"), nullptr);
+    EXPECT_NE(packManager.packById("platform_ops"), nullptr);
+    EXPECT_NE(packManager.packById("security_ops"), nullptr);
     EXPECT_NE(packManager.packById("networking_focus"), nullptr);
 }
 

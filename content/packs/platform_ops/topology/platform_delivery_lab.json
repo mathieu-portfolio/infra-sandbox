@@ -1,0 +1,166 @@
+{
+  "id": "platform_delivery_lab",
+  "display_name": "Platform Delivery Lab",
+  "description": "Valid-node topology representing a delivery platform as API, queue, workers, cache, and storage under rollout pressure.",
+  "tags": [
+    "platform",
+    "delivery",
+    "autoscaling"
+  ],
+  "regions": [
+    "Europe",
+    "NorthAmerica"
+  ],
+  "nodes": [
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "request_rate_per_second": 4.2
+    },
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 3.4
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API service",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 4.1,
+      "timeout_seconds": 4.5,
+      "resource_profile": {
+        "compute": 0.8,
+        "memory": 0.3,
+        "storage": 0.1,
+        "network": 0.45
+      }
+    },
+    {
+      "id": "eu_queue",
+      "display_name": "EU queue",
+      "type": "queue",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.66,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.3,
+      "timeout_seconds": 5.0,
+      "resource_profile": {
+        "compute": 0.25,
+        "memory": 0.55,
+        "storage": 0.25,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "eu_worker",
+      "display_name": "EU worker pool",
+      "type": "worker",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.665,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.6,
+      "timeout_seconds": 6.0,
+      "resource_profile": {
+        "compute": 0.85,
+        "memory": 0.45,
+        "storage": 0.15,
+        "network": 0.35
+      }
+    },
+    {
+      "id": "eu_cache",
+      "display_name": "EU cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.65,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 8.0,
+      "timeout_seconds": 3.0
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 2.9,
+      "timeout_seconds": 5.4,
+      "resource_profile": {
+        "compute": 0.35,
+        "memory": 0.45,
+        "storage": 0.9,
+        "network": 0.35
+      }
+    }
+  ],
+  "links": [
+    {
+      "from": "eu_users",
+      "to": "eu_api",
+      "latency_ms": 45,
+      "bandwidth_mbps": 120
+    },
+    {
+      "from": "na_users",
+      "to": "eu_api",
+      "latency_ms": 145,
+      "bandwidth_mbps": 65
+    },
+    {
+      "from": "eu_api",
+      "to": "eu_cache",
+      "latency_ms": 8,
+      "bandwidth_mbps": 250
+    },
+    {
+      "from": "eu_api",
+      "to": "eu_queue",
+      "latency_ms": 10,
+      "bandwidth_mbps": 220
+    },
+    {
+      "from": "eu_queue",
+      "to": "eu_worker",
+      "latency_ms": 8,
+      "bandwidth_mbps": 220
+    },
+    {
+      "from": "eu_worker",
+      "to": "eu_database",
+      "latency_ms": 12,
+      "bandwidth_mbps": 180
+    },
+    {
+      "from": "eu_api",
+      "to": "eu_database",
+      "latency_ms": 14,
+      "bandwidth_mbps": 180
+    }
+  ]
+}
