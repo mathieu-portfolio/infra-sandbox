@@ -49,6 +49,34 @@ void drawTrafficFlow(Vec2 start, Vec2 end, int screenWidth, int screenHeight, co
     }
 }
 
+void drawReliabilityDependencyPath(Vec2 start,
+                                   Vec2 end,
+                                   int screenWidth,
+                                   int screenHeight,
+                                   const CameraController& camera,
+                                   float risk,
+                                   bool selected)
+{
+    const float clampedRisk = std::clamp(risk, 0.0f, 1.0f);
+    if (clampedRisk < 0.10f && !selected) {
+        return;
+    }
+
+    const unsigned char baseAlpha = static_cast<unsigned char>((selected ? 105.0f : 38.0f) + clampedRisk * (selected ? 120.0f : 105.0f));
+    const Color dependencyColor = clampedRisk > 0.62f
+        ? Color{235, 86, 100, baseAlpha}
+        : Color{151, 111, 255, baseAlpha};
+    drawArc(start, end, screenWidth, screenHeight, camera, 2.5f + clampedRisk * 4.5f + (selected ? 2.0f : 0.0f), dependencyColor);
+
+    if (clampedRisk > 0.55f) {
+        const Vec2 mid = arcPoint(start, end, 0.5f);
+        const Vector2 marker = worldToScreen(mid, screenWidth, screenHeight, camera);
+        const float markerSize = 5.0f + clampedRisk * 5.0f;
+        DrawLineEx({marker.x - markerSize, marker.y - markerSize}, {marker.x + markerSize, marker.y + markerSize}, 2.0f, dependencyColor);
+        DrawLineEx({marker.x + markerSize, marker.y - markerSize}, {marker.x - markerSize, marker.y + markerSize}, 2.0f, dependencyColor);
+    }
+}
+
 }
 
 void Renderer::drawLinks(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera)
@@ -77,18 +105,26 @@ void Renderer::drawLinks(const rendering::viewmodels::RenderFrameView& frame, co
         const float feedback = visualFeedback_.linkThroughputBoost(link.id);
         const float activation = visualFeedback_.linkActivation(link.id);
         const bool trafficView = frame.uiState.activeViewMode == UiViewMode::Traffic;
+        const bool reliabilityView = frame.uiState.activeViewMode == UiViewMode::Reliability;
         const auto& linkVisual = frame.presentation.link(link.id);
         const float trafficLoad = trafficView ? linkVisual.load : 0.0f;
+        const float sourceRisk = frame.presentation.node(source->id).reliabilityRisk;
+        const float targetRisk = frame.presentation.node(target->id).reliabilityRisk;
+        const float dependencyRisk = reliabilityView ? std::max(sourceRisk, targetRisk) : 0.0f;
         const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f) + feedback * 2.0f + activation * 2.5f + trafficLoad * 2.5f;
         const Color color{
             static_cast<unsigned char>(std::min(140, 75 + static_cast<int>(feedback * 70.0f + activation * 60.0f + trafficLoad * 45.0f))),
             static_cast<unsigned char>(std::min(196, 94 + static_cast<int>(feedback * 90.0f + activation * 70.0f + trafficLoad * 55.0f))),
             static_cast<unsigned char>(std::min(255, 115 + static_cast<int>(feedback * 90.0f + activation * 80.0f + trafficLoad * 50.0f))),
-            static_cast<unsigned char>(std::min(235, 145 + static_cast<int>(feedback * 55.0f + activation * 65.0f + trafficLoad * 80.0f))),
+            static_cast<unsigned char>(std::min(235, 145 + static_cast<int>(feedback * 55.0f + activation * 65.0f + trafficLoad * 80.0f - dependencyRisk * 45.0f))),
         };
         drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, color);
         if (trafficView) {
             drawTrafficFlow(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, linkVisual);
+        }
+        if (reliabilityView) {
+            const bool selected = frame.uiState.selection.nodeId == source->id || frame.uiState.selection.nodeId == target->id;
+            drawReliabilityDependencyPath(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, dependencyRisk, selected);
         }
     }
 }
@@ -99,7 +135,7 @@ void Renderer::drawDependencyHighlights(const rendering::viewmodels::RenderFrame
     const GeoLayoutFrame& layout = frame.geoLayout;
 
     const int selectedNodeId = frame.uiState.selection.nodeId;
-    if (selectedNodeId < 0) {
+    if (selectedNodeId < 0 || frame.uiState.activeViewMode == UiViewMode::Reliability) {
         return;
     }
 

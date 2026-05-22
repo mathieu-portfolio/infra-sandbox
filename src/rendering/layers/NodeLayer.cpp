@@ -75,19 +75,47 @@ void drawPersistenceOverlay(const NodeDefinition& definition, const Node& node, 
     DrawRectangleRounded({center.x - 24.0f, center.y - 58.0f, 48.0f * visual.persistenceHealth, 8.0f}, 0.5f, 6, dataColor);
 }
 
+void drawCornerBracket(Vector2 a, float horizontalSign, float verticalSign, float size, float thickness, Color color)
+{
+    DrawLineEx(a, {a.x + horizontalSign * size, a.y}, thickness, color);
+    DrawLineEx(a, {a.x, a.y + verticalSign * size}, thickness, color);
+}
+
 void drawReliabilityOverlay(const Node& node, const rendering::NodePresentationState& visual, Vector2 center, double timeSeconds)
 {
-    const float risk = visual.reliabilityRisk;
+    const float risk = std::clamp(visual.reliabilityRisk, 0.0f, 1.0f);
+    const float flicker = 0.70f + 0.30f * pulse(timeSeconds, 11.0, node.id);
+    const float box = 56.0f + risk * 10.0f;
+    const float half = box * 0.5f;
+    const float corner = 12.0f + risk * 8.0f;
+
     if (risk < 0.08f) {
-        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 54.0f, {86, 210, 151, 95});
+        const Color safeColor{86, 210, 151, 95};
+        drawCornerBracket({center.x - half, center.y - half}, 1.0f, 1.0f, corner, 2.0f, safeColor);
+        drawCornerBracket({center.x + half, center.y - half}, -1.0f, 1.0f, corner, 2.0f, safeColor);
+        drawCornerBracket({center.x - half, center.y + half}, 1.0f, -1.0f, corner, 2.0f, safeColor);
+        drawCornerBracket({center.x + half, center.y + half}, -1.0f, -1.0f, corner, 2.0f, safeColor);
         return;
     }
 
-    const float flicker = 0.65f + 0.35f * pulse(timeSeconds, 12.0, node.id);
-    const Color riskColor{235, 86, 100, static_cast<unsigned char>(90 + risk * flicker * 130.0f)};
-    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 54.0f + risk * 10.0f, riskColor);
-    DrawLineEx({center.x - 18.0f, center.y - 46.0f}, {center.x - 5.0f, center.y - 30.0f}, 2.0f, riskColor);
-    DrawLineEx({center.x + 8.0f, center.y + 31.0f}, {center.x + 22.0f, center.y + 47.0f}, 2.0f, riskColor);
+    const Color riskColor{235, 86, 100, static_cast<unsigned char>(95 + risk * flicker * 135.0f)};
+    const Color fillColor{235, 86, 100, static_cast<unsigned char>(18 + risk * 42.0f)};
+    DrawRectangleRounded({center.x - half, center.y - half, box, box}, 0.12f, 8, fillColor);
+    drawCornerBracket({center.x - half, center.y - half}, 1.0f, 1.0f, corner, 2.5f, riskColor);
+    drawCornerBracket({center.x + half, center.y - half}, -1.0f, 1.0f, corner, 2.5f, riskColor);
+    drawCornerBracket({center.x - half, center.y + half}, 1.0f, -1.0f, corner, 2.5f, riskColor);
+    drawCornerBracket({center.x + half, center.y + half}, -1.0f, -1.0f, corner, 2.5f, riskColor);
+
+    const float crack = 10.0f + risk * 14.0f;
+    DrawLineEx({center.x - 7.0f, center.y - crack}, {center.x + 1.0f, center.y - 3.0f}, 2.0f, riskColor);
+    DrawLineEx({center.x + 1.0f, center.y - 3.0f}, {center.x - 3.0f, center.y + 7.0f}, 2.0f, riskColor);
+    DrawLineEx({center.x - 3.0f, center.y + 7.0f}, {center.x + 8.0f, center.y + crack}, 2.0f, riskColor);
+
+    if (risk > 0.62f) {
+        const float badgeRadius = 6.0f + risk * 4.0f;
+        DrawCircleV({center.x + half + 6.0f, center.y - half - 4.0f}, badgeRadius, riskColor);
+        DrawText("!", static_cast<int>(center.x + half + 3.0f), static_cast<int>(center.y - half - 12.0f), 15, {13, 17, 23, 240});
+    }
 }
 
 void drawGeographyOverlay(const rendering::NodePresentationState& visual, Vector2 center)
