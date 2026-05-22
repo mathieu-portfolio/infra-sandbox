@@ -11,7 +11,6 @@ InputMap::InputMap()
         {InputAction::ResetCamera, InputDevice::Keyboard, KEY_HOME, InputTrigger::Pressed},
         {InputAction::Select, InputDevice::MouseButton, MOUSE_BUTTON_LEFT, InputTrigger::Pressed},
         {InputAction::ClearSelection, InputDevice::Keyboard, KEY_ESCAPE, InputTrigger::Pressed},
-        {InputAction::ToggleDebugUI, InputDevice::Keyboard, KEY_F9, InputTrigger::Pressed},
         {InputAction::ToggleMetricsUI, InputDevice::Keyboard, KEY_F10, InputTrigger::Pressed},
     };
 }

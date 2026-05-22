@@ -49,7 +49,7 @@ bool OptionsMenuPanel::update(UiContext& context, Vector2 mouse)
     }
 
     const Rectangle menu = menuBounds(context);
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 3; ++i) {
         if (!CheckCollisionPointRec(mouse, optionsRowBounds(menu, i))) {
             continue;
         }
@@ -58,8 +58,6 @@ bool OptionsMenuPanel::update(UiContext& context, Vector2 mouse)
         } else if (i == 1) {
             context.state->showMetrics = !context.state->showMetrics;
         } else if (i == 2) {
-            context.state->showDebug = !context.state->showDebug;
-        } else if (i == 3) {
             context.state->showGeoGrid = !context.state->showGeoGrid;
         }
         return true;
@@ -90,6 +88,5 @@ void OptionsMenuPanel::drawMenu(const UiContext& context) const
     DrawText("Options", static_cast<int>(menu.x + 12.0f), static_cast<int>(menu.y + 12.0f), 14, {89, 196, 255, 255});
     drawOptionRow(optionsRowBounds(menu, 0), "Maximized", IsWindowMaximized());
     drawOptionRow(optionsRowBounds(menu, 1), "Metrics panel", context.state->showMetrics);
-    drawOptionRow(optionsRowBounds(menu, 2), "Debug UI", context.state->showDebug);
-    drawOptionRow(optionsRowBounds(menu, 3), "Map grid", context.state->showGeoGrid);
+    drawOptionRow(optionsRowBounds(menu, 2), "Map grid", context.state->showGeoGrid);
 }

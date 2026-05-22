@@ -70,7 +70,7 @@ Rectangle hudOptionsButtonBounds(int screenWidth)
 Rectangle hudOptionsMenuBounds(int screenWidth, int screenHeight)
 {
     constexpr float width = 300.0f;
-    constexpr float height = 176.0f;
+    constexpr float height = 148.0f;
     return {
         static_cast<float>(screenWidth) * 0.5f - width * 0.5f,
         static_cast<float>(screenHeight) * 0.5f - height * 0.5f,

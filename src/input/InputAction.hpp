@@ -39,7 +39,6 @@ enum class InputAction {
     EnableTracing,
     ThrottleTrafficUp,
     ThrottleTrafficDown,
-    ToggleDebugUI,
     ToggleMetricsUI,
     ToggleGeoGrid
 };

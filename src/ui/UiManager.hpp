@@ -3,7 +3,6 @@
 #include "simulation/core/Simulation.hpp"
 #include "content/loading/ContentPackManager.hpp"
 #include "gameplay/scenario/ScenarioManager.hpp"
-#include "ui/panels/DebugPanel.hpp"
 #include "ui/panels/HudPanel.hpp"
 #include "ui/actions/ActionPanel.hpp"
 #include "ui/panels/MetricsPanel.hpp"
@@ -34,5 +33,4 @@ private:
     SelectionPanel selectionPanel_{};
     ActionPanel actionPanel_{};
     TimelinePanel timelinePanel_{};
-    DebugPanel debugPanel_{};
 };

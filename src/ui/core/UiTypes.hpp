@@ -23,7 +23,6 @@ enum class UiLayer {
     Scenario,
     Timeline,
     Explanation,
-    Debug,
     Flow,
     Resources,
     Persistence,
@@ -227,7 +226,6 @@ struct UiState {
     NodeInspectionTab activeNodeInspectionTab = NodeInspectionTab::Overview;
     ObservabilityState observability{};
     std::array<bool, static_cast<std::size_t>(UiLayer::Count)> enabledLayers{};
-    bool showDebug = false;
     bool showMetrics = true;
     MetricsSpecialization selectedMetricsSpecialization = MetricsSpecialization::Frontend;
     bool showHud = true;

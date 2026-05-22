@@ -8,9 +8,6 @@ void UiController::handleActions(std::span<const InputEvent> events, UiState& st
         }
 
         switch (event.action) {
-        case InputAction::ToggleDebugUI:
-            state.showDebug = !state.showDebug;
-            break;
         case InputAction::ToggleMetricsUI:
             state.showMetrics = !state.showMetrics;
             break;

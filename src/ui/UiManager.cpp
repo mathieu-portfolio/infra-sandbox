@@ -104,7 +104,6 @@ void UiManager::update(const Simulation& simulation, const ScenarioManager& scen
     selectionPanel_.update(context, view);
     actionPanel_.update(context, view);
     timelinePanel_.update(context, view, view.scenario);
-    debugPanel_.update(context, view);
 }
 
 void UiManager::updateViewTransition(float deltaSeconds)
@@ -192,7 +191,6 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     actionPanel_.draw(context, view);
     timelinePanel_.draw(context, view, view.scenario);
     selectionPanel_.draw(context, view);
-    debugPanel_.draw(context, view);
     actionPanel_.drawPlanningOverlays(context, view.scenario);
     hudPanel_.draw(context, view, view.scenario, packManager);
     drawDockResizeHandles(computeDockLayout(state_.dockLayout, GetScreenWidth(), GetScreenHeight()), state_.dockLayout);
