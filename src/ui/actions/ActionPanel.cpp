@@ -190,19 +190,20 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
 
         DrawRectangleRounded(status, 0.035f, 8, {18, 24, 34, 230});
         DrawRectangleRoundedLines(status, 0.035f, 8, {70, 86, 104, 110});
-        DrawText("VISIBLE SIGNALS", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 15.0f), 14, {205, 213, 224, 255});
+        drawTextClipped("VISIBLE SIGNALS", {status.x + 14.0f, status.y + 15.0f, status.width - 28.0f, 18.0f}, 14, {205, 213, 224, 255});
         if (selected == nullptr) {
             actions_ui::drawWrappedTextClipped("No node selected. Overview remains intentionally high-level until a concrete node is inspected.", {status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, status.height - 62.0f}, 13, {139, 148, 158, 255});
         } else {
             const double overall = actions_ui::overallPressure(selectedPressure, selected);
-            drawTextClipped(actions_ui::pressureSeverity(overall), {status.x + status.width - 78.0f, status.y + 15.0f, 64.0f, 16.0f}, 13, actions_ui::pressureColor(overall));
-            drawMetricBar({status.x + 14.0f, status.y + 48.0f, status.width - 28.0f, 18.0f}, "Health", overall, actions_ui::pressureColor(overall));
-            DrawText("OBSERVABILITY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 84.0f), 11, {166, 176, 192, 255});
+            const std::string statusLabel = std::string("Pressure: ") + actions_ui::pressureSeverity(overall);
+            drawTextClipped(statusLabel, {status.x + 14.0f, status.y + 34.0f, status.width - 28.0f, 16.0f}, 12, actions_ui::pressureColor(overall));
+            drawMetricBar({status.x + 14.0f, status.y + 60.0f, status.width - 28.0f, 18.0f}, "Pressure", overall, actions_ui::pressureColor(overall));
+            DrawText("OBSERVABILITY", static_cast<int>(status.x + 14.0f), static_cast<int>(status.y + 96.0f), 11, {166, 176, 192, 255});
             actions_ui::drawWrappedTextClipped(
                 context.state->observability.metricsUnlocked || context.state->observability.dependenciesUnlocked
                     ? "Some telemetry layers are available. Use the tabs to move from broad signals to evidence."
                     : "Only broad status is available. World observability actions unlock metrics, traffic analysis, tracing, and diagnostics.",
-                {status.x + 14.0f, status.y + 104.0f, status.width - 28.0f, 62.0f}, 12, {139, 148, 158, 255});
+                {status.x + 14.0f, status.y + 116.0f, status.width - 28.0f, status.height - 130.0f}, 12, {139, 148, 158, 255});
         }
     } else if (activeNodeTab == NodeInspectionTab::Metrics) {
         DrawRectangleRounded(overview, 0.035f, 8, {18, 24, 34, 230});
