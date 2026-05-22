@@ -47,5 +47,5 @@ Views:
 
 ## Documentation
 
-- `docs/architecture-and-rendering.md`
-- `docs/simulation-and-content.md`
+- [Architecture](docs/architecture-and-rendering.md)
+- [Simulation](simulation-and-content.md)
