@@ -60,6 +60,30 @@ bool metadataValid(const ContentPackMetadata& metadata)
 {
     return !metadata.id.empty() && !metadata.displayName.empty() && !metadata.version.empty();
 }
+
+bool hasJsonFile(const std::filesystem::path& directory)
+{
+    if (!std::filesystem::exists(directory)) {
+        return false;
+    }
+    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".json") {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool selectablePackShape(const std::filesystem::path& packPath, std::vector<std::string>& missing)
+{
+    if (!hasJsonFile(packPath / "scenarios")) {
+        missing.push_back("scenarios");
+    }
+    if (!hasJsonFile(packPath / "progression")) {
+        missing.push_back("progression");
+    }
+    return missing.empty();
+}
 } // namespace
 
 ContentLoadResult ContentPackManager::discover(const std::filesystem::path& contentRoot)
@@ -98,6 +122,19 @@ ContentLoadResult ContentPackManager::discover(const std::filesystem::path& cont
         ContentPackMetadata metadata = parseMetadata(parsed.value);
         if (!metadataValid(metadata)) {
             result.errors.push_back(packFile.string() + ": Pack metadata requires id, display_name, and version.");
+            continue;
+        }
+        std::vector<std::string> missingRequiredContent;
+        if (!selectablePackShape(entry.path(), missingRequiredContent)) {
+            std::string message = packFile.string() + ": Skipping incomplete content pack " + metadata.id + "; missing ";
+            for (std::size_t i = 0; i < missingRequiredContent.size(); ++i) {
+                if (i > 0) {
+                    message += ", ";
+                }
+                message += missingRequiredContent[i];
+            }
+            message += ".";
+            result.errors.push_back(std::move(message));
             continue;
         }
         packs_.push_back({std::move(metadata), entry.path()});

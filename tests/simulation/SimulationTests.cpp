@@ -1,4 +1,5 @@
 #include "content/ContentRegistry.hpp"
+#include "content/loading/ContentPackManager.hpp"
 #include "gameplay/Scenario.hpp"
 #include "gameplay/scenario/ScenarioManager.hpp"
 #include "core/simulation/Mechanics.hpp"
@@ -33,6 +34,15 @@ EngineeringCapacity capacityBonus(int frontend, int backend, int infrastructure,
     bonus.data = data;
     bonus.total = total;
     return bonus;
+}
+
+std::string joinedErrors(const content::ContentLoadResult& result)
+{
+    std::string errors;
+    for (const auto& error : result.errors) {
+        errors += error + "\n";
+    }
+    return errors;
 }
 
 TEST(NodeRegistryTests, RegistersFutureNodeSkeletons)
@@ -144,16 +154,26 @@ TEST(TopologyMutationTests, GeneratesAndAppliesConstrainedCachePlacement)
     EXPECT_TRUE(hasDisabledLink);
 }
 
-TEST(TopologyMutationTests, QueuePlacementIsRegionConstrained)
+TEST(TopologyMutationTests, QueuePlacementCandidatesAreRegionScoped)
 {
     Simulation simulation(ScenarioRegistry::burstTraffic());
     PlacementCandidateGenerator generator;
+    MutationValidator validator;
     const auto candidates = generator.generate(simulation, TopologyMutationType::AddQueue);
 
     ASSERT_FALSE(candidates.empty());
+    bool includesEurope = false;
     for (const auto& candidate : candidates) {
-        EXPECT_EQ(candidate.location.regionName, "Europe");
+        EXPECT_FALSE(candidate.location.regionName.empty());
+        includesEurope = includesEurope || candidate.location.regionName == "Europe";
+
+        const MutationPreview preview = validator.preview(simulation, TopologyMutationType::AddQueue, candidate);
+        EXPECT_TRUE(preview.valid) << preview.validationMessage;
+        ASSERT_FALSE(preview.mutation.nodesToCreate.empty());
+        EXPECT_EQ(preview.mutation.nodesToCreate.front().type, NodeType::QueueBroker);
+        EXPECT_EQ(preview.mutation.nodesToCreate.front().geoLocation.regionName, candidate.location.regionName);
     }
+    EXPECT_TRUE(includesEurope);
 }
 
 TEST(ScenarioRegistryTests, ProvidesInitialScenarioSet)
@@ -216,6 +236,32 @@ TEST(ContentRegistryTests, LoadsTechIndustryNodeCatalogScenario)
     EXPECT_TRUE(hasNode("object_storage", NodeType::ObjectStorage));
     EXPECT_TRUE(hasNode("ai_inference_gateway", NodeType::AIInferenceNode));
     EXPECT_TRUE(hasNode("vector_database", NodeType::VectorDatabase));
+}
+
+TEST(ContentPackManagerTests, DiscoveryHidesIncompleteSelectablePacks)
+{
+    const std::filesystem::path contentRoot = INFRA_CONTENT_DIR;
+    content::ContentPackManager packManager;
+    const auto result = packManager.discover(contentRoot);
+
+    ASSERT_TRUE(result.loaded) << joinedErrors(result);
+    EXPECT_EQ(packManager.packById("ai_infrastructure"), nullptr);
+    EXPECT_EQ(packManager.packById("platform_ops"), nullptr);
+    EXPECT_EQ(packManager.packById("security_ops"), nullptr);
+    EXPECT_NE(packManager.packById("networking_focus"), nullptr);
+}
+
+TEST(ContentPackManagerTests, ProbeLoadsEverySelectablePack)
+{
+    const std::filesystem::path contentRoot = INFRA_CONTENT_DIR;
+    content::ContentPackManager packManager;
+    const auto discovery = packManager.discover(contentRoot);
+
+    ASSERT_TRUE(discovery.loaded) << joinedErrors(discovery);
+    for (const auto& pack : packManager.packs()) {
+        const auto result = packManager.loadPack(pack.metadata.id);
+        ASSERT_TRUE(result.loaded) << "Pack " << pack.metadata.id << " failed to load:\n" << joinedErrors(result);
+    }
 }
 
 TEST(ScenarioRunTests, SeparatesStaticDefinitionFromSeededRun)
