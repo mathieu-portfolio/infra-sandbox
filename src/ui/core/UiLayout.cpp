@@ -154,7 +154,7 @@ LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMo
     root->add(std::move(alerts));
     if (sandboxMode) {
         auto sandbox = std::make_unique<ui::PanelNode>("sandbox");
-        sandbox->style(ui::fixedHeight(288.0f));
+        sandbox->style(ui::fixedHeight(430.0f));
         root->add(std::move(sandbox));
     }
     auto legend = std::make_unique<ui::PanelNode>("legend");

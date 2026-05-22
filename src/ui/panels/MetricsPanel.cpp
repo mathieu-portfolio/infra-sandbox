@@ -1,6 +1,7 @@
 #include "ui/panels/MetricsPanel.hpp"
 
 #include "ui/panels/MetricsPanelRenderer.hpp"
+#include "ui/panels/LabPanelLayout.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/ScrollHandling.hpp"
 
@@ -21,10 +22,6 @@ Rectangle specializationButton(Rectangle bounds, int index)
     };
 }
 
-Rectangle sandboxButton(float x, float y, float width, int index)
-{
-    return {x + 12.0f + static_cast<float>(index % 2) * ((width - 30.0f) * 0.5f + 6.0f), y + 42.0f + static_cast<float>(index / 2) * 30.0f, (width - 30.0f) * 0.5f, 24.0f};
-}
 }
 
 void MetricsPanel::update(UiContext& context, const UiFrameView& view)
@@ -44,7 +41,13 @@ void MetricsPanel::update(UiContext& context, const UiFrameView& view)
     const int alertRows = static_cast<int>(view.pressure().hints.size() + view.pressure().suspiciousPatterns.size() + view.pressure().explanations.size());
     const Rectangle alertsViewport = ui::scrollViewport(left.alerts, alertsHeaderHeight);
     const float alertsContentHeight = alertsTopPadding + static_cast<float>(std::max(1, alertRows)) * alertsRowHeight + alertsBottomPadding;
-    (void)ui::updateScrollOffset(alertsViewport, alertsContentHeight, GetMouseWheelMove(), mouse, context.state->alertsScrollOffset);
+    const float wheel = GetMouseWheelMove();
+    (void)ui::updateScrollOffset(alertsViewport, alertsContentHeight, wheel, mouse, context.state->alertsScrollOffset);
+
+    if (context.state->sandboxMode && left.sandbox.height > 0.0f) {
+        (void)ui::updateScrollOffset(lab_panel::viewport(left.sandbox), lab_panel::contentHeight + lab_panel::panelPadding * 2.0f, wheel, mouse, context.state->sandboxScrollOffset);
+        context.state->sandboxScrollOffset = std::clamp(context.state->sandboxScrollOffset, 0.0f, lab_panel::maxScroll(left.sandbox));
+    }
 
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;
@@ -62,64 +65,68 @@ void MetricsPanel::update(UiContext& context, const UiFrameView& view)
     if (!context.state->sandboxMode) {
         return;
     }
-    const float x = left.sandbox.x;
-    const float width = left.sandbox.width;
-    const float y = left.sandbox.y;
-    if (left.sandbox.height <= 0.0f) {
+    if (left.sandbox.height <= 0.0f || !CheckCollisionPointRec(mouse, lab_panel::viewport(left.sandbox))) {
         return;
     }
-    const char* requests[] = {"traffic_spike", "retry_storm", "db_slowdown", "regional_traffic_spike", "recovery"};
-    for (int i = 0; i < 5; ++i) {
-        if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, i))) {
-            context.state->sandboxEventRequest = requests[i];
+
+    for (const auto& button : lab_panel::buttons(left.sandbox, context.state->sandboxScrollOffset)) {
+        if (!CheckCollisionPointRec(mouse, button.bounds)) {
+            continue;
+        }
+        switch (button.action) {
+        case lab_panel::Action::TrafficSpike:
+            context.state->sandboxEventRequest = "traffic_spike";
+            return;
+        case lab_panel::Action::RetryStorm:
+            context.state->sandboxEventRequest = "retry_storm";
+            return;
+        case lab_panel::Action::DbSlowdown:
+            context.state->sandboxEventRequest = "db_slowdown";
+            return;
+        case lab_panel::Action::RegionalSpike:
+            context.state->sandboxEventRequest = "regional_traffic_spike";
+            return;
+        case lab_panel::Action::Recovery:
+            context.state->sandboxEventRequest = "recovery";
+            return;
+        case lab_panel::Action::QueueToggle:
+            context.state->sandboxQueueBuildup = !context.state->sandboxQueueBuildup;
+            return;
+        case lab_panel::Action::TrafficDown:
+            context.state->sandboxTrafficMultiplier = std::max(0.1, context.state->sandboxTrafficMultiplier - 0.25);
+            return;
+        case lab_panel::Action::TrafficUp:
+            context.state->sandboxTrafficMultiplier = std::min(8.0, context.state->sandboxTrafficMultiplier + 0.25);
+            return;
+        case lab_panel::Action::LatencyDown:
+            context.state->sandboxLatencyMultiplier = std::max(0.1, context.state->sandboxLatencyMultiplier - 0.25);
+            return;
+        case lab_panel::Action::LatencyUp:
+            context.state->sandboxLatencyMultiplier = std::min(8.0, context.state->sandboxLatencyMultiplier + 0.25);
+            return;
+        case lab_panel::Action::ResetSim:
+            context.state->sandboxResetSimulationRequested = true;
+            return;
+        case lab_panel::Action::ClearLog:
+            context.state->sandboxClearTimelineRequested = true;
+            return;
+        case lab_panel::Action::SlowMo:
+            context.state->sandboxSlowMotionRequested = true;
+            return;
+        case lab_panel::Action::Step:
+            context.state->sandboxStepRequested = true;
+            return;
+        case lab_panel::Action::SeedDown:
+            context.state->sandboxSeed = std::max(1, context.state->sandboxSeed - 1);
+            context.state->sandboxRegenerateRequested = true;
+            return;
+        case lab_panel::Action::SeedUp:
+            context.state->sandboxSeed += 1;
+            context.state->sandboxRegenerateRequested = true;
+            return;
+        case lab_panel::Action::Count:
             return;
         }
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 5))) {
-        context.state->sandboxQueueBuildup = !context.state->sandboxQueueBuildup;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 6))) {
-        context.state->sandboxTrafficMultiplier = std::max(0.1, context.state->sandboxTrafficMultiplier - 0.25);
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 7))) {
-        context.state->sandboxTrafficMultiplier = std::min(8.0, context.state->sandboxTrafficMultiplier + 0.25);
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 8))) {
-        context.state->sandboxLatencyMultiplier = std::max(0.1, context.state->sandboxLatencyMultiplier - 0.25);
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 9))) {
-        context.state->sandboxLatencyMultiplier = std::min(8.0, context.state->sandboxLatencyMultiplier + 0.25);
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 10))) {
-        context.state->sandboxResetSimulationRequested = true;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 11))) {
-        context.state->sandboxClearTimelineRequested = true;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 12))) {
-        context.state->sandboxSlowMotionRequested = true;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 13))) {
-        context.state->sandboxStepRequested = true;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 14))) {
-        context.state->sandboxSeed = std::max(1, context.state->sandboxSeed - 1);
-        context.state->sandboxRegenerateRequested = true;
-        return;
-    }
-    if (CheckCollisionPointRec(mouse, sandboxButton(x, y, width, 15))) {
-        context.state->sandboxSeed += 1;
-        context.state->sandboxRegenerateRequested = true;
-        return;
     }
 }
 

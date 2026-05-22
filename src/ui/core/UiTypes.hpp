@@ -254,6 +254,7 @@ struct UiState {
     int activeActionCategoryIndex = 0;
     float nodeActionScrollOffset = 0.0f;
     float alertsScrollOffset = 0.0f;
+    float sandboxScrollOffset = 0.0f;
     float timelineScrollOffset = 0.0f;
     DockLayoutState dockLayout{};
     std::unordered_map<std::string, int> actionUseCounts;

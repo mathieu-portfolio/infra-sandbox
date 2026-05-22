@@ -1,4 +1,5 @@
 #include "ui/panels/MetricsPanelRenderer.hpp"
+#include "ui/panels/LabPanelLayout.hpp"
 #include "ui/panels/MetricsPanelModel.hpp"
 
 #include "ui/widgets/IconRegistry.hpp"
@@ -28,10 +29,154 @@ Rectangle specializationButton(Rectangle bounds, int index)
     };
 }
 
-Rectangle sandboxButton(float x, float y, float width, int index)
+
+Color withAlpha(Color color, unsigned char alpha)
 {
-    return {x + 12.0f + static_cast<float>(index % 2) * ((width - 30.0f) * 0.5f + 6.0f), y + 42.0f + static_cast<float>(index / 2) * 30.0f, (width - 30.0f) * 0.5f, 24.0f};
+    return {color.r, color.g, color.b, alpha};
 }
+
+const char* labActionLabel(lab_panel::Action action, bool queueEnabled)
+{
+    switch (action) {
+    case lab_panel::Action::TrafficSpike: return "Traffic Spike";
+    case lab_panel::Action::RetryStorm: return "Retry Storm";
+    case lab_panel::Action::DbSlowdown: return "DB Slowdown";
+    case lab_panel::Action::RegionalSpike: return "Regional Spike";
+    case lab_panel::Action::TrafficDown: return "Traffic -";
+    case lab_panel::Action::TrafficUp: return "Traffic +";
+    case lab_panel::Action::LatencyDown: return "Latency -";
+    case lab_panel::Action::LatencyUp: return "Latency +";
+    case lab_panel::Action::Recovery: return "Recovery";
+    case lab_panel::Action::QueueToggle: return queueEnabled ? "Queue On" : "Queue Off";
+    case lab_panel::Action::ResetSim: return "Reset Sim";
+    case lab_panel::Action::ClearLog: return "Clear Log";
+    case lab_panel::Action::SlowMo: return "Slow Mo";
+    case lab_panel::Action::Step: return "Step";
+    case lab_panel::Action::SeedDown: return "Seed -";
+    case lab_panel::Action::SeedUp: return "Seed +";
+    case lab_panel::Action::Count: return "";
+    }
+    return "";
+}
+
+const char* labActionIcon(lab_panel::Action action)
+{
+    switch (action) {
+    case lab_panel::Action::DbSlowdown: return "lab.database";
+    case lab_panel::Action::Recovery: return "lab.recovery";
+    case lab_panel::Action::ResetSim: return "alert.warning";
+    case lab_panel::Action::ClearLog: return "lab.document";
+    case lab_panel::Action::QueueToggle: return "lab.queue";
+    case lab_panel::Action::Step: return "lab.play";
+    case lab_panel::Action::SeedDown:
+    case lab_panel::Action::SeedUp: return "lab.seed";
+    case lab_panel::Action::LatencyDown:
+    case lab_panel::Action::LatencyUp: return "lab.latency";
+    default: return "lab.action";
+    }
+}
+
+Color labActionColor(lab_panel::Action action, bool queueEnabled)
+{
+    switch (action) {
+    case lab_panel::Action::RetryStorm:
+    case lab_panel::Action::ResetSim:
+        return {255, 104, 92, 255};
+    case lab_panel::Action::DbSlowdown:
+    case lab_panel::Action::RegionalSpike:
+    case lab_panel::Action::LatencyDown:
+    case lab_panel::Action::LatencyUp:
+        return {151, 111, 255, 255};
+    case lab_panel::Action::Recovery:
+        return {86, 210, 151, 255};
+    case lab_panel::Action::QueueToggle:
+        return queueEnabled ? Color{245, 184, 76, 255} : Color{139, 148, 158, 255};
+    default:
+        return {89, 196, 255, 255};
+    }
+}
+
+void drawLabMetricChip(Rectangle bounds, const char* label, const char* value, Color accent)
+{
+    DrawRectangleRounded(bounds, 0.12f, 6, {18, 23, 30, 235});
+    DrawRectangleRoundedLines(bounds, 0.12f, 6, withAlpha(accent, 85));
+
+    constexpr float horizontalPadding = 8.0f;
+    constexpr float gap = 8.0f;
+    const int valueFontSize = 14;
+    const float valueWidth = static_cast<float>(MeasureText(value, valueFontSize));
+    const float valueX = bounds.x + bounds.width - horizontalPadding - valueWidth;
+    const float labelWidth = std::max(0.0f, valueX - gap - (bounds.x + horizontalPadding));
+
+    drawTextClipped(label, {bounds.x + horizontalPadding, bounds.y + 6.0f, labelWidth, 14.0f}, 12, {139, 148, 158, 255});
+    DrawText(value, static_cast<int>(valueX), static_cast<int>(bounds.y + 5.0f), valueFontSize, accent);
+}
+
+void drawLabSection(Rectangle bounds, const char* title, const char* icon, Color accent)
+{
+    DrawRectangleRounded(bounds, 0.06f, 8, {18, 23, 30, 190});
+    DrawRectangleRoundedLines(bounds, 0.06f, 8, {70, 86, 104, 90});
+    IconRegistry::instance().drawIcon(icon, {bounds.x + 10.0f, bounds.y + 9.0f, 14.0f, 14.0f}, accent);
+    drawTextClipped(title, {bounds.x + 30.0f, bounds.y + 8.0f, bounds.width - 40.0f, 15.0f}, 13, {174, 186, 199, 255});
+}
+
+void drawLabButton(Rectangle bounds, lab_panel::Action action, const UiState& state, bool enabled = true)
+{
+    const Vector2 mouse = GetMousePosition();
+    const bool hovered = enabled && CheckCollisionPointRec(mouse, bounds);
+    const Color accent = enabled ? labActionColor(action, state.sandboxQueueBuildup) : Color{84, 94, 106, 255};
+    const Color fill = hovered ? Color{31, 39, 50, 245} : Color{22, 27, 34, 235};
+    const Color border = hovered ? withAlpha(accent, 170) : Color{70, 86, 104, 120};
+    DrawRectangleRounded(bounds, 0.12f, 6, fill);
+    DrawRectangleRoundedLines(bounds, 0.12f, 6, border);
+    IconRegistry::instance().drawIcon(labActionIcon(action), {bounds.x + 7.0f, bounds.y + 6.0f, 14.0f, 14.0f}, accent);
+    drawTextClipped(labActionLabel(action, state.sandboxQueueBuildup), {bounds.x + 27.0f, bounds.y + 6.0f, bounds.width - 35.0f, 14.0f}, 12, enabled ? Color{230, 237, 243, 255} : Color{92, 101, 112, 255});
+}
+
+void drawLabPanel(Rectangle sandbox, const UiContext& context, const UiFrameView& view)
+{
+    drawPanelFrame(sandbox, "Infrastructure Lab");
+    if (context.state == nullptr) {
+        return;
+    }
+
+    char buffer[80];
+    drawTextClipped("Experiment with load, failures and recovery", {sandbox.x + 14.0f, sandbox.y + 30.0f, sandbox.width - 28.0f, 14.0f}, 12, {139, 148, 158, 255});
+    const float chipWidth = (sandbox.width - 36.0f) * 0.5f;
+    std::snprintf(buffer, sizeof(buffer), "%.2fx", context.state->sandboxTrafficMultiplier);
+    drawLabMetricChip({sandbox.x + 12.0f, sandbox.y + 52.0f, chipWidth, 24.0f}, "Traffic", buffer, {89, 196, 255, 255});
+    std::snprintf(buffer, sizeof(buffer), "%.2fx", context.state->sandboxLatencyMultiplier);
+    drawLabMetricChip({sandbox.x + 24.0f + chipWidth, sandbox.y + 52.0f, chipWidth, 24.0f}, "Latency", buffer, {151, 111, 255, 255});
+
+    const Rectangle viewBounds = lab_panel::viewport(sandbox);
+    const ui::ScissorGuard clip(viewBounds);
+    const float scroll = std::clamp(context.state->sandboxScrollOffset, 0.0f, lab_panel::maxScroll(sandbox));
+    const Rectangle content = lab_panel::contentBounds(sandbox, scroll);
+    const Rectangle traffic = lab_panel::section(content, 0.0f, 154.0f);
+    const Rectangle recovery = lab_panel::section(content, 154.0f + lab_panel::sectionGap, 90.0f);
+    const Rectangle sim = lab_panel::section(content, 154.0f + lab_panel::sectionGap + 90.0f + lab_panel::sectionGap, 58.0f);
+    const Rectangle seed = lab_panel::section(content, 154.0f + lab_panel::sectionGap + 90.0f + lab_panel::sectionGap + 58.0f + lab_panel::sectionGap, 78.0f);
+
+    drawLabSection(traffic, "TRAFFIC & LATENCY", "lab.traffic", {89, 196, 255, 255});
+    drawLabSection(recovery, "FAILURES & RECOVERY", "lab.recovery", {86, 210, 151, 255});
+    drawLabSection(sim, "SIMULATION", "lab.play", {89, 196, 255, 255});
+    drawLabSection(seed, "SEED", "lab.seed", {89, 196, 255, 255});
+
+    for (const auto& button : lab_panel::buttons(sandbox, scroll)) {
+        const bool enabled = button.action != lab_panel::Action::SeedDown || context.state->sandboxSeed > 1;
+        drawLabButton(button.bounds, button.action, *context.state, enabled);
+    }
+
+    const Rectangle seedValue = lab_panel::seedValueBounds(sandbox, scroll);
+    DrawRectangleRounded(seedValue, 0.12f, 6, {14, 18, 24, 220});
+    DrawRectangleRoundedLines(seedValue, 0.12f, 6, {70, 86, 104, 115});
+    std::snprintf(buffer, sizeof(buffer), "Seed %d", context.state->sandboxSeed);
+    drawTextClipped(buffer, {seedValue.x + 8.0f, seedValue.y + 6.0f, seedValue.width - 16.0f, 14.0f}, 12, {174, 186, 199, 255});
+
+    std::snprintf(buffer, sizeof(buffer), "Pressure %s | Node %d", pressureCategoryName(view.pressure().dominantPressure), view.pressure().topOverloadedNodeId);
+    drawTextClipped(buffer, {seed.x + 10.0f, seed.y + 58.0f, seed.width - 20.0f, 14.0f}, 11, {245, 184, 76, 255});
+}
+
 
 void drawButton(Rectangle bounds, const char* label)
 {
@@ -290,23 +435,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     }
 
     if (context.state->sandboxMode) {
-        Rectangle sandbox = left.sandbox;
-        y = sandbox.y;
-        drawPanelFrame(sandbox, "Infrastructure Lab");
-        char labBuffer[80];
-        std::snprintf(labBuffer, sizeof(labBuffer), "Traffic %.2fx  Latency %.2fx", context.state->sandboxTrafficMultiplier, context.state->sandboxLatencyMultiplier);
-        drawTextClipped(labBuffer, {x + 14.0f, y + 22.0f, width - 28.0f, 16.0f}, 12, {139, 148, 158, 255});
-        std::snprintf(labBuffer, sizeof(labBuffer), "Pressure %s  Node %d", pressureCategoryName(view.pressure().dominantPressure), view.pressure().topOverloadedNodeId);
-        drawTextClipped(labBuffer, {x + 14.0f, y + 256.0f, width - 28.0f, 14.0f}, 12, {245, 184, 76, 255});
-        const char* labels[] = {
-            "Traffic Spike", "Retry Storm", "DB Slowdown", "Regional Spike", "Recovery", context.state->sandboxQueueBuildup ? "Queue On" : "Queue Off",
-            "Traffic -", "Traffic +", "Latency -", "Latency +", "Reset Sim", "Clear Log", "Slow Mo", "Step", "Seed -", "Seed +"
-        };
-        for (int i = 0; i < 16; ++i) {
-            drawButton(sandboxButton(x, y, width, i), labels[i]);
-        }
-        std::snprintf(labBuffer, sizeof(labBuffer), "Seed %d", context.state->sandboxSeed);
-        drawTextClipped(labBuffer, {x + 14.0f, y + 274.0f, width - 28.0f, 14.0f}, 12, {89, 196, 255, 255});
+        drawLabPanel(left.sandbox, context, view);
     }
 
     Rectangle legend = left.legend;
