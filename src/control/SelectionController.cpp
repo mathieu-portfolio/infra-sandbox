@@ -3,15 +3,9 @@
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/RenderPrimitives.hpp"
 #include "ui/core/UiLayout.hpp"
+#include "ui/actions/WorldActionOverlay.hpp"
 
 #include "raylib.h"
-
-namespace {
-Rectangle worldActionToggleBounds(int screenWidth)
-{
-    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
-}
-}
 
 void SelectionController::handleActions(std::span<const InputEvent> events, const Simulation& simulation, const CameraController& camera, UiState& state)
 {
@@ -32,7 +26,7 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
             continue;
         }
         if (state.gameplayPhase == GameplayPhase::Planning && !state.worldActionDraft.empty()) {
-            if (state.worldActionDraftVisible || CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(GetScreenWidth()))) {
+            if (state.worldActionDraftVisible || CheckCollisionPointRec(event.mousePosition, WorldActionOverlay::toggleBounds(GetScreenWidth(), GetScreenHeight(), state.dockLayout, state.worldActionDraftVisible, state.worldActionDraft))) {
                 continue;
             }
         }

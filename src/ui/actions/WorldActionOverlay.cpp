@@ -58,9 +58,21 @@ Rectangle draftCardBoundsFromGrid(Rectangle overlay, int index, int count)
 } // namespace
 
 
-Rectangle WorldActionOverlay::toggleBounds(int screenWidth)
+Rectangle WorldActionOverlay::toggleBounds(int screenWidth, int screenHeight, const DockLayoutState& dockLayout, bool overlayVisible, const std::vector<WorldActionDraft>& drafts)
 {
-    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
+    constexpr float kTabWidth = 42.0f;
+    constexpr float kTabHeight = 126.0f;
+
+    if (overlayVisible) {
+        const Rectangle overlay = overlayBounds(screenWidth, screenHeight, drafts);
+        return {overlay.x - kTabWidth + 1.0f, overlay.y + (overlay.height - kTabHeight) * 0.5f, kTabWidth, kTabHeight};
+    }
+
+    const UiLayout layout = computeUiLayout(screenWidth, screenHeight, dockLayout);
+    const float wantedY = layout.rightSidebar.y + 96.0f;
+    const float maxY = layout.rightSidebar.y + layout.rightSidebar.height - kTabHeight - 12.0f;
+    const float y = std::clamp(wantedY, layout.rightSidebar.y + 12.0f, std::max(layout.rightSidebar.y + 12.0f, maxY));
+    return {layout.rightSidebar.x - kTabWidth + 1.0f, y, kTabWidth, kTabHeight};
 }
 
 Rectangle WorldActionOverlay::overlayBounds(int screenWidth, int screenHeight)
@@ -107,36 +119,23 @@ void WorldActionOverlay::draw(const UiContext& context) const
         return;
     }
 
-    const Rectangle toggle = toggleBounds(context.screenWidth);
-    if (context.state->eventPopupMode != EventPopupMode::None) {
-        DrawRectangleRounded(toggle, 0.28f, 8, {17, 24, 34, 210});
-        DrawRectangleRoundedLines(toggle, 0.28f, 8, {70, 86, 104, 120});
-        drawIconLabelRow({toggle.x + 12.0f, toggle.y + 5.0f, toggle.width - 24.0f, toggle.height - 10.0f},
-            "action.world_toggle",
-            "Review Events First",
-            {
-                18.0f,
-                8.0f,
-                13,
-                {139, 148, 158, 190},
-                {139, 148, 158, 255},
-            });
+    const bool hasPick = context.state->selectedWorldActionIndex >= 0;
+    const Rectangle toggle = toggleBounds(context.screenWidth, context.screenHeight, context.state->dockLayout, context.state->worldActionDraftVisible, context.state->worldActionDraft);
+    const bool lockedByEvent = context.state->eventPopupMode != EventPopupMode::None;
+    const Color border = lockedByEvent ? Color{70, 86, 104, 120} : hasPick ? Color{86, 210, 151, 210} : Color{245, 184, 76, 190};
+    const Color accent = lockedByEvent ? Color{139, 148, 158, 210} : hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255};
+    const Color fill = context.state->worldActionDraftVisible ? Color{24, 34, 50, 245} : Color{17, 24, 34, 235};
+
+    DrawRectangleRounded(toggle, 0.22f, 8, fill);
+    DrawRectangleRoundedLines(toggle, 0.22f, 8, border);
+    DrawText(context.state->worldActionDraftVisible ? "<" : ">", static_cast<int>(toggle.x + 15.0f), static_cast<int>(toggle.y + 12.0f), 18, accent);
+    DrawText("World", static_cast<int>(toggle.x + 6.0f), static_cast<int>(toggle.y + 42.0f), 10, {230, 237, 243, 255});
+    DrawText("Actions", static_cast<int>(toggle.x + 4.0f), static_cast<int>(toggle.y + 58.0f), 10, {230, 237, 243, 255});
+    if (lockedByEvent) {
+        DrawText("Locked", static_cast<int>(toggle.x + 6.0f), static_cast<int>(toggle.y + 82.0f), 10, {139, 148, 158, 255});
         return;
     }
-    const bool hasPick = context.state->selectedWorldActionIndex >= 0;
-    DrawRectangleRounded(toggle, 0.28f, 8, context.state->worldActionDraftVisible ? Color{24, 34, 50, 245} : Color{17, 24, 34, 235});
-    DrawRectangleRoundedLines(toggle, 0.28f, 8, hasPick ? Color{86, 210, 151, 210} : Color{245, 184, 76, 190});
-    const char* toggleText = context.state->worldActionDraftVisible ? "Hide World Actions" : (hasPick ? "Show World Actions" : "Pick World Action");
-    drawIconLabelRow({toggle.x + 12.0f, toggle.y + 5.0f, toggle.width - 24.0f, toggle.height - 10.0f},
-        "action.world_toggle",
-        toggleText,
-        {
-            18.0f,
-            8.0f,
-            13,
-            hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255},
-            {230, 237, 243, 255},
-        });
+    DrawCircle(static_cast<int>(toggle.x + toggle.width * 0.5f), static_cast<int>(toggle.y + toggle.height - 18.0f), 4.0f, accent);
 
     if (!context.state->worldActionDraftVisible) {
         return;

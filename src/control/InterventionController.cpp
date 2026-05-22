@@ -6,6 +6,7 @@
 #include "gameplay/actions/ActionRules.hpp"
 #include "ui/actions/ActionPanelModel.hpp"
 #include "ui/actions/EventOverlay.hpp"
+#include "ui/actions/WorldActionOverlay.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/viewmodels/UiFrameView.hpp"
 #include "rendering/RenderPrimitives.hpp"
@@ -13,27 +14,6 @@
 #include <algorithm>
 
 namespace {
-Rectangle worldActionToggleBounds(int screenWidth)
-{
-    return {static_cast<float>(screenWidth) * 0.5f - 120.0f, 68.0f, 240.0f, 34.0f};
-}
-
-Rectangle worldActionOverlayBounds(int screenWidth, int screenHeight)
-{
-    const float width = std::min(840.0f, static_cast<float>(screenWidth) - 96.0f);
-    const float height = std::min(360.0f, static_cast<float>(screenHeight) - 160.0f);
-    return {static_cast<float>(screenWidth) * 0.5f - width * 0.5f, static_cast<float>(screenHeight) * 0.5f - height * 0.5f, width, height};
-}
-
-Rectangle worldActionOverlayCardBounds(Rectangle overlay, int index, int count)
-{
-    constexpr float gap = 14.0f;
-    const float contentX = overlay.x + 20.0f;
-    const float contentWidth = overlay.width - 40.0f;
-    const float width = (contentWidth - gap * static_cast<float>(std::max(0, count - 1))) / static_cast<float>(std::max(1, count));
-    return {contentX + static_cast<float>(index) * (width + gap), overlay.y + 86.0f, width, overlay.height - 116.0f};
-}
-
 Rectangle mapBounds(const CameraController& camera, int screenWidth, int screenHeight)
 {
     const Vector2 topLeft = worldToScreen({-MapProjection::worldWidth * 0.5f, -MapProjection::worldHeight * 0.5f}, screenWidth, screenHeight, camera);
@@ -225,16 +205,16 @@ void InterventionController::handleActionPanelClick(const InputEvent& event, Sim
     }
 
     if (uiState.gameplayPhase == GameplayPhase::Planning && !uiState.worldActionDraft.empty()) {
-        if (CheckCollisionPointRec(event.mousePosition, worldActionToggleBounds(screenWidth))) {
+        if (CheckCollisionPointRec(event.mousePosition, WorldActionOverlay::toggleBounds(screenWidth, screenHeight, uiState.dockLayout, uiState.worldActionDraftVisible, uiState.worldActionDraft))) {
             uiState.worldActionDraftVisible = !uiState.worldActionDraftVisible;
             uiState.suppressMapSelectionOnce = true;
             return;
         }
         if (uiState.worldActionDraftVisible) {
-            const Rectangle overlay = worldActionOverlayBounds(screenWidth, screenHeight);
+            const Rectangle overlay = WorldActionOverlay::overlayBounds(screenWidth, screenHeight, uiState.worldActionDraft);
             const int count = static_cast<int>(uiState.worldActionDraft.size());
             for (int i = 0; i < count; ++i) {
-                if (!CheckCollisionPointRec(event.mousePosition, worldActionOverlayCardBounds(overlay, i, count))) {
+                if (!CheckCollisionPointRec(event.mousePosition, WorldActionOverlay::draftCardBounds(overlay, i, count))) {
                     continue;
                 }
                 const EngineeringCapacity selectedCapacity = gameplay::actions::addCapacityPreview(
