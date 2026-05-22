@@ -107,6 +107,7 @@ if(INFRA_BUILD_TESTS)
         ${INFRA_TEST_SOURCES}
     )
 
+    target_include_directories(infra_sandbox_tests PRIVATE tests)
     target_link_libraries(infra_sandbox_tests PRIVATE infra_simulation GTest::gtest_main)
 
     if(MSVC)
