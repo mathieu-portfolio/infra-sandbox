@@ -294,7 +294,7 @@ void TimelinePanel::update(UiContext& context, const UiFrameView& view, const Ui
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const BottomPanelLayout bottom = computeBottomPanelLayout(layout.bottomPanel);
     const Rectangle categoryField = categoryDroplistBounds(layout.bottomPanel);
     const Rectangle filterField = filterDroplistBounds(layout.bottomPanel);
@@ -371,7 +371,7 @@ void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, cons
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const Rectangle panel = layout.bottomPanel;
     const BottomPanelLayout bottom = computeBottomPanelLayout(panel);
     DrawRectangleRounded(panel, 0.025f, 8, {13, 17, 23, 232});

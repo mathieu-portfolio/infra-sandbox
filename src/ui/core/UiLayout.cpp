@@ -5,6 +5,11 @@
 #include <algorithm>
 
 namespace {
+Rectangle toRaylib(UiRect rect)
+{
+    return {rect.x, rect.y, rect.width, rect.height};
+}
+
 Rectangle boundsOf(const ui::UiNode& root, const char* id)
 {
     if (const ui::UiNode* node = root.find(id); node != nullptr) {
@@ -32,78 +37,22 @@ float specializationPanelContentHeight()
 
 UiLayout computeUiLayout(int screenWidth, int screenHeight)
 {
-    const float width = static_cast<float>(screenWidth);
-    const float height = static_cast<float>(screenHeight);
-    const float leftWidth = std::min(UiTheme::leftWidth, width * 0.22f);
-    const float rightWidth = std::min(UiTheme::rightWidth, width * 0.40f);
-    const float bottomHeight = std::min(UiTheme::bottomHeight, height * 0.45f);
+    DockLayoutState defaultDockState{};
+    defaultDockState.leftWidth = std::min(UiTheme::leftWidth, static_cast<float>(screenWidth) * 0.22f);
+    defaultDockState.rightWidth = std::min(UiTheme::rightWidth, static_cast<float>(screenWidth) * 0.40f);
+    defaultDockState.bottomHeight = std::min(UiTheme::bottomHeight, static_cast<float>(screenHeight) * 0.45f);
+    return computeUiLayout(screenWidth, screenHeight, defaultDockState);
+}
 
-    auto root = ui::verticalStack("root");
-    ui::LayoutStyle rootStyle;
-    rootStyle.gap = UiTheme::margin;
-    root->style(rootStyle);
-
-    auto topBar = std::make_unique<ui::PanelNode>("topBar");
-    topBar->style(ui::fixedHeight(UiTheme::topBarHeight));
-    root->add(std::move(topBar));
-
-    auto body = ui::horizontalStack("body");
-    ui::LayoutStyle bodyStyle;
-    bodyStyle.paddingLeft = UiTheme::margin;
-    bodyStyle.paddingRight = UiTheme::margin;
-    bodyStyle.paddingBottom = UiTheme::margin;
-    bodyStyle.gap = UiTheme::gap;
-    bodyStyle.flexGrow = 1.0f;
-    bodyStyle.heightMode = ui::SizeMode::Flex;
-    body->style(bodyStyle);
-
-    auto left = std::make_unique<ui::PanelNode>("leftSidebar");
-    ui::LayoutStyle leftStyle;
-    leftStyle.fixedWidth = leftWidth;
-    leftStyle.flexGrow = 1.0f;
-    leftStyle.widthMode = ui::SizeMode::Fixed;
-    leftStyle.heightMode = ui::SizeMode::Flex;
-    left->style(leftStyle);
-    body->add(std::move(left));
-
-    auto center = ui::verticalStack("center");
-    ui::LayoutStyle centerStyle;
-    centerStyle.gap = UiTheme::gap;
-    centerStyle.flexGrow = 1.0f;
-    centerStyle.widthMode = ui::SizeMode::Flex;
-    centerStyle.heightMode = ui::SizeMode::Flex;
-    center->style(centerStyle);
-    auto world = std::make_unique<ui::PanelNode>("worldView");
-    ui::LayoutStyle worldStyle;
-    worldStyle.minHeight = 120.0f;
-    worldStyle.flexGrow = 1.0f;
-    worldStyle.heightMode = ui::SizeMode::Flex;
-    world->style(worldStyle);
-    center->add(std::move(world));
-    auto bottom = std::make_unique<ui::PanelNode>("bottomPanel");
-    bottom->style(ui::fixedHeight(bottomHeight));
-    center->add(std::move(bottom));
-    body->add(std::move(center));
-
-    auto right = std::make_unique<ui::PanelNode>("rightSidebar");
-    ui::LayoutStyle rightStyle;
-    rightStyle.fixedWidth = rightWidth;
-    rightStyle.flexGrow = 1.0f;
-    rightStyle.widthMode = ui::SizeMode::Fixed;
-    rightStyle.heightMode = ui::SizeMode::Flex;
-    right->style(rightStyle);
-    body->add(std::move(right));
-
-    root->add(std::move(body));
-    root->measure({width, height});
-    root->layout({0.0f, 0.0f, width, height});
-
+UiLayout computeUiLayout(int screenWidth, int screenHeight, const DockLayoutState& dockState)
+{
+    const DockLayoutFrame dock = computeDockLayout(dockState, screenWidth, screenHeight);
     return {
-        .topBar = boundsOf(*root, "topBar"),
-        .leftSidebar = boundsOf(*root, "leftSidebar"),
-        .rightSidebar = boundsOf(*root, "rightSidebar"),
-        .bottomPanel = boundsOf(*root, "bottomPanel"),
-        .worldView = boundsOf(*root, "worldView"),
+        .topBar = toRaylib(dock.topBar),
+        .leftSidebar = toRaylib(dock.leftSidebar),
+        .rightSidebar = toRaylib(dock.rightSidebar),
+        .bottomPanel = toRaylib(dock.bottomPanel),
+        .worldView = toRaylib(dock.worldView),
     };
 }
 

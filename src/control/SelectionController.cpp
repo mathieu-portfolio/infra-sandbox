@@ -25,7 +25,7 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
             continue;
         }
 
-        if (mouseOverScreenPanel(event.mousePosition, GetScreenWidth(), GetScreenHeight())) {
+        if (mouseOverScreenPanel(event.mousePosition, GetScreenWidth(), GetScreenHeight(), state)) {
             continue;
         }
         if (state.gameplayPhase == GameplayPhase::Planning && state.eventPopupMode != EventPopupMode::None) {
@@ -65,7 +65,10 @@ void SelectionController::handleActions(std::span<const InputEvent> events, cons
     }
 }
 
-bool SelectionController::mouseOverScreenPanel(Vector2 mouse, int screenWidth, int screenHeight) const
+bool SelectionController::mouseOverScreenPanel(Vector2 mouse, int screenWidth, int screenHeight, const UiState& state) const
 {
-    return pointInUiPanel(mouse, computeUiLayout(screenWidth, screenHeight));
+    const DockLayoutFrame dock = computeDockLayout(state.dockLayout, screenWidth, screenHeight);
+    return state.dockLayout.activeHandle != DockResizeHandle::None
+        || dockResizeHandleAt({mouse.x, mouse.y}, dock) != DockResizeHandle::None
+        || pointInUiPanel(mouse, computeUiLayout(screenWidth, screenHeight, state.dockLayout));
 }

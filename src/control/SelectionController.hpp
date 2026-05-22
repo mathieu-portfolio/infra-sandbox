@@ -12,5 +12,5 @@ public:
     void handleActions(std::span<const InputEvent> events, const Simulation& simulation, const CameraController& camera, UiState& state);
 
 private:
-    [[nodiscard]] bool mouseOverScreenPanel(Vector2 mouse, int screenWidth, int screenHeight) const;
+    [[nodiscard]] bool mouseOverScreenPanel(Vector2 mouse, int screenWidth, int screenHeight, const UiState& state) const;
 };

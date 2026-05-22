@@ -196,7 +196,7 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
     const float x = layout.leftSidebar.x;
     float y = layout.leftSidebar.y;

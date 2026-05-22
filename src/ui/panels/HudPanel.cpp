@@ -62,7 +62,7 @@ bool handleViewModeBar(UiContext& context, Vector2 mouse)
         return false;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const Rectangle bar = computeViewModeBarBounds(layout.worldView);
     if (!CheckCollisionPointRec(mouse, bar)) {
         return false;
@@ -100,7 +100,7 @@ void drawViewModeBar(const UiContext& context)
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const Rectangle bar = computeViewModeBarBounds(layout.worldView);
     DrawRectangleRounded(bar, 0.28f, 12, {12, 18, 27, 218});
     DrawRectangleRoundedLines(bar, 0.28f, 12, {70, 86, 104, 105});
@@ -214,7 +214,7 @@ void HudPanel::draw(const UiContext& context, const UiFrameView& view, const UiS
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const TopBarLayout top = computeTopBarLayout(layout.topBar);
     DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
     DrawLineEx({0.0f, layout.topBar.height}, {static_cast<float>(context.screenWidth), layout.topBar.height}, 1.0f, {70, 86, 104, 110});

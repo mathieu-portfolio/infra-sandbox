@@ -126,7 +126,7 @@ void WorldActionOverlay::draw(const UiContext& context) const
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     DrawRectangleRec(layout.worldView, {0, 0, 0, 128});
 
     const Rectangle overlay = overlayBounds(context.screenWidth, context.screenHeight, context.state->worldActionDraft);

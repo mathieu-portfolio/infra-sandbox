@@ -2,6 +2,8 @@
 
 #include "raylib.h"
 
+#include "ui/core/DockLayout.hpp"
+
 struct UiLayout {
     Rectangle topBar{};
     Rectangle leftSidebar{};
@@ -54,6 +56,7 @@ struct UiTheme {
 };
 
 UiLayout computeUiLayout(int screenWidth, int screenHeight);
+UiLayout computeUiLayout(int screenWidth, int screenHeight, const DockLayoutState& dockState);
 TopBarLayout computeTopBarLayout(Rectangle topBar);
 LeftSidebarLayout computeLeftSidebarLayout(Rectangle leftSidebar, bool sandboxMode);
 BottomPanelLayout computeBottomPanelLayout(Rectangle bottomPanel);

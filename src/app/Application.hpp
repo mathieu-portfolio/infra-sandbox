@@ -13,6 +13,7 @@
 #include "input/InputManager.hpp"
 #include "rendering/CameraController.hpp"
 #include "rendering/Renderer.hpp"
+#include "ui/core/DockLayout.hpp"
 
 #include <cstddef>
 #include <string>
@@ -52,5 +53,6 @@ private:
     WorldActionController worldActionController_;
     GameplayPhaseController gameplayPhaseController_;
     SandboxController sandboxController_;
+    DockLayoutController dockLayoutController_;
     bool paused_ = false;
 };

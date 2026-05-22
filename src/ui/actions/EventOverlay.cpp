@@ -187,7 +187,7 @@ void EventOverlay::draw(const UiContext& context, const UiScenarioView& scenario
         return;
     }
 
-    const UiLayout uiLayout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout uiLayout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     DrawRectangleRec(uiLayout.worldView, {0, 0, 0, 128});
 
     const bool planning = context.state->eventPopupMode == EventPopupMode::PlanningStart;

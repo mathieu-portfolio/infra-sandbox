@@ -75,7 +75,7 @@ void SelectionPanel::draw(const UiContext& context, const UiFrameView& view) con
     }
 
     const NodePressure* pressure = view.pressureAnalysis().pressureForNode(node->id);
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const float panelWidth = 364.0f;
     const float contentWidth = panelWidth - kPanelPadding * 2.0f;
     const std::string summary = pressure != nullptr && !pressure->explanation.empty()

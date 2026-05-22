@@ -32,7 +32,7 @@ void MetricsPanel::update(UiContext& context, const UiFrameView& view)
     if (context.state == nullptr) {
         return;
     }
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const LeftSidebarLayout left = computeLeftSidebarLayout(layout.leftSidebar, context.state->sandboxMode);
     const Vector2 mouse = GetMousePosition();
 

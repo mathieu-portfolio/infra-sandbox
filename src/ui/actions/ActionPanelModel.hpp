@@ -18,6 +18,6 @@ struct ActionSectionsLayout {
 class ActionPanelModel {
 public:
     [[nodiscard]] std::vector<ActionCardModel> buildCards(const UiFrameView& view, const UiState& state, int screenWidth, int screenHeight) const;
-    [[nodiscard]] Rectangle panelBounds(int screenWidth, int screenHeight) const;
+    [[nodiscard]] Rectangle panelBounds(const UiState& state, int screenWidth, int screenHeight) const;
     [[nodiscard]] ActionSectionsLayout actionSectionsLayout(const UiState& state, int screenWidth, int screenHeight) const;
 };

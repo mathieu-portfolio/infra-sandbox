@@ -1,6 +1,7 @@
 #include "ui/UiManager.hpp"
 
 #include "ui/widgets/IconRegistry.hpp"
+#include "ui/core/DockLayout.hpp"
 #include "ui/viewmodels/UiFrameView.hpp"
 
 #include "raylib.h"
@@ -10,6 +11,46 @@
 #include <string>
 
 namespace {
+
+Rectangle toRaylib(UiRect rect)
+{
+    return {rect.x, rect.y, rect.width, rect.height};
+}
+
+float centerY(UiRect rect)
+{
+    return rect.y + rect.height * 0.5f;
+}
+
+void drawDockResizeHandles(const DockLayoutFrame& frame, const DockLayoutState& state)
+{
+    const DockResizeHandle visible = state.activeHandle != DockResizeHandle::None ? state.activeHandle : state.hoveredHandle;
+    if (visible == DockResizeHandle::None) {
+        return;
+    }
+
+    const Color fill = state.activeHandle != DockResizeHandle::None
+        ? Color{89, 196, 255, 120}
+        : Color{89, 196, 255, 70};
+    const Color line = state.activeHandle != DockResizeHandle::None
+        ? Color{125, 211, 252, 220}
+        : Color{125, 211, 252, 150};
+
+    if (visible == DockResizeHandle::LeftRightEdge) {
+        DrawRectangleRec(toRaylib(frame.leftResizeHandle), fill);
+        DrawLineV({frame.leftResizeHandle.x + frame.leftResizeHandle.width * 0.5f, frame.leftResizeHandle.y + 12.0f},
+                  {frame.leftResizeHandle.x + frame.leftResizeHandle.width * 0.5f, frame.leftResizeHandle.y + frame.leftResizeHandle.height - 12.0f}, line);
+    } else if (visible == DockResizeHandle::RightLeftEdge) {
+        DrawRectangleRec(toRaylib(frame.rightResizeHandle), fill);
+        DrawLineV({frame.rightResizeHandle.x + frame.rightResizeHandle.width * 0.5f, frame.rightResizeHandle.y + 12.0f},
+                  {frame.rightResizeHandle.x + frame.rightResizeHandle.width * 0.5f, frame.rightResizeHandle.y + frame.rightResizeHandle.height - 12.0f}, line);
+    } else if (visible == DockResizeHandle::BottomTopEdge) {
+        DrawRectangleRec(toRaylib(frame.bottomResizeHandle), fill);
+        DrawLineV({frame.bottomResizeHandle.x + 12.0f, centerY(frame.bottomResizeHandle)},
+                  {frame.bottomResizeHandle.x + frame.bottomResizeHandle.width - 12.0f, centerY(frame.bottomResizeHandle)}, line);
+    }
+}
+
 EngineeringCapacity displayCapacityWithBonus(EngineeringCapacity base, const EngineeringCapacity& bonus)
 {
     return applyEngineeringCapacityBudgetCap(base, bonus);
@@ -135,6 +176,7 @@ void UiManager::draw(const Simulation& simulation, const ScenarioManager& scenar
     debugPanel_.draw(context, view);
     hudPanel_.draw(context, view, view.scenario, packManager);
     actionPanel_.drawPlanningOverlays(context, view.scenario);
+    drawDockResizeHandles(computeDockLayout(state_.dockLayout, GetScreenWidth(), GetScreenHeight()), state_.dockLayout);
 }
 
 const UiState& UiManager::state() const

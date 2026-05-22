@@ -33,7 +33,7 @@ void ActionPanelInteraction::update(UiContext& context, const UiFrameView& view)
     const float actionContentHeight = std::max(0.0f, actionContentBottom - actionsLayout.actionList.y);
     (void)ui::updateScrollOffset(actionsLayout.actionList, actionContentHeight, GetMouseWheelMove(), mouse, context.state->nodeActionScrollOffset);
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-        const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+        const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
         const RightSidebarLayout panel = computeRightSidebarLayout(layout.rightSidebar);
         const auto categoryLabels = actions_ui::categoryFilterLabels(cards);
         for (int i = 0; i < 4 && i < static_cast<int>(categoryLabels.size()); ++i) {

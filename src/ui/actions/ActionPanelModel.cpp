@@ -238,15 +238,15 @@ ActionCardModel topologyCard(const UiFrameView& view, const UiState& state, cons
 }
 }
 
-Rectangle ActionPanelModel::panelBounds(int screenWidth, int screenHeight) const
+Rectangle ActionPanelModel::panelBounds(const UiState& state, int screenWidth, int screenHeight) const
 {
-    return computeUiLayout(screenWidth, screenHeight).rightSidebar;
+    return computeUiLayout(screenWidth, screenHeight, state.dockLayout).rightSidebar;
 }
 
 
 ActionSectionsLayout ActionPanelModel::actionSectionsLayout(const UiState& state, int screenWidth, int screenHeight) const
 {
-    const Rectangle panel = panelBounds(screenWidth, screenHeight);
+    const Rectangle panel = panelBounds(state, screenWidth, screenHeight);
     const RightSidebarLayout layout = computeRightSidebarLayout(panel);
 
     const float top = layout.actionHeader.y;

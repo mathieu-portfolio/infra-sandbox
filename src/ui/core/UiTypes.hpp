@@ -4,6 +4,7 @@
 #include "core/simulation/Mechanics.hpp"
 #include "simulation/topology/TopologyMutation.hpp"
 #include "gameplay/Scenario.hpp"
+#include "ui/core/DockLayout.hpp"
 
 #include <array>
 #include <cstddef>
@@ -254,6 +255,7 @@ struct UiState {
     float nodeActionScrollOffset = 0.0f;
     float alertsScrollOffset = 0.0f;
     float timelineScrollOffset = 0.0f;
+    DockLayoutState dockLayout{};
     std::unordered_map<std::string, int> actionUseCounts;
     int hoveredActionIndex = -1;
     std::vector<EngineeringCost> hoveredActionEngineeringCosts;

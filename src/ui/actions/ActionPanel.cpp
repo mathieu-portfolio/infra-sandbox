@@ -122,7 +122,7 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
         return;
     }
 
-    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight);
+    const UiLayout layout = computeUiLayout(context.screenWidth, context.screenHeight, context.state->dockLayout);
     const Rectangle sidebar = layout.rightSidebar;
     const RightSidebarLayout panel = computeRightSidebarLayout(sidebar);
     DrawRectangleRounded(sidebar, 0.018f, 8, {9, 16, 27, 242});

@@ -43,10 +43,13 @@ Rectangle mapBounds(const CameraController& camera, int screenWidth, int screenH
 
 bool canUseMapPlacementClick(const UiState& uiState, Vector2 mousePosition, const CameraController& camera, int screenWidth, int screenHeight)
 {
+    if (uiState.dockLayout.activeHandle != DockResizeHandle::None || uiState.dockLayout.hoveredHandle != DockResizeHandle::None) {
+        return false;
+    }
     if (!uiState.placementActive || uiState.gameplayPhase != GameplayPhase::Planning || uiState.eventPopupMode != EventPopupMode::None) {
         return false;
     }
-    if (uiState.worldActionDraftVisible || pointInUiPanel(mousePosition, computeUiLayout(screenWidth, screenHeight))) {
+    if (uiState.worldActionDraftVisible || pointInUiPanel(mousePosition, computeUiLayout(screenWidth, screenHeight, uiState.dockLayout))) {
         return false;
     }
     return CheckCollisionPointRec(mousePosition, mapBounds(camera, screenWidth, screenHeight));
@@ -180,12 +183,17 @@ void InterventionController::handleActions(std::span<const InputEvent> events, S
 
 void InterventionController::handleActionPanelClick(const InputEvent& event, Simulation& simulation, ScenarioManager& scenarioManager, UiState& uiState) const
 {
+    if (uiState.dockLayout.activeHandle != DockResizeHandle::None || uiState.dockLayout.hoveredHandle != DockResizeHandle::None) {
+        uiState.suppressMapSelectionOnce = true;
+        return;
+    }
+
     const ActionPanelModel model;
     const UiFrameView view = buildUiFrameView(simulation, scenarioManager);
     const auto cards = model.buildCards(view, uiState, GetScreenWidth(), GetScreenHeight());
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
-    const UiLayout layout = computeUiLayout(screenWidth, screenHeight);
+    const UiLayout layout = computeUiLayout(screenWidth, screenHeight, uiState.dockLayout);
     const Rectangle sidebar = layout.rightSidebar;
     const gameplay::actions::ActionQueue actionQueue;
     const gameplay::actions::ActionPlacementService placementService;

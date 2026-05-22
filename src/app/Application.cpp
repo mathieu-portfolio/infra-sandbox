@@ -70,6 +70,24 @@ void Application::handleInput()
     applyUiRequests();
     applyWindowRequests();
 
+    const Vector2 dockMouse = GetMousePosition();
+    auto& dockState = renderer_.uiManager().state().dockLayout;
+    dockLayoutController_.update(
+        dockState,
+        GetScreenWidth(),
+        GetScreenHeight(),
+        {dockMouse.x, dockMouse.y},
+        IsMouseButtonPressed(MOUSE_BUTTON_LEFT),
+        IsMouseButtonDown(MOUSE_BUTTON_LEFT));
+    if (dockState.activeHandle == DockResizeHandle::BottomTopEdge || dockState.hoveredHandle == DockResizeHandle::BottomTopEdge) {
+        SetMouseCursor(MOUSE_CURSOR_RESIZE_NS);
+    } else if (dockState.activeHandle == DockResizeHandle::LeftRightEdge || dockState.activeHandle == DockResizeHandle::RightLeftEdge
+        || dockState.hoveredHandle == DockResizeHandle::LeftRightEdge || dockState.hoveredHandle == DockResizeHandle::RightLeftEdge) {
+        SetMouseCursor(MOUSE_CURSOR_RESIZE_EW);
+    } else {
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+    }
+
     const auto events = inputManager_.poll();
     const auto simulationResult = simulationController_.handleActions(events, session_.simulation(), paused_);
     if (simulationResult.resetRequested) {
@@ -234,8 +252,9 @@ void Application::applyWindowRequests()
 bool Application::shouldBlockCameraInput() const
 {
     const UiState& uiState = renderer_.uiManager().state();
-    const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight());
-    return pointInUiPanel(GetMousePosition(), layout)
+    const UiLayout layout = computeUiLayout(GetScreenWidth(), GetScreenHeight(), uiState.dockLayout);
+    return dockLayoutController_.isMouseOwnedByDock(uiState.dockLayout)
+        || pointInUiPanel(GetMousePosition(), layout)
         || uiState.eventPopupMode != EventPopupMode::None
         || (uiState.gameplayPhase == GameplayPhase::Planning && uiState.worldActionDraftVisible && !uiState.worldActionDraft.empty());
 }
