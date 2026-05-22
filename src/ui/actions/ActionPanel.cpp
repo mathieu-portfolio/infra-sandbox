@@ -10,6 +10,7 @@
 #include "ui/core/UiCore.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/UiPrimitives.hpp"
+#include "ui/core/ScrollHandling.hpp"
 #include "ui/actions/ActionFiltering.hpp"
 #include "ui/actions/ActionText.hpp"
 #include "ui/actions/PressurePresentation.hpp"
@@ -297,8 +298,9 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
     for (int i = 0; i < 4; ++i) {
         drawFilterPill(actions.filters[i], actions_ui::categoryFilterLabel(cards, i), i == context.state->activeActionCategoryIndex);
     }
-    BeginScissorMode(static_cast<int>(actions.actionList.x - 2.0f), static_cast<int>(actions.actionList.y), static_cast<int>(actions.actionList.width + 4.0f), static_cast<int>(actions.actionList.height));
-    if (cards.empty()) {
+    {
+        const ui::ScissorGuard actionListClip({actions.actionList.x - 2.0f, actions.actionList.y, actions.actionList.width + 4.0f, actions.actionList.height});
+        if (cards.empty()) {
         drawTextClipped("Select an API, database, cache, or queue node to see contextual actions.", {actions.actionList.x, actions.actionList.y + 4.0f, actions.actionList.width, 18.0f}, 13, {139, 148, 158, 255});
     }
     for (int i = 0; i < static_cast<int>(cards.size()); ++i) {
@@ -311,8 +313,8 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
         }
         const bool highlighted = i == context.state->hoveredActionIndex || i == context.state->selectedActionIndex;
         NodeActionCardView{}.draw(card, highlighted);
+        }
     }
-    EndScissorMode();
 
     const Rectangle locked = panel.locked;
     DrawRectangleRounded(locked, 0.045f, 8, {17, 24, 34, 230});

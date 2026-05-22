@@ -1,4 +1,5 @@
 #include "ui/core/UiNode.hpp"
+#include "ui/core/ScrollHandling.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -93,15 +94,15 @@ void UiNode::draw() const
     }
 
     if (style_.clip) {
-        BeginScissorMode(static_cast<int>(bounds_.x), static_cast<int>(bounds_.y), static_cast<int>(bounds_.width), static_cast<int>(bounds_.height));
+        const ScissorGuard clip(bounds_);
+        for (const auto& child : children_) {
+            child->draw();
+        }
+        return;
     }
 
     for (const auto& child : children_) {
         child->draw();
-    }
-
-    if (style_.clip) {
-        EndScissorMode();
     }
 }
 

@@ -394,8 +394,9 @@ void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, cons
     int row = 0;
     const float timelineY = bottom.rows.y - context.state->timelineScrollOffset;
     const auto rows = buildActivityRows(*context.state, view, scenarioView);
-    BeginScissorMode(static_cast<int>(bottom.rows.x), static_cast<int>(bottom.rows.y), static_cast<int>(bottom.rows.width), static_cast<int>(bottom.rows.height));
-    for (const auto& activity : rows) {
+    {
+        const ui::ScissorGuard rowsClip(bottom.rows);
+        for (const auto& activity : rows) {
         if (!rowMatches(activity, *context.state)) {
             continue;
         }
@@ -415,7 +416,7 @@ void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, cons
     if (row == 0) {
         drawTextClipped("No events match the selected filters.", {panel.x + 14.0f, bottom.rows.y, panel.width - 28.0f, 18.0f}, 13, {139, 148, 158, 255});
     }
-    EndScissorMode();
+    }
 
     if (context.state->timelineCategoryDroplistOpen) {
         drawTimelineMenu(categoryField, {"All Events", "Objectives", "Traffic", "Change", "Database", "Reliability", "System"});

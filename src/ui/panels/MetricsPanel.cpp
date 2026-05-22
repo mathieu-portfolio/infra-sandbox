@@ -37,9 +37,14 @@ void MetricsPanel::update(UiContext& context, const UiFrameView& view)
     const Vector2 mouse = GetMousePosition();
 
 
+    constexpr float alertsHeaderHeight = 32.0f;
+    constexpr float alertsTopPadding = 8.0f;
+    constexpr float alertsBottomPadding = 10.0f;
+    constexpr float alertsRowHeight = 32.0f;
     const int alertRows = static_cast<int>(view.pressure().hints.size() + view.pressure().suspiciousPatterns.size() + view.pressure().explanations.size());
-    const float alertsContentHeight = 40.0f + static_cast<float>(std::max(1, alertRows)) * 32.0f + 10.0f;
-    (void)ui::updateScrollOffset(left.alerts, alertsContentHeight, GetMouseWheelMove(), mouse, context.state->alertsScrollOffset);
+    const Rectangle alertsViewport = ui::scrollViewport(left.alerts, alertsHeaderHeight);
+    const float alertsContentHeight = alertsTopPadding + static_cast<float>(std::max(1, alertRows)) * alertsRowHeight + alertsBottomPadding;
+    (void)ui::updateScrollOffset(alertsViewport, alertsContentHeight, GetMouseWheelMove(), mouse, context.state->alertsScrollOffset);
 
     if (!IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
         return;

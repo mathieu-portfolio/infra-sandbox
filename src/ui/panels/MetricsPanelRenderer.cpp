@@ -4,6 +4,7 @@
 #include "ui/widgets/IconRegistry.hpp"
 #include "ui/core/UiLayout.hpp"
 #include "ui/core/UiPrimitives.hpp"
+#include "ui/core/ScrollHandling.hpp"
 #include "ui/actions/PressurePresentation.hpp"
 
 #include "raylib.h"
@@ -67,7 +68,8 @@ void drawFrontendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
-    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    {
+    const ui::ScissorGuard clip(bounds);
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.perceivedLatency * 1000.0);
     compactMetricRow("Perceived latency", buffer, x, y, width, metrics.frontend.perceivedLatency > 1.0 ? Color{245, 184, 76, 255} : Color{86, 210, 151, 255});
     std::snprintf(buffer, sizeof(buffer), "%.0f ms", metrics.frontend.renderLatency * 1000.0);
@@ -88,7 +90,7 @@ void drawFrontendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
         std::snprintf(buffer, sizeof(buffer), "%+.1f", contribution->amount);
         compactMetricRow(contribution->label, buffer, x, y + 148.0f, width, contribution->amount < 0.0 ? Color{245, 184, 76, 255} : Color{89, 196, 255, 255});
     }
-    EndScissorMode();
+    }
 }
 
 void drawContributionRow(const MetricsSnapshot& metrics, MetricContributionDomain domain, float x, float y, float width)
@@ -106,7 +108,8 @@ void drawBackendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
-    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    {
+    const ui::ScissorGuard clip(bounds);
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.requestLoad);
     compactMetricRow("Request load", buffer, x, y, width, metrics_panel::scoreColor(metrics.backend.requestLoad, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.queuePressure);
@@ -118,7 +121,7 @@ void drawBackendDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.backend.reliabilityRisk);
     compactMetricRow("Reliability risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.backend.reliabilityRisk, false));
     drawContributionRow(metrics, MetricContributionDomain::Backend, x, y + 94.0f, width);
-    EndScissorMode();
+    }
 }
 
 void drawNetworkDetails(const MetricsSnapshot& metrics, Rectangle bounds)
@@ -127,7 +130,8 @@ void drawNetworkDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
-    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    {
+    const ui::ScissorGuard clip(bounds);
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.bandwidthPressure);
     compactMetricRow("Bandwidth pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.network.bandwidthPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.latencySensitivity);
@@ -137,7 +141,7 @@ void drawNetworkDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.network.deliveryPressure);
     compactMetricRow("Delivery pressure", buffer, x, y + 54.0f, width, metrics_panel::scoreColor(metrics.network.deliveryPressure, false));
     drawContributionRow(metrics, MetricContributionDomain::Network, x, y + 76.0f, width);
-    EndScissorMode();
+    }
 }
 
 void drawDatabaseDetails(const MetricsSnapshot& metrics, Rectangle bounds)
@@ -146,7 +150,8 @@ void drawDatabaseDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
-    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    {
+    const ui::ScissorGuard clip(bounds);
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.readPressure);
     compactMetricRow("Read pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.database.readPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.writePressure);
@@ -158,7 +163,7 @@ void drawDatabaseDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.database.persistenceRisk);
     compactMetricRow("Persistence risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.database.persistenceRisk, false));
     drawContributionRow(metrics, MetricContributionDomain::Database, x, y + 94.0f, width);
-    EndScissorMode();
+    }
 }
 
 void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
@@ -167,7 +172,8 @@ void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     const float x = bounds.x + 14.0f;
     const float y = bounds.y + 184.0f;
     const float width = bounds.width - 28.0f;
-    BeginScissorMode(static_cast<int>(bounds.x), static_cast<int>(bounds.y), static_cast<int>(bounds.width), static_cast<int>(bounds.height));
+    {
+    const ui::ScissorGuard clip(bounds);
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.cpuPressure);
     compactMetricRow("CPU pressure", buffer, x, y, width, metrics_panel::scoreColor(metrics.runtime.cpuPressure, false));
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.memoryPressure);
@@ -179,7 +185,7 @@ void drawRuntimeDetails(const MetricsSnapshot& metrics, Rectangle bounds)
     std::snprintf(buffer, sizeof(buffer), "%.0f", metrics.runtime.executionRisk);
     compactMetricRow("Execution risk", buffer, x, y + 72.0f, width, metrics_panel::scoreColor(metrics.runtime.executionRisk, false));
     drawContributionRow(metrics, MetricContributionDomain::Runtime, x, y + 94.0f, width);
-    EndScissorMode();
+    }
 }
 }
 
@@ -251,14 +257,19 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     Rectangle alerts = left.alerts;
     y = alerts.y;
     drawPanelFrame(alerts, "Alerts");
-    BeginScissorMode(static_cast<int>(alerts.x), static_cast<int>(alerts.y), static_cast<int>(alerts.width), static_cast<int>(alerts.height));
+    {
+    constexpr float alertsHeaderHeight = 32.0f;
+    constexpr float alertsTopPadding = 8.0f;
+    constexpr float alertsRowHeight = 32.0f;
+    const Rectangle alertsViewport = ui::scrollViewport(alerts, alertsHeaderHeight);
+    const ui::ScissorGuard alertsClip(alertsViewport);
     int row = 0;
     const float scrollY = context.state != nullptr ? context.state->alertsScrollOffset : 0.0f;
     auto drawAlertRow = [&](const char* iconId, const std::string& text, Color iconColor) {
-        const float rowY = y + 40.0f + static_cast<float>(row) * 32.0f - scrollY;
-        if (rowY > alerts.y - 32.0f && rowY < alerts.y + alerts.height) {
-            IconRegistry::instance().drawIcon(iconId, {x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, iconColor);
-            drawTextClipped(text, {x + 38.0f, rowY, width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
+        const float rowY = alertsViewport.y + alertsTopPadding + static_cast<float>(row) * alertsRowHeight - scrollY;
+        if (rowY > alertsViewport.y - alertsRowHeight && rowY < alertsViewport.y + alertsViewport.height) {
+            IconRegistry::instance().drawIcon(iconId, {alertsViewport.x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, iconColor);
+            drawTextClipped(text, {alertsViewport.x + 38.0f, rowY, alertsViewport.width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
         }
         ++row;
     };
@@ -272,10 +283,11 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
         drawAlertRow("alert.explanation", explanation, {89, 196, 255, 255});
     }
     if (row == 0) {
-        IconRegistry::instance().drawIcon("alert.empty_state", {x + 14.0f, y + 42.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
-        drawTextClipped("No active incidents", {x + 38.0f, y + 40.0f, width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
+        const float rowY = alertsViewport.y + alertsTopPadding - scrollY;
+        IconRegistry::instance().drawIcon("alert.empty_state", {alertsViewport.x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
+        drawTextClipped("No active incidents", {alertsViewport.x + 38.0f, rowY, alertsViewport.width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
     }
-    EndScissorMode();
+    }
 
     if (context.state->sandboxMode) {
         Rectangle sandbox = left.sandbox;
@@ -300,7 +312,8 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     Rectangle legend = left.legend;
     y = legend.y;
     drawPanelFrame(legend, "Legend");
-    BeginScissorMode(static_cast<int>(legend.x), static_cast<int>(legend.y), static_cast<int>(legend.width), static_cast<int>(legend.height));
+    {
+    const ui::ScissorGuard legendClip(legend);
     const std::array<const char*, 5> names{"Client Region", "Service", "Database", "Cache", "Network Link"};
     const std::array<const char*, 5> icons{"legend.client", "legend.service", "legend.database", "legend.cache", "legend.link"};
     for (int i = 0; i < 5; ++i) {
@@ -308,5 +321,5 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
         IconRegistry::instance().drawIcon(icons[static_cast<std::size_t>(i)], {x + 14.0f, rowY, 15.0f, 15.0f}, {89, 196, 255, 255});
         drawTextClipped(names[static_cast<std::size_t>(i)], {x + 38.0f, rowY - 1.0f, width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
     }
-    EndScissorMode();
+    }
 }

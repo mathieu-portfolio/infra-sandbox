@@ -1,4 +1,5 @@
 #include "ui/core/UiPrimitives.hpp"
+#include "ui/core/ScrollHandling.hpp"
 
 #include <algorithm>
 
@@ -49,24 +50,15 @@ float measureTextWrappedHeight(const std::string& text, float width, int fontSiz
 
 void drawTextClipped(const std::string& text, Rectangle bounds, int fontSize, Color color)
 {
-    BeginScissorMode(
-        static_cast<int>(bounds.x),
-        static_cast<int>(bounds.y),
-        static_cast<int>(bounds.width),
-        static_cast<int>(bounds.height));
+    const ui::ScissorGuard clip(bounds);
     const std::string visible = ellipsizeText(text, fontSize, bounds.width);
     DrawText(visible.c_str(), static_cast<int>(bounds.x), static_cast<int>(bounds.y), fontSize, color);
-    EndScissorMode();
 }
 
 
 void drawTextWrappedClipped(const std::string& text, Rectangle bounds, int fontSize, Color color, float lineSpacing)
 {
-    BeginScissorMode(
-        static_cast<int>(bounds.x),
-        static_cast<int>(bounds.y),
-        static_cast<int>(bounds.width),
-        static_cast<int>(bounds.height));
+    const ui::ScissorGuard clip(bounds);
 
     const float lineHeight = static_cast<float>(fontSize) + lineSpacing;
     float x = bounds.x;
@@ -115,8 +107,6 @@ void drawTextWrappedClipped(const std::string& text, Rectangle bounds, int fontS
         pushWord(word);
     }
     flushLine();
-
-    EndScissorMode();
 }
 
 void drawPanelFrame(Rectangle bounds, const char* title)
