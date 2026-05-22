@@ -105,7 +105,6 @@ void drawViewModeBar(const UiContext& context)
     DrawRectangleRounded(bar, 0.28f, 12, {12, 18, 27, 218});
     DrawRectangleRoundedLines(bar, 0.28f, 12, {70, 86, 104, 105});
 
-    auto& icons = IconRegistry::instance();
     for (int i = 0; i < kViewModeCount; ++i) {
         const UiViewMode mode = viewModeAt(i);
         const Rectangle button = computeViewModeButtonBounds(bar, i, kViewModeCount);
@@ -117,8 +116,13 @@ void drawViewModeBar(const UiContext& context)
 
         DrawRectangleRounded(button, 0.24f, 8, fill);
         DrawRectangleRoundedLines(button, 0.24f, 8, stroke);
-        icons.drawIcon(uiViewModeIcon(mode), {button.x + 9.0f, button.y + 7.0f, 14.0f, 14.0f}, text);
-        drawTextClipped(uiViewModeName(mode), {button.x + 28.0f, button.y + 6.0f, button.width - 34.0f, 16.0f}, 13, text);
+        drawIconLabelRow({button.x + 9.0f, button.y + 4.0f, button.width - 18.0f, button.height - 8.0f}, uiViewModeIcon(mode), uiViewModeName(mode), {
+            14.0f,
+            5.0f,
+            13,
+            text,
+            text,
+        });
     }
 }
 
@@ -219,9 +223,13 @@ void HudPanel::draw(const UiContext& context, const UiFrameView& view, const UiS
     DrawRectangleRec(layout.topBar, {8, 13, 20, 246});
     DrawLineEx({0.0f, layout.topBar.height}, {static_cast<float>(context.screenWidth), layout.topBar.height}, 1.0f, {70, 86, 104, 110});
 
-    auto& icons = IconRegistry::instance();
-    icons.drawIcon("hud.logo", {top.brand.x + 4.0f, top.brand.y + 4.0f, 26.0f, 26.0f}, {230, 237, 243, 255});
-    DrawText("INFRA SANDBOX", static_cast<int>(top.brand.x + 38.0f), static_cast<int>(top.brand.y + 8.0f), 18, {230, 237, 243, 255});
+    drawIconLabelRow({top.brand.x + 4.0f, top.brand.y, top.brand.width - 4.0f, top.brand.height}, "hud.logo", "INFRA SANDBOX", {
+        26.0f,
+        8.0f,
+        18,
+        {230, 237, 243, 255},
+        {230, 237, 243, 255},
+    });
 
     packDropdown_.drawField(context, packManager);
     scenarioDropdown_.drawField(context, scenarioView);
@@ -237,12 +245,22 @@ void HudPanel::draw(const UiContext& context, const UiFrameView& view, const UiS
     objectivesDropdown_.drawField(context, scenarioView);
 
     const Rectangle feedback = hudFeedbackBounds(context.screenWidth);
-    icons.drawIcon("hud.feedback", {feedback.x, feedback.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Feedback", static_cast<int>(feedback.x + 28.0f), static_cast<int>(feedback.y + 10.0f), 14, {139, 148, 158, 255});
+    drawIconLabelRow({feedback.x, feedback.y, feedback.width, feedback.height}, "hud.feedback", "Feedback", {
+        22.0f,
+        6.0f,
+        14,
+        {139, 148, 158, 255},
+        {139, 148, 158, 255},
+    });
 
     const Rectangle help = hudHelpBounds(context.screenWidth);
-    icons.drawIcon("hud.help", {help.x, help.y + 4.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText("Help", static_cast<int>(help.x + 26.0f), static_cast<int>(help.y + 10.0f), 14, {139, 148, 158, 255});
+    drawIconLabelRow({help.x, help.y, help.width, help.height}, "hud.help", "Help", {
+        22.0f,
+        4.0f,
+        14,
+        {139, 148, 158, 255},
+        {139, 148, 158, 255},
+    });
 
     optionsMenu_.drawButton(context);
 

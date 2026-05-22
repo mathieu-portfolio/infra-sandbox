@@ -173,16 +173,16 @@ void NodeActionCardView::draw(const ActionCardModel& card, bool highlighted) con
 {
     actions_ui::cards::drawCardChrome(card.bounds, {.highlighted = highlighted});
 
-    IconRegistry::instance().drawIcon(
+    drawIconLabelRow({card.bounds.x + kPad, card.bounds.y + 10.0f, card.bounds.width - kPad * 2.0f, 40.0f},
         actions_ui::cards::iconForActionCard(card),
-        {card.bounds.x + kPad, card.bounds.y + kPad, 30.0f, 30.0f},
-        {89, 196, 255, 255});
-
-    drawTextClipped(
         card.name,
-        {card.bounds.x + 56.0f, card.bounds.y + kHeaderTop, card.bounds.width - 72.0f, 22.0f},
-        15,
-        {230, 237, 243, 255});
+        {
+            30.0f,
+            10.0f,
+            15,
+            {89, 196, 255, 255},
+            {230, 237, 243, 255},
+        });
 
     const float contentWidth = card.bounds.width - kPad * 2.0f;
     const float footerY = card.bounds.y + card.bounds.height - kFooterHeight - kFooterBottomPad;

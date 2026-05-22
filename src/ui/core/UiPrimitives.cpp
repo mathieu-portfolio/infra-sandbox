@@ -1,5 +1,6 @@
 #include "ui/core/UiPrimitives.hpp"
 #include "ui/core/ScrollHandling.hpp"
+#include "ui/widgets/IconRegistry.hpp"
 
 #include <algorithm>
 
@@ -124,4 +125,48 @@ void drawToggle(Rectangle bounds, bool enabled)
     const float radius = bounds.height * 0.38f;
     const float x = enabled ? bounds.x + bounds.width - bounds.height * 0.5f : bounds.x + bounds.height * 0.5f;
     DrawCircleV({x, bounds.y + bounds.height * 0.5f}, radius, knob);
+}
+
+
+Rectangle centeredSquare(Rectangle row, float size)
+{
+    return {
+        row.x,
+        row.y + (row.height - size) * 0.5f,
+        size,
+        size,
+    };
+}
+
+Rectangle centeredTextBounds(Rectangle row, float x, float width, int fontSize)
+{
+    return {
+        x,
+        row.y + (row.height - static_cast<float>(fontSize)) * 0.5f,
+        width,
+        static_cast<float>(fontSize) + 2.0f,
+    };
+}
+
+void drawIconLabelRow(Rectangle row, const std::string& iconId, const std::string& label, UiIconLabelStyle style)
+{
+    const Rectangle iconBounds = centeredSquare({row.x, row.y, style.iconSize, row.height}, style.iconSize);
+    IconRegistry::instance().drawIcon(iconId, iconBounds, style.iconColor);
+
+    const float textX = row.x + style.iconSize + style.gap;
+    const float textWidth = std::max(0.0f, row.width - style.iconSize - style.gap);
+    drawTextClipped(label, centeredTextBounds(row, textX, textWidth, style.fontSize), style.fontSize, style.textColor);
+}
+
+void drawIconLabelRowValue(Rectangle row, const std::string& iconId, const std::string& label, const std::string& value, float valueWidth, UiIconLabelStyle style, Color valueColor)
+{
+    const Rectangle iconBounds = centeredSquare({row.x, row.y, style.iconSize, row.height}, style.iconSize);
+    IconRegistry::instance().drawIcon(iconId, iconBounds, style.iconColor);
+
+    const float textX = row.x + style.iconSize + style.gap;
+    const float labelWidth = std::max(0.0f, row.width - style.iconSize - style.gap - valueWidth - style.gap);
+    drawTextClipped(label, centeredTextBounds(row, textX, labelWidth, style.fontSize), style.fontSize, style.textColor);
+
+    const float valueX = row.x + row.width - valueWidth;
+    drawTextClipped(value, centeredTextBounds(row, valueX, valueWidth, style.fontSize), style.fontSize, valueColor);
 }

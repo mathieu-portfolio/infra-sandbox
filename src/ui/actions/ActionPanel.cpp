@@ -134,8 +134,13 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
     if (selected != nullptr) {
         DrawRectangleRounded({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {37, 50, 82, 255});
         DrawRectangleRoundedLines({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {130, 93, 255, 220});
-        IconRegistry::instance().drawIcon("node.header_selected", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {89, 196, 255, 255});
-        drawTextClipped(selected->name, {header.x + 70.0f, header.y + 4.0f, header.width - 150.0f, 30.0f}, 25, {241, 245, 249, 255});
+        drawIconLabelRow({header.x + 14.0f, header.y + 8.0f, header.width - 28.0f, 38.0f}, "node.header_selected", selected->name, {
+            26.0f,
+            30.0f,
+            25,
+            {89, 196, 255, 255},
+            {241, 245, 249, 255},
+        });
         const char* region = selected->hasGeoLocation ? selected->geoLocation.regionName.c_str() : "local";
         drawTextClipped(region, {header.x + 70.0f, header.y + 40.0f, 140.0f, 20.0f}, 14, {166, 176, 192, 255});
         const double load = actions_ui::overallPressure(selectedPressure, selected);
@@ -144,8 +149,13 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
         drawTextClipped(status, {header.x + header.width - 112.0f, header.y + 6.0f, 108.0f, 18.0f}, 14, actions_ui::pressureColor(load));
     } else {
         DrawRectangleRounded({header.x, header.y + 4.0f, 52.0f, 52.0f}, 0.12f, 8, {37, 50, 82, 255});
-        IconRegistry::instance().drawIcon("node.header_empty", {header.x + 14.0f, header.y + 18.0f, 26.0f, 26.0f}, {139, 148, 158, 255});
-        drawTextClipped("Select a Node", {header.x + 70.0f, header.y + 6.0f, header.width - 84.0f, 30.0f}, 25, {241, 245, 249, 255});
+        drawIconLabelRow({header.x + 14.0f, header.y + 8.0f, header.width - 28.0f, 38.0f}, "node.header_empty", "Select a Node", {
+            26.0f,
+            30.0f,
+            25,
+            {139, 148, 158, 255},
+            {241, 245, 249, 255},
+        });
         drawTextClipped("Inspect local actions and pressures", {header.x + 70.0f, header.y + 42.0f, header.width - 84.0f, 20.0f}, 14, {166, 176, 192, 255});
     }
 
@@ -320,7 +330,6 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
     const Rectangle locked = panel.locked;
     DrawRectangleRounded(locked, 0.045f, 8, {17, 24, 34, 230});
     DrawRectangleRoundedLines(locked, 0.045f, 8, {70, 86, 104, 110});
-    IconRegistry::instance().drawIcon("action.locked", {locked.x + 16.0f, locked.y + 24.0f, 24.0f, 24.0f}, {139, 148, 158, 180});
     int lockedCount = 0;
     std::string lockedReason = "More actions will be discovered as scenarios unlock concepts.";
     for (const auto& card : cards) {
@@ -331,7 +340,16 @@ void ActionPanel::draw(const UiContext& context, const UiFrameView& view) const
             }
         }
     }
-    drawTextClipped(lockedCount > 0 ? std::to_string(lockedCount) + " locked action(s)" : "Locked actions", {locked.x + 56.0f, locked.y + 17.0f, locked.width - 72.0f, 20.0f}, 13, {166, 176, 192, 255});
+    drawIconLabelRow({locked.x + 16.0f, locked.y + 14.0f, locked.width - 32.0f, 28.0f},
+        "action.locked",
+        lockedCount > 0 ? std::to_string(lockedCount) + " locked action(s)" : "Locked actions",
+        {
+            24.0f,
+            16.0f,
+            13,
+            {139, 148, 158, 180},
+            {166, 176, 192, 255},
+        });
     drawTextClipped(lockedReason, {locked.x + 56.0f, locked.y + 42.0f, locked.width - 72.0f, 18.0f}, 12, {139, 148, 158, 255});
 
     if (context.state->placementActive) {

@@ -47,6 +47,38 @@ void TextBlockNode::draw() const
     UiNode::draw();
 }
 
+
+IconLabelNode::IconLabelNode(std::string iconIdValue, std::string textValue, int fontSizeValue, std::string id)
+    : UiNode(std::move(id)), iconId(std::move(iconIdValue)), text(std::move(textValue)), fontSize(fontSizeValue)
+{
+    style_.paddingLeft = 0.0f;
+    style_.paddingRight = 0.0f;
+}
+
+Size IconLabelNode::measure(Size available)
+{
+    const float horizontalPadding = style_.paddingLeft + style_.paddingRight;
+    const float verticalPadding = style_.paddingTop + style_.paddingBottom;
+    const float naturalTextWidth = static_cast<float>(std::max(MeasureText(text.c_str(), fontSize), 1));
+    const float width = iconSize + gap + naturalTextWidth + horizontalPadding;
+    const float height = std::max(iconSize, static_cast<float>(fontSize)) + verticalPadding;
+    measured_ = clampSize({std::min(available.width, width), height});
+    return measured_;
+}
+
+void IconLabelNode::draw() const
+{
+    drawIconLabelRow(contentBounds(), iconId, text, {
+        iconSize,
+        gap,
+        fontSize,
+        iconColor,
+        textColor,
+    });
+    UiNode::draw();
+}
+
+
 ButtonNode::ButtonNode(std::string textValue, int fontSizeValue, std::string id)
     : TextBlockNode(std::move(textValue), fontSizeValue, std::move(id))
 {

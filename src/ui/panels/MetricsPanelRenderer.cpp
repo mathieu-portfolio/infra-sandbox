@@ -116,8 +116,13 @@ void drawLabSection(Rectangle bounds, const char* title, const char* icon, Color
 {
     DrawRectangleRounded(bounds, 0.06f, 8, {18, 23, 30, 190});
     DrawRectangleRoundedLines(bounds, 0.06f, 8, {70, 86, 104, 90});
-    IconRegistry::instance().drawIcon(icon, {bounds.x + 10.0f, bounds.y + 9.0f, 14.0f, 14.0f}, accent);
-    drawTextClipped(title, {bounds.x + 30.0f, bounds.y + 8.0f, bounds.width - 40.0f, 15.0f}, 13, {174, 186, 199, 255});
+    drawIconLabelRow({bounds.x + 10.0f, bounds.y + 6.0f, bounds.width - 20.0f, 20.0f}, icon, title, {
+        14.0f,
+        6.0f,
+        13,
+        accent,
+        {174, 186, 199, 255},
+    });
 }
 
 void drawLabButton(Rectangle bounds, lab_panel::Action action, const UiState& state, bool enabled = true)
@@ -129,8 +134,16 @@ void drawLabButton(Rectangle bounds, lab_panel::Action action, const UiState& st
     const Color border = hovered ? withAlpha(accent, 170) : Color{70, 86, 104, 120};
     DrawRectangleRounded(bounds, 0.12f, 6, fill);
     DrawRectangleRoundedLines(bounds, 0.12f, 6, border);
-    IconRegistry::instance().drawIcon(labActionIcon(action), {bounds.x + 7.0f, bounds.y + 6.0f, 14.0f, 14.0f}, accent);
-    drawTextClipped(labActionLabel(action, state.sandboxQueueBuildup), {bounds.x + 27.0f, bounds.y + 6.0f, bounds.width - 35.0f, 14.0f}, 12, enabled ? Color{230, 237, 243, 255} : Color{92, 101, 112, 255});
+    drawIconLabelRow({bounds.x + 7.0f, bounds.y + 3.0f, bounds.width - 14.0f, bounds.height - 6.0f},
+        labActionIcon(action),
+        labActionLabel(action, state.sandboxQueueBuildup),
+        {
+            14.0f,
+            6.0f,
+            12,
+            accent,
+            enabled ? Color{230, 237, 243, 255} : Color{92, 101, 112, 255},
+        });
 }
 
 void drawLabPanel(Rectangle sandbox, const UiContext& context, const UiFrameView& view)
@@ -187,9 +200,13 @@ void drawButton(Rectangle bounds, const char* label)
 
 void metricRow(const char* icon, const char* label, const char* value, float x, float y, Color valueColor)
 {
-    IconRegistry::instance().drawIcon(icon, {x, y + 1.0f, 16.0f, 16.0f}, valueColor);
-    drawTextClipped(label, {x + 24.0f, y, 112.0f, 18.0f}, 14, {139, 148, 158, 255});
-    drawTextClipped(value, {x + 150.0f, y, 82.0f, 18.0f}, 14, valueColor);
+    drawIconLabelRowValue({x, y - 1.0f, 232.0f, 20.0f}, icon, label, value, 82.0f, {
+        16.0f,
+        8.0f,
+        14,
+        valueColor,
+        {139, 148, 158, 255},
+    }, valueColor);
 }
 
 void compactMetricRow(const char* label, const char* value, float x, float y, float width, Color valueColor)
@@ -413,8 +430,13 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     auto drawAlertRow = [&](const char* iconId, const std::string& text, Color iconColor) {
         const float rowY = alertsViewport.y + alertsTopPadding + static_cast<float>(row) * alertsRowHeight - scrollY;
         if (rowY > alertsViewport.y - alertsRowHeight && rowY < alertsViewport.y + alertsViewport.height) {
-            IconRegistry::instance().drawIcon(iconId, {alertsViewport.x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, iconColor);
-            drawTextClipped(text, {alertsViewport.x + 38.0f, rowY, alertsViewport.width - 52.0f, 18.0f}, 13, {230, 237, 243, 255});
+            drawIconLabelRow({alertsViewport.x + 14.0f, rowY, alertsViewport.width - 28.0f, 20.0f}, iconId, text, {
+                16.0f,
+                8.0f,
+                13,
+                iconColor,
+                {230, 237, 243, 255},
+            });
         }
         ++row;
     };
@@ -429,8 +451,13 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     }
     if (row == 0) {
         const float rowY = alertsViewport.y + alertsTopPadding - scrollY;
-        IconRegistry::instance().drawIcon("alert.empty_state", {alertsViewport.x + 14.0f, rowY + 2.0f, 16.0f, 16.0f}, {86, 210, 151, 255});
-        drawTextClipped("No active incidents", {alertsViewport.x + 38.0f, rowY, alertsViewport.width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
+        drawIconLabelRow({alertsViewport.x + 14.0f, rowY, alertsViewport.width - 28.0f, 20.0f}, "alert.empty_state", "No active incidents", {
+            16.0f,
+            8.0f,
+            14,
+            {86, 210, 151, 255},
+            {139, 148, 158, 255},
+        });
     }
     }
 
@@ -447,8 +474,13 @@ void MetricsPanelRenderer::draw(const UiContext& context, const UiFrameView& vie
     const std::array<const char*, 5> icons{"legend.client", "legend.service", "legend.database", "legend.cache", "legend.link"};
     for (int i = 0; i < 5; ++i) {
         const float rowY = y + 42.0f + static_cast<float>(i) * 24.0f;
-        IconRegistry::instance().drawIcon(icons[static_cast<std::size_t>(i)], {x + 14.0f, rowY, 15.0f, 15.0f}, {89, 196, 255, 255});
-        drawTextClipped(names[static_cast<std::size_t>(i)], {x + 38.0f, rowY - 1.0f, width - 52.0f, 18.0f}, 14, {139, 148, 158, 255});
+        drawIconLabelRow({x + 14.0f, rowY - 2.0f, width - 28.0f, 20.0f}, icons[static_cast<std::size_t>(i)], names[static_cast<std::size_t>(i)], {
+            15.0f,
+            9.0f,
+            14,
+            {89, 196, 255, 255},
+            {139, 148, 158, 255},
+        });
     }
     }
 }

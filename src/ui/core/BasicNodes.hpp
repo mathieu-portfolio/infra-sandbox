@@ -32,6 +32,24 @@ public:
     int maxLines = 4;
 };
 
+
+
+class IconLabelNode : public UiNode {
+public:
+    IconLabelNode(std::string iconId, std::string text, int fontSize, std::string id = {});
+
+    Size measure(Size available) override;
+    void draw() const override;
+
+    std::string iconId;
+    std::string text;
+    int fontSize = 13;
+    float iconSize = 16.0f;
+    float gap = 8.0f;
+    Color iconColor{139, 148, 158, 255};
+    Color textColor{230, 237, 243, 255};
+};
+
 class ButtonNode : public TextBlockNode {
 public:
     ButtonNode(std::string text, int fontSize, std::string id = {});

@@ -94,8 +94,13 @@ void SelectionPanel::draw(const UiContext& context, const UiFrameView& view) con
     const Rectangle panel{layout.worldView.x + 14.0f, layout.worldView.y + 14.0f, panelWidth, panelHeight};
     DrawRectangleRounded(panel, 0.035f, 8, {13, 17, 23, 230});
     DrawRectangleRoundedLines(panel, 0.035f, 8, {89, 196, 255, 120});
-    IconRegistry::instance().drawIcon("node.selection_panel", {panel.x + 14.0f, panel.y + 14.0f, 20.0f, 20.0f}, {89, 196, 255, 255});
-    drawTextClipped(node->name, {panel.x + 42.0f, panel.y + 13.0f, panel.width - 58.0f, 20.0f}, 16, {230, 237, 243, 255});
+    drawIconLabelRow({panel.x + 14.0f, panel.y + 10.0f, panel.width - 28.0f, 28.0f}, "node.selection_panel", node->name, {
+        20.0f,
+        8.0f,
+        16,
+        {89, 196, 255, 255},
+        {230, 237, 243, 255},
+    });
 
     char value[128];
     float y = panel.y + 48.0f;

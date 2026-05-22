@@ -404,8 +404,16 @@ void TimelinePanel::draw(const UiContext& context, const UiFrameView& view, cons
         if (y > bottom.rows.y - 22.0f && y < bottom.rows.y + bottom.rows.height) {
             const Color color = categoryColor(activity.category);
             const std::string timeLabel = scenarioView.visibleCalendarLabel();
-            IconRegistry::instance().drawIcon(activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action", {panel.x + 14.0f, y, 15.0f, 15.0f}, color);
-            drawTextClipped(timeLabel, {panel.x + 38.0f, y, 112.0f, 16.0f}, 12, {139, 148, 158, 255});
+            drawIconLabelRow({panel.x + 14.0f, y - 2.0f, 136.0f, 20.0f},
+                activity.category == TimelineCategory::Objectives ? "timeline.objective" : "timeline.action",
+                timeLabel,
+                {
+                    15.0f,
+                    9.0f,
+                    12,
+                    color,
+                    {139, 148, 158, 255},
+                });
             drawTextClipped(activity.title, {panel.x + 160.0f, y, 148.0f, 16.0f}, 13, {230, 237, 243, 255});
             drawTextClipped(activity.detail, {panel.x + 322.0f, y, panel.width - 482.0f, 16.0f}, 12, {139, 148, 158, 255});
             drawCategoryBadge({panel.x + panel.width - 118.0f, y - 1.0f, 104.0f, 18.0f}, activity.category);

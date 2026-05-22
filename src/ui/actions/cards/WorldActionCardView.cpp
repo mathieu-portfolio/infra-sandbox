@@ -151,8 +151,16 @@ void WorldActionCardView::drawCompact(Rectangle bounds, const WorldActionDraft& 
     const Color border = selected ? Color{145, 109, 255, 230} : Color{70, 86, 104, 120};
     DrawRectangleRounded(bounds, 0.07f, 8, fill);
     DrawRectangleRoundedLines(bounds, 0.07f, 8, border);
-    IconRegistry::instance().drawIcon(action.iconId.empty() ? "action.default" : action.iconId.c_str(), {bounds.x + 9.0f, bounds.y + 10.0f, 18.0f, 18.0f}, {89, 196, 255, 255});
-    drawTextClipped(action.name, {bounds.x + 33.0f, bounds.y + 8.0f, bounds.width - 42.0f, 18.0f}, 11, {230, 237, 243, 255});
+    drawIconLabelRow({bounds.x + 9.0f, bounds.y + 7.0f, bounds.width - 18.0f, 22.0f},
+        action.iconId.empty() ? "action.default" : action.iconId.c_str(),
+        action.name,
+        {
+            18.0f,
+            6.0f,
+            11,
+            {89, 196, 255, 255},
+            {230, 237, 243, 255},
+        });
     drawTextClipped(action.category, {bounds.x + 10.0f, bounds.y + 32.0f, bounds.width - 20.0f, 14.0f}, 10, {189, 135, 255, 255});
     const std::string bonus = capacityBonusLabel(action.capacityBonus, false);
     drawTextClipped(bonus.empty() ? "Strategic focus" : bonus, {bounds.x + 10.0f, bounds.y + 55.0f, bounds.width - 20.0f, 14.0f}, 10, {86, 210, 151, 255});
@@ -165,8 +173,16 @@ void WorldActionCardView::drawDraft(Rectangle bounds, const WorldActionDraft& ac
     DrawRectangleRounded(bounds, 0.035f, 8, fill);
     DrawRectangleRoundedLines(bounds, 0.035f, 8, border);
 
-    IconRegistry::instance().drawIcon(action.iconId.empty() ? "action.default" : action.iconId.c_str(), {bounds.x + 16.0f, bounds.y + 16.0f, 28.0f, 28.0f}, {89, 196, 255, 255});
-    drawTextClipped(action.name, {bounds.x + 54.0f, bounds.y + 14.0f, bounds.width - 70.0f, 24.0f}, 18, {241, 245, 249, 255});
+    drawIconLabelRow({bounds.x + 16.0f, bounds.y + 10.0f, bounds.width - 32.0f, 40.0f},
+        action.iconId.empty() ? "action.default" : action.iconId.c_str(),
+        action.name,
+        {
+            28.0f,
+            10.0f,
+            18,
+            {89, 196, 255, 255},
+            {241, 245, 249, 255},
+        });
     drawTextClipped(action.category, {bounds.x + 54.0f, bounds.y + 41.0f, bounds.width - 70.0f, 18.0f}, 12, {189, 135, 255, 255});
 
     const float textWidth = bounds.width - 2.0f * kDraftPadding;

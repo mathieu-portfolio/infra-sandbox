@@ -200,8 +200,16 @@ void EventOverlay::draw(const UiContext& context, const UiScenarioView& scenario
     DrawRectangleRounded(layout.overlay, 0.025f, 8, {9, 16, 27, 248});
     DrawRectangleRoundedLines(layout.overlay, 0.025f, 8, {70, 86, 104, 150});
 
-    IconRegistry::instance().drawIcon("timeline.events", {layout.title.x, layout.title.y + 1.0f, 22.0f, 22.0f}, {139, 148, 158, 255});
-    DrawText(planning ? "EVENT BRIEFING" : "SIMULATION EVENT RECAP", static_cast<int>(layout.title.x + 32.0f), static_cast<int>(layout.title.y + 4.0f), 14, {139, 148, 158, 255});
+    drawIconLabelRow({layout.title.x, layout.title.y, layout.title.width, 26.0f},
+        "timeline.events",
+        planning ? "EVENT BRIEFING" : "SIMULATION EVENT RECAP",
+        {
+            22.0f,
+            10.0f,
+            14,
+            {139, 148, 158, 255},
+            {139, 148, 158, 255},
+        });
     drawTextClipped(
         planning ? "A new event shaped the planning context. Adapt your actions before advancing time."
                  : "These events occurred during the resolved operational cycle. You can react during the next planning phase.",

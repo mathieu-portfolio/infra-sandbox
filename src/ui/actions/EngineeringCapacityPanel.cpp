@@ -93,8 +93,13 @@ void drawCapacityRow(Rectangle row, const char* iconId, const char* label, int u
         return;
     }
 
-    IconRegistry::instance().drawIcon(iconId, {row.x, row.y - 1.0f, 14.0f, 14.0f}, {139, 148, 158, 255});
-    drawTextClipped(label, {row.x + 20.0f, row.y - 1.0f, 52.0f, 14.0f}, 11, labelColor);
+    drawIconLabelRow({row.x, row.y - 3.0f, 72.0f, 18.0f}, iconId, label, {
+        14.0f,
+        6.0f,
+        11,
+        {139, 148, 158, 255},
+        labelColor,
+    });
     drawCapacitySquares({row.x + 78.0f, row.y}, used, max, usedMeansFilled);
 }
 }

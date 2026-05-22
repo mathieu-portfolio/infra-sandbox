@@ -111,16 +111,32 @@ void WorldActionOverlay::draw(const UiContext& context) const
     if (context.state->eventPopupMode != EventPopupMode::None) {
         DrawRectangleRounded(toggle, 0.28f, 8, {17, 24, 34, 210});
         DrawRectangleRoundedLines(toggle, 0.28f, 8, {70, 86, 104, 120});
-        IconRegistry::instance().drawIcon("action.world_toggle", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, {139, 148, 158, 190});
-        drawTextClipped("Review Events First", {toggle.x + 38.0f, toggle.y + 9.0f, toggle.width - 50.0f, 16.0f}, 13, {139, 148, 158, 255});
+        drawIconLabelRow({toggle.x + 12.0f, toggle.y + 5.0f, toggle.width - 24.0f, toggle.height - 10.0f},
+            "action.world_toggle",
+            "Review Events First",
+            {
+                18.0f,
+                8.0f,
+                13,
+                {139, 148, 158, 190},
+                {139, 148, 158, 255},
+            });
         return;
     }
     const bool hasPick = context.state->selectedWorldActionIndex >= 0;
     DrawRectangleRounded(toggle, 0.28f, 8, context.state->worldActionDraftVisible ? Color{24, 34, 50, 245} : Color{17, 24, 34, 235});
     DrawRectangleRoundedLines(toggle, 0.28f, 8, hasPick ? Color{86, 210, 151, 210} : Color{245, 184, 76, 190});
-    IconRegistry::instance().drawIcon("action.world_toggle", {toggle.x + 12.0f, toggle.y + 8.0f, 18.0f, 18.0f}, hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255});
     const char* toggleText = context.state->worldActionDraftVisible ? "Hide World Actions" : (hasPick ? "Show World Actions" : "Pick World Action");
-    drawTextClipped(toggleText, {toggle.x + 38.0f, toggle.y + 9.0f, toggle.width - 50.0f, 16.0f}, 13, {230, 237, 243, 255});
+    drawIconLabelRow({toggle.x + 12.0f, toggle.y + 5.0f, toggle.width - 24.0f, toggle.height - 10.0f},
+        "action.world_toggle",
+        toggleText,
+        {
+            18.0f,
+            8.0f,
+            13,
+            hasPick ? Color{86, 210, 151, 255} : Color{245, 184, 76, 255},
+            {230, 237, 243, 255},
+        });
 
     if (!context.state->worldActionDraftVisible) {
         return;
