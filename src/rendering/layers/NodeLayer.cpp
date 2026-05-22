@@ -19,23 +19,47 @@ float clamp01(double value)
     return static_cast<float>(std::clamp(value, 0.0, 1.0));
 }
 
-void drawMiniBar(Vector2 origin, float width, float height, float value, Color color)
+float maxResourcePressure(const rendering::NodePresentationState& visual)
+{
+    return std::max(std::max(visual.computePressure, visual.memoryPressure), std::max(visual.storagePressure, visual.networkPressure));
+}
+
+void drawResourceMeter(Vector2 origin, const char* label, float value, Color color)
 {
     const float clamped = std::clamp(value, 0.0f, 1.0f);
-    DrawRectangleRounded({origin.x, origin.y, width, height}, 0.35f, 5, {18, 22, 28, 190});
+    const Rectangle track{origin.x, origin.y, 66.0f, 7.0f};
+    DrawRectangleRounded(track, 0.45f, 6, {18, 22, 28, 210});
     if (clamped > 0.01f) {
-        DrawRectangleRounded({origin.x, origin.y, width * clamped, height}, 0.35f, 5, color);
+        DrawRectangleRounded({track.x, track.y, track.width * clamped, track.height}, 0.45f, 6, color);
     }
+    DrawText(label, static_cast<int>(origin.x - 18.0f), static_cast<int>(origin.y - 3.0f), 11, {198, 208, 220, 185});
 }
 
 void drawResourceOverlay(const rendering::NodePresentationState& visual, Vector2 center)
 {
-    const float left = center.x - 42.0f;
-    const float top = center.y + 48.0f;
-    drawMiniBar({left, top}, 84.0f, 5.0f, visual.computePressure, {89, 196, 255, 205});
-    drawMiniBar({left, top + 7.0f}, 84.0f, 5.0f, visual.memoryPressure, {151, 111, 255, 205});
-    drawMiniBar({left, top + 14.0f}, 84.0f, 5.0f, visual.storagePressure, {86, 210, 151, 205});
-    drawMiniBar({left, top + 21.0f}, 84.0f, 5.0f, visual.networkPressure, {245, 184, 76, 205});
+    const float saturation = maxResourcePressure(visual);
+    if (saturation < 0.03f) {
+        return;
+    }
+
+    const float panelWidth = 104.0f;
+    const float panelHeight = 48.0f;
+    const float left = center.x - panelWidth * 0.5f;
+    const float top = center.y + 44.0f;
+
+    const unsigned char panelAlpha = static_cast<unsigned char>(160 + saturation * 65.0f);
+    DrawRectangleRounded({left, top, panelWidth, panelHeight}, 0.14f, 8, {12, 16, 21, panelAlpha});
+    DrawRectangleRoundedLines({left, top, panelWidth, panelHeight}, 0.14f, 8, {139, 148, 158, static_cast<unsigned char>(65 + saturation * 70.0f)});
+
+    drawResourceMeter({left + 28.0f, top + 7.0f}, "CPU", visual.computePressure, {89, 196, 255, 215});
+    drawResourceMeter({left + 28.0f, top + 17.0f}, "MEM", visual.memoryPressure, {151, 111, 255, 215});
+    drawResourceMeter({left + 28.0f, top + 27.0f}, "DSK", visual.storagePressure, {86, 210, 151, 215});
+    drawResourceMeter({left + 28.0f, top + 37.0f}, "NET", visual.networkPressure, {245, 184, 76, 215});
+
+    if (saturation > 0.68f) {
+        const unsigned char heatAlpha = static_cast<unsigned char>((saturation - 0.68f) / 0.32f * 95.0f);
+        DrawCircleV(center, 60.0f + saturation * 9.0f, {245, 184, 76, heatAlpha});
+    }
 }
 
 void drawPersistenceOverlay(const NodeDefinition& definition, const Node& node, const rendering::NodePresentationState& visual, Vector2 center, double timeSeconds)
