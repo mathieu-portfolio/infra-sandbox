@@ -25,7 +25,9 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
         visualFeedback_.submit(event);
     }
     uiManager_.state().pendingVisualFeedbackEvents.clear();
-    visualFeedback_.update(GetFrameTime() * simulation.simulationSpeed(), simulation);
+    const float frameTime = GetFrameTime();
+    visualFeedback_.update(frameTime * simulation.simulationSpeed(), simulation);
+    topologyPresentation_.update(frameTime, simulation);
 
     const int screenWidth = GetScreenWidth();
     const int screenHeight = GetScreenHeight();
@@ -52,8 +54,8 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
             currentState.viewTransition.previous = state.viewTransition.current;
             currentState.viewTransition.current = state.viewTransition.current;
 
-            const rendering::viewmodels::RenderFrameView previousFrame{simulation, previousState, geoLayout, screenWidth, screenHeight};
-            const rendering::viewmodels::RenderFrameView currentFrame{simulation, currentState, geoLayout, screenWidth, screenHeight};
+            const rendering::viewmodels::RenderFrameView previousFrame{simulation, previousState, geoLayout, topologyPresentation_, screenWidth, screenHeight};
+            const rendering::viewmodels::RenderFrameView currentFrame{simulation, currentState, geoLayout, topologyPresentation_, screenWidth, screenHeight};
             drawWorldToTexture(previousViewTarget_, previousFrame, camera);
             drawWorldToTexture(currentViewTarget_, currentFrame, camera);
         }
@@ -66,7 +68,7 @@ void Renderer::draw(const Simulation& simulation, const ScenarioManager& scenari
         drawTextureFullscreen(previousViewTarget_.texture, 1.0f - state.viewTransition.progress);
         drawTextureFullscreen(currentViewTarget_.texture, state.viewTransition.progress);
     } else {
-        const rendering::viewmodels::RenderFrameView frameView{simulation, state, geoLayout, screenWidth, screenHeight};
+        const rendering::viewmodels::RenderFrameView frameView{simulation, state, geoLayout, topologyPresentation_, screenWidth, screenHeight};
         drawWorld(frameView, camera);
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rendering/GeoLayoutSystem.hpp"
+#include "rendering/TopologyPresentationState.hpp"
 #include "simulation/core/Simulation.hpp"
 #include "ui/core/UiTypes.hpp"
 
@@ -13,6 +14,7 @@ struct RenderFrameView {
     const Simulation& simulation;
     const UiState& uiState;
     const GeoLayoutFrame& geoLayout;
+    const rendering::TopologyPresentationState& presentation;
     int screenWidth = 0;
     int screenHeight = 0;
 };

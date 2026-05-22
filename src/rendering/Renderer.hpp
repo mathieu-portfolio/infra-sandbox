@@ -6,6 +6,7 @@
 #include "rendering/CameraController.hpp"
 #include "rendering/GeoLayoutSystem.hpp"
 #include "rendering/MapRenderer.hpp"
+#include "rendering/TopologyPresentationState.hpp"
 #include "rendering/VisualFeedbackSystem.hpp"
 #include "rendering/viewmodels/RenderFrameView.hpp"
 #include "simulation/core/Simulation.hpp"
@@ -45,6 +46,7 @@ private:
     GeoLayoutSystem geoLayoutSystem_;
     UiManager uiManager_;
     VisualFeedbackSystem visualFeedback_;
+    rendering::TopologyPresentationState topologyPresentation_;
     RenderTexture2D previousViewTarget_{};
     RenderTexture2D currentViewTarget_{};
     int transitionTargetWidth_ = 0;

@@ -11,6 +11,86 @@
 
 using namespace rendering::layers;
 
+
+namespace {
+
+float clamp01(double value)
+{
+    return static_cast<float>(std::clamp(value, 0.0, 1.0));
+}
+
+void drawMiniBar(Vector2 origin, float width, float height, float value, Color color)
+{
+    const float clamped = std::clamp(value, 0.0f, 1.0f);
+    DrawRectangleRounded({origin.x, origin.y, width, height}, 0.35f, 5, {18, 22, 28, 190});
+    if (clamped > 0.01f) {
+        DrawRectangleRounded({origin.x, origin.y, width * clamped, height}, 0.35f, 5, color);
+    }
+}
+
+void drawResourceOverlay(const rendering::NodePresentationState& visual, Vector2 center)
+{
+    const float left = center.x - 42.0f;
+    const float top = center.y + 48.0f;
+    drawMiniBar({left, top}, 84.0f, 5.0f, visual.computePressure, {89, 196, 255, 205});
+    drawMiniBar({left, top + 7.0f}, 84.0f, 5.0f, visual.memoryPressure, {151, 111, 255, 205});
+    drawMiniBar({left, top + 14.0f}, 84.0f, 5.0f, visual.storagePressure, {86, 210, 151, 205});
+    drawMiniBar({left, top + 21.0f}, 84.0f, 5.0f, visual.networkPressure, {245, 184, 76, 205});
+}
+
+void drawPersistenceOverlay(const NodeDefinition& definition, const Node& node, const rendering::NodePresentationState& visual, Vector2 center, double timeSeconds)
+{
+    if (!definition.storesState) {
+        return;
+    }
+
+    const float sync = 0.45f + 0.55f * pulse(timeSeconds, 3.0, node.id);
+    const Color dataColor{86, 210, 151, static_cast<unsigned char>(115 + sync * 90.0f)};
+    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 50.0f + sync * 5.0f, dataColor);
+    DrawRectangleRounded({center.x - 24.0f, center.y - 58.0f, 48.0f, 8.0f}, 0.5f, 6, {18, 22, 28, 210});
+    DrawRectangleRounded({center.x - 24.0f, center.y - 58.0f, 48.0f * visual.persistenceHealth, 8.0f}, 0.5f, 6, dataColor);
+}
+
+void drawReliabilityOverlay(const Node& node, const rendering::NodePresentationState& visual, Vector2 center, double timeSeconds)
+{
+    const float risk = visual.reliabilityRisk;
+    if (risk < 0.08f) {
+        DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 54.0f, {86, 210, 151, 95});
+        return;
+    }
+
+    const float flicker = 0.65f + 0.35f * pulse(timeSeconds, 12.0, node.id);
+    const Color riskColor{235, 86, 100, static_cast<unsigned char>(90 + risk * flicker * 130.0f)};
+    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 54.0f + risk * 10.0f, riskColor);
+    DrawLineEx({center.x - 18.0f, center.y - 46.0f}, {center.x - 5.0f, center.y - 30.0f}, 2.0f, riskColor);
+    DrawLineEx({center.x + 8.0f, center.y + 31.0f}, {center.x + 22.0f, center.y + 47.0f}, 2.0f, riskColor);
+}
+
+void drawGeographyOverlay(const rendering::NodePresentationState& visual, Vector2 center)
+{
+    if (visual.geoPresence < 0.02f) {
+        return;
+    }
+
+    const auto alpha = static_cast<unsigned char>(std::clamp(visual.geoPresence, 0.0f, 1.0f) * 125.0f);
+    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 48.0f, {89, 196, 255, static_cast<unsigned char>(alpha * 0.64f)});
+    DrawLineEx({center.x, center.y + 36.0f}, {center.x, center.y + 55.0f}, 2.0f, {89, 196, 255, alpha});
+    DrawCircleV({center.x, center.y + 59.0f}, 3.0f, {89, 196, 255, static_cast<unsigned char>(std::min(150, static_cast<int>(alpha) + 25))});
+}
+
+void drawTrafficOverlay(const Node& node, const rendering::NodePresentationState& visual, Vector2 center, double timeSeconds)
+{
+    const float traffic = visual.traffic;
+    if (traffic < 0.05f) {
+        return;
+    }
+
+    const float beat = pulse(timeSeconds, 5.0 + traffic * 7.0, node.id);
+    const float radius = 48.0f + beat * 8.0f;
+    DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), radius, {89, 196, 255, static_cast<unsigned char>(55 + traffic * 120.0f)});
+}
+
+}
 void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera)
 {
     const Simulation& simulation = frame.simulation;
@@ -35,6 +115,7 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
         const float pressureGlow = visualFeedback_.nodePressureGlow(node.id);
         const float instability = visualFeedback_.nodeInstability(node.id);
         const bool drawOverviewStatus = frame.uiState.activeViewMode == UiViewMode::Overview;
+        const auto& visual = frame.presentation.node(node.id);
         if (drawOverviewStatus && pressureGlow > 0.02f) {
             const float radius = definition.defaultVisualSize * (0.72f + pressureGlow * 0.55f);
             DrawCircleV(center, radius, {245, 184, 76, static_cast<unsigned char>(std::min(95, static_cast<int>(pressureGlow * 95.0f)))});
@@ -100,6 +181,27 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
             DrawCircleV(center, 58.0f, overlayTint);
         }
 
+        switch (frame.uiState.activeViewMode) {
+        case UiViewMode::Traffic:
+            drawTrafficOverlay(node, visual, center, simulation.timeSeconds());
+            break;
+        case UiViewMode::Resources:
+            drawResourceOverlay(visual, center);
+            break;
+        case UiViewMode::Persistence:
+            drawPersistenceOverlay(definition, node, visual, center, simulation.timeSeconds());
+            break;
+        case UiViewMode::Reliability:
+            drawReliabilityOverlay(node, visual, center, simulation.timeSeconds());
+            break;
+        case UiViewMode::Geography:
+            drawGeographyOverlay(visual, center);
+            break;
+        case UiViewMode::Overview:
+        case UiViewMode::Count:
+            break;
+        }
+
         if (frame.uiState.selection.nodeId == node.id) {
             DrawCircleLines(static_cast<int>(center.x), static_cast<int>(center.y), 64.0f, {230, 237, 243, 230});
         }
@@ -116,6 +218,10 @@ void Renderer::drawQueueBars(const rendering::viewmodels::RenderFrameView& frame
 {
     const Simulation& simulation = frame.simulation;
     const GeoLayoutFrame& layout = frame.geoLayout;
+
+    if (frame.uiState.activeViewMode != UiViewMode::Traffic) {
+        return;
+    }
 
     const int width = GetScreenWidth();
     const int height = GetScreenHeight();
@@ -137,7 +243,7 @@ void Renderer::drawQueueBars(const rendering::viewmodels::RenderFrameView& frame
         const float x = center.x + 70.0f;
         const float bottom = center.y + 48.0f;
 
-        const float pressureGlow = visualFeedback_.nodePressureGlow(node.id);
+        const float pressureGlow = frame.presentation.node(node.id).queuePressure;
         DrawRectangleRounded({x - 8.0f, bottom - 122.0f, 16.0f, 128.0f}, 0.35f, 8, {18, 22, 28, static_cast<unsigned char>(220 + std::min(30, static_cast<int>(pressureGlow * 30.0f)))});
         for (int i = 0; i < visibleDots; ++i) {
             const float queueWave = pressureGlow > 0.15f ? std::sin(static_cast<float>(simulation.timeSeconds() * 8.0 + i)) * pressureGlow * 1.6f : 0.0f;
