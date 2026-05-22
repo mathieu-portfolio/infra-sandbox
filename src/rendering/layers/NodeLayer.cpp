@@ -34,11 +34,12 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
         const float actionPulse = visualFeedback_.nodeActionPulse(node.id);
         const float pressureGlow = visualFeedback_.nodePressureGlow(node.id);
         const float instability = visualFeedback_.nodeInstability(node.id);
-        if (pressureGlow > 0.02f) {
+        const bool drawOverviewStatus = frame.uiState.activeViewMode == UiViewMode::Overview;
+        if (drawOverviewStatus && pressureGlow > 0.02f) {
             const float radius = definition.defaultVisualSize * (0.72f + pressureGlow * 0.55f);
             DrawCircleV(center, radius, {245, 184, 76, static_cast<unsigned char>(std::min(95, static_cast<int>(pressureGlow * 95.0f)))});
         }
-        if (instability > 0.12f) {
+        if (drawOverviewStatus && instability > 0.12f) {
             const float flicker = 0.55f + 0.45f * pulse(simulation.timeSeconds(), 18.0, node.id);
             DrawCircleV(center, definition.defaultVisualSize * (0.62f + instability * 0.4f), {235, 86, 100, static_cast<unsigned char>(std::min(80, static_cast<int>(instability * flicker * 80.0f)))});
         }
@@ -95,7 +96,7 @@ void Renderer::drawNodes(const rendering::viewmodels::RenderFrameView& frame, co
             DrawRectangleRoundedLines(rect, 0.08f, 8, definitionColor);
         }
 
-        if (overlayTint.a > 0) {
+        if (drawOverviewStatus && overlayTint.a > 0) {
             DrawCircleV(center, 58.0f, overlayTint);
         }
 
