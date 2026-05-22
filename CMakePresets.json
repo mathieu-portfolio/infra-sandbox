@@ -7,6 +7,14 @@
   },
   "configurePresets": [
     {
+      "name": "ninja-debug",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
       "name": "app-debug",
       "displayName": "App Debug",
       "description": "Configure the raylib visualization app.",
@@ -26,6 +34,26 @@
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
     },
     {
+      "name": "app-ninja-debug",
+      "displayName": "App Ninja Debug",
+      "description": "Configure the raylib visualization app with Ninja.",
+      "inherits": [
+        "app-debug",
+        "ninja-debug"
+      ],
+      "binaryDir": "${sourceDir}/build/app-ninja-debug"
+    },
+    {
+      "name": "app-vcpkg-ninja-debug",
+      "displayName": "App Ninja Debug with vcpkg",
+      "description": "Configure the visualization app with Ninja and the vcpkg toolchain. Requires VCPKG_ROOT.",
+      "inherits": [
+        "app-vcpkg-debug",
+        "ninja-debug"
+      ],
+      "binaryDir": "${sourceDir}/build/app-vcpkg-ninja-debug"
+    },
+    {
       "name": "tests-debug",
       "displayName": "Tests Debug",
       "description": "Configure GoogleTest simulator tests only. raylib is not required.",
@@ -43,6 +71,26 @@
       "inherits": "tests-debug",
       "binaryDir": "${sourceDir}/build/tests-vcpkg-debug",
       "toolchainFile": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+    },
+    {
+      "name": "tests-ninja-debug",
+      "displayName": "Tests Ninja Debug",
+      "description": "Configure GoogleTest simulator tests only with Ninja. raylib is not required.",
+      "inherits": [
+        "tests-debug",
+        "ninja-debug"
+      ],
+      "binaryDir": "${sourceDir}/build/tests-ninja-debug"
+    },
+    {
+      "name": "tests-vcpkg-ninja-debug",
+      "displayName": "Tests Ninja Debug with vcpkg",
+      "description": "Configure GoogleTest simulator tests with Ninja and the vcpkg toolchain. Requires VCPKG_ROOT.",
+      "inherits": [
+        "tests-vcpkg-debug",
+        "ninja-debug"
+      ],
+      "binaryDir": "${sourceDir}/build/tests-vcpkg-ninja-debug"
     }
   ],
   "buildPresets": [
@@ -57,6 +105,14 @@
       "configuration": "Debug"
     },
     {
+      "name": "app-ninja-debug",
+      "configurePreset": "app-ninja-debug"
+    },
+    {
+      "name": "app-vcpkg-ninja-debug",
+      "configurePreset": "app-vcpkg-ninja-debug"
+    },
+    {
       "name": "tests-debug",
       "configurePreset": "tests-debug",
       "configuration": "Debug",
@@ -68,6 +124,20 @@
       "name": "tests-vcpkg-debug",
       "configurePreset": "tests-vcpkg-debug",
       "configuration": "Debug",
+      "targets": [
+        "infra_sandbox_tests"
+      ]
+    },
+    {
+      "name": "tests-ninja-debug",
+      "configurePreset": "tests-ninja-debug",
+      "targets": [
+        "infra_sandbox_tests"
+      ]
+    },
+    {
+      "name": "tests-vcpkg-ninja-debug",
+      "configurePreset": "tests-vcpkg-ninja-debug",
       "targets": [
         "infra_sandbox_tests"
       ]
@@ -86,6 +156,20 @@
       "name": "tests-vcpkg-debug",
       "configurePreset": "tests-vcpkg-debug",
       "configuration": "Debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "tests-ninja-debug",
+      "configurePreset": "tests-ninja-debug",
+      "output": {
+        "outputOnFailure": true
+      }
+    },
+    {
+      "name": "tests-vcpkg-ninja-debug",
+      "configurePreset": "tests-vcpkg-ninja-debug",
       "output": {
         "outputOnFailure": true
       }
