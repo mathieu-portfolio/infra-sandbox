@@ -11,6 +11,46 @@
 
 using namespace rendering::layers;
 
+namespace {
+
+void drawTrafficFlow(Vec2 start, Vec2 end, int screenWidth, int screenHeight, const CameraController& camera, const rendering::LinkPresentationState& visual)
+{
+    if (visual.activity < 0.03f) {
+        return;
+    }
+
+    const float load = std::clamp(visual.load, 0.0f, 1.0f);
+    const float congestion = std::clamp(visual.congestion, 0.0f, 1.0f);
+    const float activity = std::clamp(visual.activity, 0.0f, 1.0f);
+
+    const float flowThickness = 2.5f + load * 6.0f;
+    const Color laneColor{89, 196, 255, static_cast<unsigned char>(50 + activity * 95.0f)};
+    drawArc(start, end, screenWidth, screenHeight, camera, flowThickness, laneColor);
+
+    if (congestion > 0.25f) {
+        const Color congestionColor{245, 184, 76, static_cast<unsigned char>(35 + congestion * 100.0f)};
+        drawArc(start, end, screenWidth, screenHeight, camera, flowThickness + congestion * 5.0f, congestionColor);
+    }
+
+    const int particleCount = std::clamp(2 + static_cast<int>(std::round(activity * 7.0f)), 2, 9);
+    for (int i = 0; i < particleCount; ++i) {
+        const float base = (static_cast<float>(i) / static_cast<float>(particleCount));
+        float t = visual.flowOffset + base;
+        t = t - std::floor(t);
+
+        const Vec2 world = arcPoint(start, end, t);
+        const Vector2 position = worldToScreen(world, screenWidth, screenHeight, camera);
+        const float radius = 2.5f + activity * 2.4f + congestion * 1.4f;
+        const Color particleColor = congestion > 0.62f
+            ? Color{245, 184, 76, static_cast<unsigned char>(135 + activity * 95.0f)}
+            : Color{89, 196, 255, static_cast<unsigned char>(135 + activity * 95.0f)};
+        DrawCircleV(position, radius, particleColor);
+        DrawCircleV(position, radius + 4.0f, {particleColor.r, particleColor.g, particleColor.b, 36});
+    }
+}
+
+}
+
 void Renderer::drawLinks(const rendering::viewmodels::RenderFrameView& frame, const CameraController& camera)
 {
     const Simulation& simulation = frame.simulation;
@@ -36,14 +76,20 @@ void Renderer::drawLinks(const rendering::viewmodels::RenderFrameView& frame, co
         }
         const float feedback = visualFeedback_.linkThroughputBoost(link.id);
         const float activation = visualFeedback_.linkActivation(link.id);
-        const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f) + feedback * 2.0f + activation * 2.5f;
+        const bool trafficView = frame.uiState.activeViewMode == UiViewMode::Traffic;
+        const auto& linkVisual = frame.presentation.link(link.id);
+        const float trafficLoad = trafficView ? linkVisual.load : 0.0f;
+        const float thickness = 2.0f + std::min(5.0f, static_cast<float>(link.inFlightRequests.size()) * 0.08f) + feedback * 2.0f + activation * 2.5f + trafficLoad * 2.5f;
         const Color color{
-            static_cast<unsigned char>(std::min(140, 75 + static_cast<int>(feedback * 70.0f + activation * 60.0f))),
-            static_cast<unsigned char>(std::min(196, 94 + static_cast<int>(feedback * 90.0f + activation * 70.0f))),
-            static_cast<unsigned char>(std::min(255, 115 + static_cast<int>(feedback * 90.0f + activation * 80.0f))),
-            static_cast<unsigned char>(std::min(235, 170 + static_cast<int>(feedback * 55.0f + activation * 65.0f))),
+            static_cast<unsigned char>(std::min(140, 75 + static_cast<int>(feedback * 70.0f + activation * 60.0f + trafficLoad * 45.0f))),
+            static_cast<unsigned char>(std::min(196, 94 + static_cast<int>(feedback * 90.0f + activation * 70.0f + trafficLoad * 55.0f))),
+            static_cast<unsigned char>(std::min(255, 115 + static_cast<int>(feedback * 90.0f + activation * 80.0f + trafficLoad * 50.0f))),
+            static_cast<unsigned char>(std::min(235, 145 + static_cast<int>(feedback * 55.0f + activation * 65.0f + trafficLoad * 80.0f))),
         };
         drawArc(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, thickness, color);
+        if (trafficView) {
+            drawTrafficFlow(sourceLayout->displayPosition, targetLayout->displayPosition, width, height, camera, linkVisual);
+        }
     }
 }
 

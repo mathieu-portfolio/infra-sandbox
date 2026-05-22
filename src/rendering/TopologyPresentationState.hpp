@@ -3,6 +3,7 @@
 #include "simulation/core/Simulation.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -20,11 +21,20 @@ struct NodePresentationState {
     float queuePressure = 0.0f;
 };
 
+struct LinkPresentationState {
+    float load = 0.0f;
+    float activity = 0.0f;
+    float congestion = 0.0f;
+    float flowOffset = 0.0f;
+};
+
 class TopologyPresentationState {
 public:
     void update(float deltaSeconds, const Simulation& simulation)
     {
         const float dt = std::max(0.0f, deltaSeconds);
+        visualTimeSeconds_ += dt;
+
         std::unordered_set<int> activeNodeIds;
         activeNodeIds.reserve(simulation.graph().nodes().size());
 
@@ -50,13 +60,47 @@ public:
                 ++it;
             }
         }
+
+        std::unordered_set<int> activeLinkIds;
+        activeLinkIds.reserve(simulation.graph().links().size());
+        for (const auto& link : simulation.graph().links()) {
+            activeLinkIds.insert(link.id);
+            const LinkPresentationState target = targetForLink(link);
+            auto& visual = links_[link.id];
+            visual.load = approach(visual.load, target.load, dt, 7.5f);
+            visual.activity = approach(visual.activity, target.activity, dt, 8.0f);
+            visual.congestion = approach(visual.congestion, target.congestion, dt, 8.0f);
+            visual.flowOffset = wrap01(visual.flowOffset + dt * (0.12f + visual.activity * 0.72f));
+        }
+
+        for (auto it = links_.begin(); it != links_.end();) {
+            if (activeLinkIds.find(it->first) == activeLinkIds.end()) {
+                it = links_.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    [[nodiscard]] float visualTimeSeconds() const
+    {
+        return visualTimeSeconds_;
     }
 
     [[nodiscard]] const NodePresentationState& node(int nodeId) const
     {
         const auto it = nodes_.find(nodeId);
         if (it == nodes_.end()) {
-            return fallback_;
+            return fallbackNode_;
+        }
+        return it->second;
+    }
+
+    [[nodiscard]] const LinkPresentationState& link(int linkId) const
+    {
+        const auto it = links_.find(linkId);
+        if (it == links_.end()) {
+            return fallbackLink_;
         }
         return it->second;
     }
@@ -71,6 +115,12 @@ private:
     static float clamp01(double value)
     {
         return static_cast<float>(std::clamp(value, 0.0, 1.0));
+    }
+
+    static float wrap01(float value)
+    {
+        value = std::fmod(value, 1.0f);
+        return value < 0.0f ? value + 1.0f : value;
     }
 
     static NodePresentationState targetForNode(const Node& node)
@@ -88,8 +138,21 @@ private:
         return target;
     }
 
+    static LinkPresentationState targetForLink(const Link& link)
+    {
+        LinkPresentationState target{};
+        const double safeBandwidth = std::max(1.0, link.bandwidthPerSecond);
+        target.load = clamp01(static_cast<double>(link.inFlightRequests.size()) / safeBandwidth);
+        target.activity = clamp01(static_cast<double>(link.inFlightRequests.size()) / std::max(1.0, safeBandwidth * 0.35));
+        target.congestion = clamp01(static_cast<double>(link.inFlightRequests.size()) / std::max(1.0, safeBandwidth * 0.75));
+        return target;
+    }
+
+    float visualTimeSeconds_ = 0.0f;
     std::unordered_map<int, NodePresentationState> nodes_;
-    NodePresentationState fallback_{};
+    std::unordered_map<int, LinkPresentationState> links_;
+    NodePresentationState fallbackNode_{};
+    LinkPresentationState fallbackLink_{};
 };
 
 } // namespace rendering
