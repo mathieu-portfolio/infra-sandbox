@@ -1,0 +1,158 @@
+{
+  "id": "infrastructure_lab",
+  "display_name": "Infrastructure Lab Topology",
+  "description": "Richer lab topology for testing pressure propagation, regional caches, API capacity, and persistence behavior.",
+  "tags": [
+    "sandbox",
+    "lab",
+    "systems"
+  ],
+  "regions": [
+    "Europe",
+    "NorthAmerica"
+  ],
+  "nodes": [
+    {
+      "id": "eu_users",
+      "display_name": "EU users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 52.52,
+        "longitude": 13.4,
+        "region": "Europe"
+      },
+      "request_rate_per_second": 4.0
+    },
+    {
+      "id": "na_users",
+      "display_name": "NA users",
+      "type": "client_cluster",
+      "geo": {
+        "latitude": 37.77,
+        "longitude": -122.42,
+        "region": "NorthAmerica"
+      },
+      "request_rate_per_second": 5.0
+    },
+    {
+      "id": "eu_api",
+      "display_name": "EU API cluster",
+      "type": "api_service",
+      "geo": {
+        "latitude": 50.11,
+        "longitude": 8.68,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 8.0,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "eu_api_secondary",
+      "display_name": "EU API secondary",
+      "type": "api_service",
+      "geo": {
+        "latitude": 48.85,
+        "longitude": 2.35,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 5.0,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "eu_database",
+      "display_name": "EU database",
+      "type": "database",
+      "geo": {
+        "latitude": 50.12,
+        "longitude": 8.67,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 3.2,
+      "timeout_seconds": 5.5
+    },
+    {
+      "id": "eu_cache",
+      "display_name": "EU cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 50.1,
+        "longitude": 8.65,
+        "region": "Europe"
+      },
+      "processing_capacity_per_second": 12.0
+    },
+    {
+      "id": "na_cache",
+      "display_name": "NA cache",
+      "type": "cache",
+      "geo": {
+        "latitude": 39.04,
+        "longitude": -77.49,
+        "region": "NorthAmerica"
+      },
+      "processing_capacity_per_second": 10.0
+    }
+  ],
+  "links": [
+    {
+      "source": "eu_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.18,
+      "bandwidth_per_second": 80.0
+    },
+    {
+      "source": "na_users",
+      "target": "eu_api",
+      "base_latency_seconds": 0.75,
+      "bandwidth_per_second": 60.0
+    },
+    {
+      "source": "na_users",
+      "target": "na_cache",
+      "base_latency_seconds": 0.16,
+      "bandwidth_per_second": 90.0
+    },
+    {
+      "source": "na_cache",
+      "target": "eu_api",
+      "base_latency_seconds": 0.55,
+      "bandwidth_per_second": 90.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_api_secondary",
+      "base_latency_seconds": 0.12,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "eu_api_secondary",
+      "target": "eu_api",
+      "base_latency_seconds": 0.12,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_cache",
+      "base_latency_seconds": 0.08,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "eu_cache",
+      "target": "eu_database",
+      "base_latency_seconds": 0.12,
+      "bandwidth_per_second": 120.0
+    },
+    {
+      "source": "eu_api",
+      "target": "eu_database",
+      "base_latency_seconds": 0.24,
+      "bandwidth_per_second": 90.0
+    },
+    {
+      "source": "eu_database",
+      "target": "eu_api",
+      "base_latency_seconds": 0.24,
+      "bandwidth_per_second": 90.0
+    }
+  ]
+}

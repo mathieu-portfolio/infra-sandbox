@@ -1,0 +1,105 @@
+[
+  {
+    "id": "cross_region_latency_wave",
+    "display_name": "Cross-Region Latency Wave",
+    "description": "Remote users grow faster than local users, making distance the first bottleneck.",
+    "type": "regional_growth",
+    "base_multiplier": {
+      "min": 1.12,
+      "max": 1.28
+    },
+    "growth_per_turn": {
+      "min": 0.22,
+      "max": 0.34
+    },
+    "tags": [
+      "latency",
+      "geography"
+    ]
+  },
+  {
+    "id": "packet_loss_retry_wave",
+    "display_name": "Packet Loss Retry Wave",
+    "description": "Unstable network paths make clients retry and create extra load when latency rises.",
+    "type": "bursty",
+    "base_multiplier": {
+      "min": 1.16,
+      "max": 1.32
+    },
+    "growth_per_turn": {
+      "min": 0.24,
+      "max": 0.38
+    },
+    "tags": [
+      "packet_loss",
+      "retry",
+      "networking"
+    ]
+  },
+  {
+    "id": "bandwidth_hotspot",
+    "display_name": "Bandwidth Hotspot",
+    "description": "One regional path receives repeated waves that expose bandwidth limits before compute capacity is exhausted.",
+    "type": "bursty",
+    "base_multiplier": {
+      "min": 1.2,
+      "max": 1.38
+    },
+    "growth_per_turn": {
+      "min": 0.18,
+      "max": 0.3
+    },
+    "tags": [
+      "bandwidth",
+      "congestion"
+    ]
+  },
+  {
+    "id": "edge_rollout_pressure",
+    "display_name": "Edge Rollout Pressure",
+    "description": "Read-heavy traffic rewards moving repeated responses closer to users, but the rollout starts with limited edge capacity.",
+    "type": "read_pressure_growth",
+    "base_multiplier": {
+      "min": 1.14,
+      "max": 1.3
+    },
+    "growth_per_turn": {
+      "min": 0.18,
+      "max": 0.28
+    },
+    "tags": [
+      "edge",
+      "caching",
+      "latency"
+    ]
+  },
+  {
+    "id": "routing_instability_wave",
+    "display_name": "Routing Instability Wave",
+    "description": "Traffic shifts unevenly between regions and creates intermittent pressure spikes.",
+    "type": "regional_growth",
+    "base_multiplier": {
+      "min": 1.18,
+      "max": 1.34
+    },
+    "growth_per_turn": {
+      "min": 0.2,
+      "max": 0.34
+    },
+    "tags": [
+      "routing",
+      "regional_scaling",
+      "congestion"
+    ],
+    "evolution": {
+      "enabled": true,
+      "pressure_sensitivity": 0.18,
+      "churn_sensitivity": 0.22,
+      "migration_sensitivity": 0.9,
+      "reroute_pressure_sensitivity": 1.6,
+      "reroute_latency_sensitivity": 0.45,
+      "dynamic_retry_sensitivity": 0.35,
+      "burst_amplification": 0.2
+    }
+  }
+]

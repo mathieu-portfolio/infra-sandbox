@@ -73,5 +73,37 @@
       "observability",
       "diagnosis"
     ]
+  },
+  {
+    "id": "slow_database_window",
+    "display_name": "Slow Storage Window",
+    "description": "A temporary storage slowdown varies persistence pressure.",
+    "selection_weight": {
+      "min": 0.25,
+      "max": 0.45
+    },
+    "events": [
+      "database_slowdown"
+    ],
+    "pressure_context": {
+      "backend": {
+        "queue_pressure": 0.08,
+        "compute_intensity": 0.04
+      },
+      "database": {
+        "contention": 0.12,
+        "replication_lag": 0.04
+      }
+    },
+    "pressure_signals": [
+      {
+        "domain": "database",
+        "name": "Storage Constraint",
+        "summary": "Backend queues rise when persistence is slow."
+      }
+    ],
+    "tags": [
+      "database"
+    ]
   }
 ]
