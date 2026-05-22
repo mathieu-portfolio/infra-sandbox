@@ -1,56 +1,51 @@
-# infra-sandbox
+# Infra Sandbox
 
-A C++20/raylib prototype for an educational systems architecture strategy game.
+A systems strategy / infrastructure visualization prototype focused on:
+- distributed systems intuition
+- layered infrastructure views
+- simulation readability
+- systems-oriented visualization
 
-This first version focuses on the simulation and rendering foundations:
-clients generate traffic, requests move through links, backend queues build up,
-processors complete or time out work, and a debug overlay exposes core metrics.
-The current simulation distinguishes lightweight requests from database-heavy
-requests, models API and database queues separately, supports retries, and has
-a small TTL cache for repeat database-heavy work. Scenario definitions now drive
-traffic pressure, phases, educational focus, objectives, events, and available mechanics.
+The project is intentionally frozen in a portfolio-ready state.
 
-## Build
+![Overview Screenshot](docs/screenshots/overview.png)
 
-```bash
-./build.sh
-```
+---
 
-Or directly with CMake presets:
+## Project Status
 
-```bash
-cmake --preset app-debug
-cmake --build --preset app-debug
-```
+The project reached its original architectural and visualization goals.
 
-If raylib or GoogleTest are not already installed, CMake will fetch them by default.
-Use `-DINFRA_FETCH_RAYLIB=OFF` if you want raylib configuration to fail instead.
+The remaining high-value work would mostly involve:
+- content production
+- balancing
+- progression tuning
+- onboarding
+- campaign/scenario authoring
 
-## Run
+Those investments would make sense for a commercial project, but are outside the intended scope of this repository.
 
-```bash
-./run.sh
-```
+---
 
-## Tests
+## Main Features
 
-```bash
-./tests.sh
-```
+- Turn-based infrastructure simulation
+- Layered topology visualization
+- Animated presentation state
+- Scenario framework
+- Content-driven architecture
 
-## Architecture
+Views:
+- Overview
+- Traffic
+- Resources
+- Persistence
+- Reliability
+- Geography
 
-See [docs/architecture.md](docs/architecture.md) for the current split between layers, runtime systems, mechanics, node categories, and overlay modes.
+---
 
-## Controls
+## Documentation
 
-- Top phase button: move from observation to planning, validate a plan, then review resolution
-- `F1`-`F7`: switch overlay mode
-- `F8`: clear overlay mode
-- `F11`: bottleneck pressure overlay
-- `F12`: retry amplification overlay
-- `F9`: toggle debug UI
-- `F10`: toggle metrics UI
-- Left click a node: select it and show minimal node details
-- Right mouse drag: pan camera
-- Mouse wheel: zoom camera
+- `docs/architecture-and-rendering.md`
+- `docs/simulation-and-content.md`
